@@ -72,6 +72,8 @@
 
     #layerContent {
       padding: 14px;
+      overflow-y: auto;
+      height: calc(100% - 48px);
     }
 
     #map {
@@ -172,6 +174,51 @@
               <input type="checkbox" id="cekSaluranMikroCakung">
               Saluran Mikro Cakung
             </label>
+
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroCipayung">
+              Saluran Mikro Cipayung
+            </label>
+
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroCiracas">
+              Saluran Mikro Ciracas
+            </label>
+
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroDurenSawit">
+              Saluran Mikro Duren Sawit
+            </label>
+
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroJatinegara">
+              Saluran Mikro Jatinegara
+            </label>
+
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroKramatJati">
+              Saluran Mikro Kramat Jati
+            </label>
+
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroMakasar">
+              Saluran Mikro Makasar
+            </label>
+
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroMatraman">
+              Saluran Mikro Matraman
+            </label>
+
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroPasarRebo">
+              Saluran Mikro Pasar Rebo
+            </label>
+
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroPuloGadung">
+              Saluran Mikro Pulo Gadung
+            </label>
           </div>
         </div>
 
@@ -215,7 +262,17 @@
 
     // Membuat layer khusus
     var layerStasiunHujan = L.layerGroup().addTo(map);
+
     var layerSaluranMikroCakung = L.layerGroup();
+    var layerSaluranMikroCipayung = L.layerGroup();
+    var layerSaluranMikroCiracas = L.layerGroup();
+    var layerSaluranMikroDurenSawit = L.layerGroup();
+    var layerSaluranMikroJatinegara = L.layerGroup();
+    var layerSaluranMikroKramatJati = L.layerGroup();
+    var layerSaluranMikroMakasar = L.layerGroup();
+    var layerSaluranMikroMatraman = L.layerGroup();
+    var layerSaluranMikroPasarRebo = L.layerGroup();
+    var layerSaluranMikroPuloGadung = L.layerGroup();
 
     // Membaca data stasiun hujan dari file CSV
     fetch("data_stasiun_hujan.csv")
@@ -252,64 +309,135 @@
         });
       });
 
-    // Membaca data saluran mikro Cakung dari file GeoJSON
-    fetch("saluran_mikro_cakung.geojson")
-      .then(response => response.json())
-      .then(data => {
-        const geojsonSaluranMikro = L.geoJSON(data, {
-          style: {
-            color: "#ff00ff",
-            weight: 2,
-            opacity: 0.9
-          },
-          onEachFeature: function (feature, layer) {
-            layer.bindPopup(`
-              <b>Saluran Mikro Cakung</b>
-            `);
+    // Fungsi untuk membaca GeoJSON saluran mikro
+    function tambahLayerSaluranMikro(namaFile, namaLayer, layerGroup) {
+      fetch(namaFile)
+        .then(response => response.json())
+        .then(data => {
+          const geojsonLayer = L.geoJSON(data, {
+            style: {
+              color: "#ff00ff",
+              weight: 2,
+              opacity: 0.9
+            },
+            onEachFeature: function (feature, layer) {
+              layer.bindPopup(`
+                <b>${namaLayer}</b>
+              `);
 
-            const decorator = L.polylineDecorator(layer, {
-              patterns: [
-                {
-                  offset: 25,
-                  repeat: 80,
-                  symbol: L.Symbol.arrowHead({
-                    pixelSize: 8,
-                    polygon: false,
-                    pathOptions: {
-                      stroke: true,
-                      color: "#ff00ff",
-                      weight: 2,
-                      opacity: 0.9
-                    }
-                  })
-                }
-              ]
-            });
+              const decorator = L.polylineDecorator(layer, {
+                patterns: [
+                  {
+                    offset: 25,
+                    repeat: 80,
+                    symbol: L.Symbol.arrowHead({
+                      pixelSize: 8,
+                      polygon: false,
+                      pathOptions: {
+                        stroke: true,
+                        color: "#ff00ff",
+                        weight: 2,
+                        opacity: 0.9
+                      }
+                    })
+                  }
+                ]
+              });
 
-            decorator.addTo(layerSaluranMikroCakung);
-          }
+              decorator.addTo(layerGroup);
+            }
+          });
+
+          geojsonLayer.addTo(layerGroup);
         });
+    }
 
-        geojsonSaluranMikro.addTo(layerSaluranMikroCakung);
+    // Memanggil semua layer saluran mikro
+    tambahLayerSaluranMikro(
+      "saluran_mikro_cakung.geojson",
+      "Saluran Mikro Cakung",
+      layerSaluranMikroCakung
+    );
+
+    tambahLayerSaluranMikro(
+      "saluran_mikro_cipayung.geojson",
+      "Saluran Mikro Cipayung",
+      layerSaluranMikroCipayung
+    );
+
+    tambahLayerSaluranMikro(
+      "saluran_mikro_ciracas.geojson",
+      "Saluran Mikro Ciracas",
+      layerSaluranMikroCiracas
+    );
+
+    tambahLayerSaluranMikro(
+      "saluran_mikro_duren_sawit.geojson",
+      "Saluran Mikro Duren Sawit",
+      layerSaluranMikroDurenSawit
+    );
+
+    tambahLayerSaluranMikro(
+      "saluran_mikro_jatinegara.geojson",
+      "Saluran Mikro Jatinegara",
+      layerSaluranMikroJatinegara
+    );
+
+    tambahLayerSaluranMikro(
+      "saluran_mikro_kramat_jati.geojson",
+      "Saluran Mikro Kramat Jati",
+      layerSaluranMikroKramatJati
+    );
+
+    tambahLayerSaluranMikro(
+      "saluran_mikro_makasar.geojson",
+      "Saluran Mikro Makasar",
+      layerSaluranMikroMakasar
+    );
+
+    tambahLayerSaluranMikro(
+      "saluran_mikro_matraman.geojson",
+      "Saluran Mikro Matraman",
+      layerSaluranMikroMatraman
+    );
+
+    tambahLayerSaluranMikro(
+      "saluran_mikro_pasar_rebo.geojson",
+      "Saluran Mikro Pasar Rebo",
+      layerSaluranMikroPasarRebo
+    );
+
+    tambahLayerSaluranMikro(
+      "saluran_mikro_pulo_gadung.geojson",
+      "Saluran Mikro Pulo Gadung",
+      layerSaluranMikroPuloGadung
+    );
+
+    // Fungsi checkbox layer
+    function aturCheckboxLayer(idCheckbox, layerGroup) {
+      document.getElementById(idCheckbox).addEventListener("change", function () {
+        if (this.checked) {
+          map.addLayer(layerGroup);
+        } else {
+          map.removeLayer(layerGroup);
+        }
       });
+    }
 
-    // Mengatur checkbox untuk menampilkan atau menyembunyikan layer stasiun hujan
-    document.getElementById("cekStasiunHujan").addEventListener("change", function () {
-      if (this.checked) {
-        map.addLayer(layerStasiunHujan);
-      } else {
-        map.removeLayer(layerStasiunHujan);
-      }
-    });
+    // Checkbox stasiun hujan
+    aturCheckboxLayer("cekStasiunHujan", layerStasiunHujan);
 
-    // Mengatur checkbox untuk menampilkan atau menyembunyikan layer saluran mikro Cakung
-    document.getElementById("cekSaluranMikroCakung").addEventListener("change", function () {
-      if (this.checked) {
-        map.addLayer(layerSaluranMikroCakung);
-      } else {
-        map.removeLayer(layerSaluranMikroCakung);
-      }
-    });
+    // Checkbox saluran mikro
+    aturCheckboxLayer("cekSaluranMikroCakung", layerSaluranMikroCakung);
+    aturCheckboxLayer("cekSaluranMikroCipayung", layerSaluranMikroCipayung);
+    aturCheckboxLayer("cekSaluranMikroCiracas", layerSaluranMikroCiracas);
+    aturCheckboxLayer("cekSaluranMikroDurenSawit", layerSaluranMikroDurenSawit);
+    aturCheckboxLayer("cekSaluranMikroJatinegara", layerSaluranMikroJatinegara);
+    aturCheckboxLayer("cekSaluranMikroKramatJati", layerSaluranMikroKramatJati);
+    aturCheckboxLayer("cekSaluranMikroMakasar", layerSaluranMikroMakasar);
+    aturCheckboxLayer("cekSaluranMikroMatraman", layerSaluranMikroMatraman);
+    aturCheckboxLayer("cekSaluranMikroPasarRebo", layerSaluranMikroPasarRebo);
+    aturCheckboxLayer("cekSaluranMikroPuloGadung", layerSaluranMikroPuloGadung);
 
     // Mengatur buka tutup grup layer
     function toggleGroup(groupId, iconId) {
