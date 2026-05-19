@@ -33,28 +33,29 @@
       font-size: 14px;
     }
 
-    #map {
+    #appContainer {
+      display: flex;
       width: 100%;
       height: calc(100vh - 76px);
     }
 
     #layerPanel {
-      position: absolute;
-      top: 110px;
-      left: 16px;
-      width: 280px;
+      width: 20%;
+      min-width: 240px;
+      max-width: 320px;
+      height: 100%;
       background: white;
       z-index: 1000;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
       font-size: 14px;
       overflow: hidden;
+      transition: width 0.3s ease, min-width 0.3s ease;
     }
 
     #layerHeader {
       background: #333;
       color: white;
-      padding: 10px 12px;
+      padding: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -65,18 +66,45 @@
       background: transparent;
       color: white;
       border: none;
-      font-size: 18px;
+      font-size: 20px;
       cursor: pointer;
     }
 
     #layerContent {
-      padding: 12px;
+      padding: 14px;
     }
 
     #layerContent label {
       display: block;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       cursor: pointer;
+    }
+
+    #map {
+      flex: 1;
+      height: 100%;
+    }
+
+    #layerPanel.minimized {
+      width: 42px;
+      min-width: 42px;
+    }
+
+    #layerPanel.minimized #layerHeader {
+      height: 100%;
+      padding: 8px 4px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #layerPanel.minimized #layerHeader span {
+      transform: rotate(180deg);
+    }
+
+    #layerPanel.minimized #togglePanel {
+      transform: rotate(90deg);
     }
 
     #layerPanel.minimized #layerContent {
@@ -84,26 +112,29 @@
     }
   </style>
 </head>
+
 <body>
   <header>
     <h1>WebGIS Data Hujan</h1>
     <p>Peta digital untuk visualisasi data hujan</p>
   </header>
 
-  <div id="map"></div>
+  <div id="appContainer">
+    <div id="layerPanel">
+      <div id="layerHeader">
+        <span>Layer Peta</span>
+        <button id="togglePanel">−</button>
+      </div>
 
-  <div id="layerPanel">
-    <div id="layerHeader">
-      <span>Layer Peta</span>
-      <button id="togglePanel">−</button>
+      <div id="layerContent">
+        <label>
+          <input type="checkbox" id="cekStasiunHujan" checked>
+          Stasiun Hujan
+        </label>
+      </div>
     </div>
 
-    <div id="layerContent">
-      <label>
-        <input type="checkbox" id="cekStasiunHujan" checked>
-        Stasiun Hujan
-      </label>
-    </div>
+    <div id="map"></div>
   </div>
 
   <!-- Leaflet JS -->
@@ -174,10 +205,14 @@
       panel.classList.toggle("minimized");
 
       if (panel.classList.contains("minimized")) {
-        this.textContent = "+";
+        this.textContent = "›";
       } else {
         this.textContent = "−";
       }
+
+      setTimeout(function () {
+        map.invalidateSize();
+      }, 300);
     });
   </script>
 </body>
