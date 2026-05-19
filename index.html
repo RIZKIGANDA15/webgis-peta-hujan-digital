@@ -198,6 +198,11 @@
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
   </script>
 
+  <!-- Plugin untuk membuat panah arah pada garis -->
+  <script
+    src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js">
+  </script>
+
   <script>
     // Membuat peta dengan titik tengah wilayah Jakarta Timur
     var map = L.map('map').setView([-6.225, 106.900], 11);
@@ -251,18 +256,41 @@
     fetch("saluran_mikro_cakung.geojson")
       .then(response => response.json())
       .then(data => {
-        L.geoJSON(data, {
+        const geojsonSaluranMikro = L.geoJSON(data, {
           style: {
-            color: "#0077ff",
+            color: "#ff00ff",
             weight: 2,
-            opacity: 0.8
+            opacity: 0.9
           },
           onEachFeature: function (feature, layer) {
             layer.bindPopup(`
               <b>Saluran Mikro Cakung</b>
             `);
+
+            const decorator = L.polylineDecorator(layer, {
+              patterns: [
+                {
+                  offset: 25,
+                  repeat: 80,
+                  symbol: L.Symbol.arrowHead({
+                    pixelSize: 8,
+                    polygon: false,
+                    pathOptions: {
+                      stroke: true,
+                      color: "#ff00ff",
+                      weight: 2,
+                      opacity: 0.9
+                    }
+                  })
+                }
+              ]
+            });
+
+            decorator.addTo(layerSaluranMikroCakung);
           }
-        }).addTo(layerSaluranMikroCakung);
+        });
+
+        geojsonSaluranMikro.addTo(layerSaluranMikroCakung);
       });
 
     // Mengatur checkbox untuk menampilkan atau menyembunyikan layer stasiun hujan
