@@ -63,6 +63,16 @@
     }).addTo(map);
 
    // Membaca data stasiun hujan dari file CSV
+var layerStasiunHujan = L.layerGroup().addTo(map);
+
+var overlayMaps = {
+  "Stasiun Hujan": layerStasiunHujan
+};
+
+L.control.layers(null, overlayMaps, {
+  collapsed: false
+}).addTo(map);
+
 fetch("data_stasiun_hujan.csv")
   .then(response => response.text())
   .then(csvText => {
@@ -83,12 +93,14 @@ fetch("data_stasiun_hujan.csv")
       const longitude = parseFloat(data.longitude);
 
       if (!isNaN(latitude) && !isNaN(longitude)) {
-        const marker = L.marker([latitude, longitude]).addTo(map);
+        const marker = L.marker([latitude, longitude]);
 
         marker.bindPopup(`
           <b>${data.nama_stasiun}</b><br>
           Wilayah: ${data.wilayah}
         `);
+
+        marker.addTo(layerStasiunHujan);
       }
     });
   });
