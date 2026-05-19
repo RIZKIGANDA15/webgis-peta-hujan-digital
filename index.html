@@ -62,15 +62,36 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Contoh titik data hujan
-    var titikHujan = L.marker([-6.225, 106.900]).addTo(map);
+   // Membaca data stasiun hujan dari file CSV
+fetch("data_stasiun_hujan.csv")
+  .then(response => response.text())
+  .then(csvText => {
+    const rows = csvText.trim().split("\n");
 
-    titikHujan.bindPopup(`
-      <b>Contoh Pos Hujan</b><br>
-      Wilayah: Jakarta Timur<br>
-      Curah Hujan: 45 mm<br>
-      Kategori: Hujan Sedang
-    `);
+    // Dikarenakan CSV memakai pemisah titik koma ;
+    const headers = rows[0].split(";").map(header => header.trim());
+
+    rows.slice(1).forEach(row => {
+      const values = row.split(";");
+      const data = {};
+
+      headers.forEach((header, index) => {
+        data[header] = values[index] ? values[index].trim() : "";
+      });
+
+      const latitude = parseFloat(data.latitude);
+      const longitude = parseFloat(data.longitude);
+
+      if (!isNaN(latitude) && !isNaN(longitude)) {
+        const marker = L.marker([latitude, longitude]).addTo(map);
+
+        marker.bindPopup(`
+          <b>${data.nama_stasiun}</b><br>
+          Wilayah: ${data.wilayah}
+        `);
+      }
+    });
+  });
   </script>
 </body>
 </html>
