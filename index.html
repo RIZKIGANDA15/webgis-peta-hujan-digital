@@ -37,6 +37,51 @@
       width: 100%;
       height: calc(100vh - 76px);
     }
+
+    #layerPanel {
+      position: absolute;
+      top: 110px;
+      left: 16px;
+      width: 280px;
+      background: white;
+      z-index: 1000;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    #layerHeader {
+      background: #333;
+      color: white;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    #togglePanel {
+      background: transparent;
+      color: white;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #layerContent {
+      padding: 12px;
+    }
+
+    #layerContent label {
+      display: block;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    #layerPanel.minimized #layerContent {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -46,6 +91,20 @@
   </header>
 
   <div id="map"></div>
+
+  <div id="layerPanel">
+    <div id="layerHeader">
+      <span>Layer Peta</span>
+      <button id="togglePanel">−</button>
+    </div>
+
+    <div id="layerContent">
+      <label>
+        <input type="checkbox" id="cekStasiunHujan" checked>
+        Stasiun Hujan
+      </label>
+    </div>
+  </div>
 
   <!-- Leaflet JS -->
   <script
@@ -62,48 +121,64 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-   // Membaca data stasiun hujan dari file CSV
-var layerStasiunHujan = L.layerGroup().addTo(map);
+    // Membuat layer khusus untuk stasiun hujan
+    var layerStasiunHujan = L.layerGroup().addTo(map);
 
-var overlayMaps = {
-  "Stasiun Hujan": layerStasiunHujan
-};
+    // Membaca data stasiun hujan dari file CSV
+    fetch("data_stasiun_hujan.csv")
+      .then(response => response.text())
+      .then(csvText => {
+        const rows = csvText.trim().split("\n");
 
-L.control.layers(null, overlayMaps, {
-  collapsed: false
-}).addTo(map);
+        // Dikarenakan CSV memakai pemisah titik koma ;
+        const headers = rows[0].split(";").map(header => header.trim());
 
-fetch("data_stasiun_hujan.csv")
-  .then(response => response.text())
-  .then(csvText => {
-    const rows = csvText.trim().split("\n");
+        rows.slice(1).forEach(row => {
+          const values = row.split(";");
+          const data = {};
 
-    // Dikarenakan CSV memakai pemisah titik koma ;
-    const headers = rows[0].split(";").map(header => header.trim());
+          headers.forEach((header, index) => {
+            if (header !== "") {
+              data[header] = values[index] ? values[index].trim() : "";
+            }
+          });
 
-    rows.slice(1).forEach(row => {
-      const values = row.split(";");
-      const data = {};
+          const latitude = parseFloat(data.latitude);
+          const longitude = parseFloat(data.longitude);
 
-      headers.forEach((header, index) => {
-        data[header] = values[index] ? values[index].trim() : "";
+          if (!isNaN(latitude) && !isNaN(longitude)) {
+            const marker = L.marker([latitude, longitude]);
+
+            marker.bindPopup(`
+              <b>${data.nama_stasiun}</b><br>
+              Wilayah: ${data.wilayah}
+            `);
+
+            marker.addTo(layerStasiunHujan);
+          }
+        });
       });
 
-      const latitude = parseFloat(data.latitude);
-      const longitude = parseFloat(data.longitude);
-
-      if (!isNaN(latitude) && !isNaN(longitude)) {
-        const marker = L.marker([latitude, longitude]);
-
-        marker.bindPopup(`
-          <b>${data.nama_stasiun}</b><br>
-          Wilayah: ${data.wilayah}
-        `);
-
-        marker.addTo(layerStasiunHujan);
+    // Mengatur checkbox untuk menampilkan atau menyembunyikan layer stasiun hujan
+    document.getElementById("cekStasiunHujan").addEventListener("change", function () {
+      if (this.checked) {
+        map.addLayer(layerStasiunHujan);
+      } else {
+        map.removeLayer(layerStasiunHujan);
       }
     });
-  });
+
+    // Mengatur tombol minimize dan maximize panel layer
+    document.getElementById("togglePanel").addEventListener("click", function () {
+      var panel = document.getElementById("layerPanel");
+      panel.classList.toggle("minimized");
+
+      if (panel.classList.contains("minimized")) {
+        this.textContent = "+";
+      } else {
+        this.textContent = "−";
+      }
+    });
   </script>
 </body>
 </html>
