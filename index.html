@@ -74,12 +74,6 @@
       padding: 14px;
     }
 
-    #layerContent label {
-      display: block;
-      margin-bottom: 12px;
-      cursor: pointer;
-    }
-
     #map {
       flex: 1;
       height: 100%;
@@ -110,6 +104,42 @@
     #layerPanel.minimized #layerContent {
       display: none;
     }
+
+    .layer-item {
+      display: block;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .layer-group {
+      margin-top: 12px;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+    }
+
+    .group-title {
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 8px;
+      color: #333;
+      user-select: none;
+    }
+
+    .group-content {
+      padding-left: 16px;
+    }
+
+    .layer-subitem {
+      display: block;
+      margin-bottom: 10px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .layer-disabled {
+      color: #888;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
@@ -127,10 +157,36 @@
       </div>
 
       <div id="layerContent">
-        <label>
+        <label class="layer-item">
           <input type="checkbox" id="cekStasiunHujan" checked>
           Stasiun Hujan
         </label>
+
+        <div class="layer-group">
+          <div class="group-title" onclick="toggleGroup('groupMikro', 'iconMikro')">
+            <span id="iconMikro">▾</span> Saluran Mikro
+          </div>
+
+          <div class="group-content" id="groupMikro">
+            <label class="layer-subitem">
+              <input type="checkbox" id="cekSaluranMikroCakung">
+              Saluran Mikro Cakung
+            </label>
+          </div>
+        </div>
+
+        <div class="layer-group">
+          <div class="group-title" onclick="toggleGroup('groupPHB', 'iconPHB')">
+            <span id="iconPHB">▾</span> Saluran PHB
+          </div>
+
+          <div class="group-content" id="groupPHB">
+            <label class="layer-subitem layer-disabled">
+              <input type="checkbox" disabled>
+              Belum ada layer
+            </label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -152,8 +208,9 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Membuat layer khusus untuk stasiun hujan
+    // Membuat layer khusus
     var layerStasiunHujan = L.layerGroup().addTo(map);
+    var layerSaluranMikroCakung = L.layerGroup();
 
     // Membaca data stasiun hujan dari file CSV
     fetch("data_stasiun_hujan.csv")
@@ -190,6 +247,24 @@
         });
       });
 
+    // Membaca data saluran mikro Cakung dari file GeoJSON
+    fetch("saluran_mikro_cakung.geojson")
+      .then(response => response.json())
+      .then(data => {
+        L.geoJSON(data, {
+          style: {
+            color: "#0077ff",
+            weight: 2,
+            opacity: 0.8
+          },
+          onEachFeature: function (feature, layer) {
+            layer.bindPopup(`
+              <b>Saluran Mikro Cakung</b>
+            `);
+          }
+        }).addTo(layerSaluranMikroCakung);
+      });
+
     // Mengatur checkbox untuk menampilkan atau menyembunyikan layer stasiun hujan
     document.getElementById("cekStasiunHujan").addEventListener("change", function () {
       if (this.checked) {
@@ -198,6 +273,29 @@
         map.removeLayer(layerStasiunHujan);
       }
     });
+
+    // Mengatur checkbox untuk menampilkan atau menyembunyikan layer saluran mikro Cakung
+    document.getElementById("cekSaluranMikroCakung").addEventListener("change", function () {
+      if (this.checked) {
+        map.addLayer(layerSaluranMikroCakung);
+      } else {
+        map.removeLayer(layerSaluranMikroCakung);
+      }
+    });
+
+    // Mengatur buka tutup grup layer
+    function toggleGroup(groupId, iconId) {
+      var group = document.getElementById(groupId);
+      var icon = document.getElementById(iconId);
+
+      if (group.style.display === "none") {
+        group.style.display = "block";
+        icon.textContent = "▾";
+      } else {
+        group.style.display = "none";
+        icon.textContent = "▸";
+      }
+    }
 
     // Mengatur tombol minimize dan maximize panel layer
     document.getElementById("togglePanel").addEventListener("click", function () {
