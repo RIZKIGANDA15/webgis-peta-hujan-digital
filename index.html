@@ -42,7 +42,7 @@
     #layerPanel {
       width: 22%;
       min-width: 280px;
-      max-width: 380px;
+      max-width: 400px;
       height: 100%;
       background: white;
       z-index: 1000;
@@ -579,6 +579,41 @@
       }
     }
 
+    function pearson3Quantile(p, mean, sd, cs) {
+      let bawah = mean - 8 * sd;
+      let atas = mean + 8 * sd;
+
+      for (let i = 0; i < 80; i++) {
+        const tengah = (bawah + atas) / 2;
+        const cdf = pearson3CDF(tengah, mean, sd, cs);
+
+        if (cdf < p) {
+          bawah = tengah;
+        } else {
+          atas = tengah;
+        }
+      }
+
+      return (bawah + atas) / 2;
+    }
+
+    function chiSquareCritical(df) {
+      const tabel = {
+        1: 3.841,
+        2: 5.991,
+        3: 7.815,
+        4: 9.488,
+        5: 11.070,
+        6: 12.592,
+        7: 14.067,
+        8: 15.507,
+        9: 16.919,
+        10: 18.307
+      };
+
+      return tabel[df] || null;
+    }
+
     // ==============================
     // BAGIAN LAYER PETA
     // ==============================
@@ -1085,6 +1120,115 @@
       };
     }
 
+    function hitungChiSquare(dataValid, metode, statistik, dataGumbel) {
+      const n = dataValid.length;
+      const jumlahKelas = 5;
+      const expected = n / jumlahKelas;
+      const batas = [];
+
+      for (let i = 1; i < jumlahKelas; i++) {
+        const p = i / jumlahKelas;
+        let nilaiBatas = 0;
+
+        if (metode === "normal") {
+          nilaiBatas = statistik.mean + inverseNormal(p) * statistik.sd;
+        }
+
+        if (metode === "lognormal") {
+          nilaiBatas = Math.pow(
+            10,
+            statistik.meanLog + inverseNormal(p) * statistik.sdLog
+          );
+        }
+
+        if (metode === "gumbel") {
+          const alpha = statistik.sd / dataGumbel.Sn;
+          const u = statistik.mean - alpha * dataGumbel.Yn;
+          nilaiBatas = u - alpha * Math.log(-Math.log(p));
+        }
+
+        if (metode === "logpearson3") {
+          const logBatas = pearson3Quantile(
+            p,
+            statistik.meanLog,
+            statistik.sdLog,
+            statistik.csLog
+          );
+
+          nilaiBatas = Math.pow(10, logBatas);
+        }
+
+        batas.push(nilaiBatas);
+      }
+
+      const observed = new Array(jumlahKelas).fill(0);
+
+      dataValid.forEach(x => {
+        let kelas = jumlahKelas - 1;
+
+        for (let i = 0; i < batas.length; i++) {
+          if (x <= batas[i]) {
+            kelas = i;
+            break;
+          }
+        }
+
+        observed[kelas] += 1;
+      });
+
+      let x2Hitung = 0;
+      const detail = [];
+
+      for (let i = 0; i < jumlahKelas; i++) {
+        const oi = observed[i];
+        const ei = expected;
+        const x2 = Math.pow(oi - ei, 2) / ei;
+        x2Hitung += x2;
+
+        let interval = "";
+
+        if (i === 0) {
+          interval = "≤ " + batas[0].toFixed(2);
+        } else if (i === jumlahKelas - 1) {
+          interval = "> " + batas[batas.length - 1].toFixed(2);
+        } else {
+          interval = batas[i - 1].toFixed(2) + " - " + batas[i].toFixed(2);
+        }
+
+        detail.push({
+          kelas: i + 1,
+          interval: interval,
+          Oi: oi,
+          Ei: ei,
+          X2: x2
+        });
+      }
+
+      let parameter = 2;
+
+      if (metode === "logpearson3") {
+        parameter = 3;
+      }
+
+      let derajatBebas = jumlahKelas - 1 - parameter;
+
+      if (derajatBebas < 1) {
+        derajatBebas = 1;
+      }
+
+      const x2Tabel = chiSquareCritical(derajatBebas);
+
+      return {
+        jumlahKelas: jumlahKelas,
+        expected: expected,
+        derajatBebas: derajatBebas,
+        x2Hitung: x2Hitung,
+        x2Tabel: x2Tabel,
+        kesimpulan: x2Tabel !== null && x2Hitung < x2Tabel ? "Diterima" : "Ditolak",
+        detail: detail
+      };
+    }
+
     function hitungHujanRencana(data, metode) {
       const kalaUlang = [2, 5, 10];
       const hasil = [];
@@ -1175,6 +1319,7 @@
       };
 
       const hasilSK = hitungSmirnovKolmogorov(dataValid, metode, statistik, dataGumbel);
+      const hasilChiSquare = hitungChiSquare(dataValid, metode, statistik, dataGumbel);
 
       return {
         jumlahData: dataValid.length,
@@ -1186,7 +1331,8 @@
         gumbelYn: dataGumbel ? dataGumbel.Yn : null,
         gumbelSn: dataGumbel ? dataGumbel.Sn : null,
         hasil: hasil,
-        smirnovKolmogorov: hasilSK
+        smirnovKolmogorov: hasilSK,
+        chiSquare: hasilChiSquare
       };
     }
 
@@ -1285,6 +1431,59 @@
             </tr>
           </table>
 
+          <br>
+          <b>Uji Chi-Square</b>
+
+          <table>
+            <tr>
+              <td>Jumlah Kelas</td>
+              <td>${hasil.chiSquare.jumlahKelas}</td>
+            </tr>
+            <tr>
+              <td>Expected Frequency</td>
+              <td>${hasil.chiSquare.expected.toFixed(4)}</td>
+            </tr>
+            <tr>
+              <td>Derajat Bebas</td>
+              <td>${hasil.chiSquare.derajatBebas}</td>
+            </tr>
+            <tr>
+              <td>X² Hitung</td>
+              <td>${hasil.chiSquare.x2Hitung.toFixed(5)}</td>
+            </tr>
+            <tr>
+              <td>X² Tabel 5%</td>
+              <td>${hasil.chiSquare.x2Tabel.toFixed(5)}</td>
+            </tr>
+            <tr>
+              <td>Kesimpulan</td>
+              <td><b>${hasil.chiSquare.kesimpulan}</b></td>
+            </tr>
+          </table>
+
+          <table>
+            <tr>
+              <th>Kelas</th>
+              <th>Oi</th>
+              <th>Ei</th>
+              <th>X²</th>
+            </tr>
+      `;
+
+      hasil.chiSquare.detail.forEach(item => {
+        html += `
+          <tr>
+            <td>${item.kelas}</td>
+            <td>${item.Oi}</td>
+            <td>${item.Ei.toFixed(2)}</td>
+            <td>${item.X2.toFixed(4)}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </table>
+
           <div class="statistik-kecil">
             Rata-rata X: ${hasil.rataRata.toFixed(4)}<br>
             Standar deviasi X: ${hasil.standarDeviasi.toFixed(4)}<br>
@@ -1306,8 +1505,9 @@
             - Log memakai log10.<br>
             - Standar deviasi memakai n-1.<br>
             - Uji Smirnov-Kolmogorov memakai D tabel = 1.36 / √n untuk α = 5%.<br>
-            - Peluang empiris memakai m / (n + 1).<br>
-            - Log Pearson III untuk uji SK memakai pendekatan CDF Pearson III.
+            - Peluang empiris Smirnov memakai m / (n + 1).<br>
+            - Uji Chi-Square sementara memakai 5 kelas dengan peluang teoritis sama besar.<br>
+            - Log Pearson III untuk uji SK dan Chi-Square memakai pendekatan CDF Pearson III.
           </div>
         </div>
       `;
