@@ -40,9 +40,9 @@
     }
 
     #layerPanel {
-      width: 20%;
-      min-width: 250px;
-      max-width: 340px;
+      width: 22%;
+      min-width: 280px;
+      max-width: 380px;
       height: 100%;
       background: white;
       z-index: 1000;
@@ -74,6 +74,7 @@
       padding: 14px;
       overflow-y: auto;
       height: calc(100% - 48px);
+      box-sizing: border-box;
     }
 
     #map {
@@ -161,6 +162,78 @@
       color: #333;
       white-space: nowrap;
     }
+
+    .calculator-box {
+      font-size: 13px;
+      background: #f8fafc;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+    }
+
+    .calculator-box label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .calculator-box select,
+    .calculator-box button {
+      width: 100%;
+      padding: 7px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #bbb;
+    }
+
+    .calculator-box button {
+      background: #0f766e;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .calculator-box button:hover {
+      background: #0b5f59;
+    }
+
+    .hasil-box {
+      margin-top: 12px;
+      padding: 10px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 12px;
+    }
+
+    .hasil-box table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .hasil-box th,
+    .hasil-box td {
+      border-bottom: 1px solid #ddd;
+      padding: 5px;
+      text-align: right;
+    }
+
+    .hasil-box th:first-child,
+    .hasil-box td:first-child {
+      text-align: left;
+    }
+
+    .statistik-kecil {
+      font-size: 11px;
+      color: #555;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 
@@ -173,38 +246,79 @@
   <div id="appContainer">
     <div id="layerPanel">
       <div id="layerHeader">
-        <span>Layer Peta</span>
+        <span>Layer & Kalkulator</span>
         <button id="togglePanel">−</button>
       </div>
 
       <div id="layerContent">
-        <label class="layer-item">
-          <input type="checkbox" id="cekStasiunHujan" checked>
-          Stasiun Hujan
-        </label>
-
-        <label class="layer-item">
-          <input type="checkbox" id="cekSaluranPrimer">
-          Saluran Primer
-        </label>
-
-        <label class="layer-item">
-          <input type="checkbox" id="cekSaluranSekunder">
-          Saluran Sekunder
-        </label>
-
-        <div class="layer-group">
-          <div class="group-title" onclick="toggleGroup('groupPHB', 'iconPHB')">
-            <span id="iconPHB">▾</span> Saluran PHB
+        <div class="layer-group" style="border-top: none; margin-top: 0; padding-top: 0;">
+          <div class="group-title" onclick="toggleGroup('groupLayerPeta', 'iconLayerPeta')">
+            <span id="iconLayerPeta">▾</span> Layer Peta
           </div>
-          <div class="group-content" id="groupPHB"></div>
+
+          <div class="group-content" id="groupLayerPeta" style="padding-left: 0;">
+            <label class="layer-item">
+              <input type="checkbox" id="cekStasiunHujan" checked>
+              Stasiun Hujan
+            </label>
+
+            <label class="layer-item">
+              <input type="checkbox" id="cekSaluranPrimer">
+              Saluran Primer
+            </label>
+
+            <label class="layer-item">
+              <input type="checkbox" id="cekSaluranSekunder">
+              Saluran Sekunder
+            </label>
+
+            <div class="layer-group">
+              <div class="group-title" onclick="toggleGroup('groupPHB', 'iconPHB')">
+                <span id="iconPHB">▾</span> Saluran PHB
+              </div>
+              <div class="group-content" id="groupPHB"></div>
+            </div>
+
+            <div class="layer-group">
+              <div class="group-title" onclick="toggleGroup('groupMikro', 'iconMikro')">
+                <span id="iconMikro">▾</span> Saluran Mikro
+              </div>
+              <div class="group-content" id="groupMikro"></div>
+            </div>
+          </div>
         </div>
 
         <div class="layer-group">
-          <div class="group-title" onclick="toggleGroup('groupMikro', 'iconMikro')">
-            <span id="iconMikro">▾</span> Saluran Mikro
+          <div class="group-title" onclick="toggleGroup('groupKalkulatorHujan', 'iconKalkulatorHujan')">
+            <span id="iconKalkulatorHujan">▾</span> Kalkulator Hujan Rencana
           </div>
-          <div class="group-content" id="groupMikro"></div>
+
+          <div class="group-content" id="groupKalkulatorHujan" style="padding-left: 0;">
+            <div class="calculator-box">
+              <label>
+                Pilih Stasiun
+                <select id="pilihStasiun">
+                  <option value="stasiun_meteorologi_halim_perdana_kusuma">Stasiun Meteorologi Halim Perdana Kusuma</option>
+                  <option value="stasiun_meteorologi_kemayoran">Stasiun Meteorologi Kemayoran</option>
+                  <option value="stasiun_meteorologi_bogor">Stasiun Meteorologi Bogor</option>
+                </select>
+              </label>
+
+              <label>
+                Pilih Metode
+                <select id="pilihMetode">
+                  <option value="normal">Normal</option>
+                  <option value="lognormal">Log Normal</option>
+                  <option value="gumbel">Gumbel</option>
+                  <option value="logpearson3">Log Pearson Tipe III</option>
+                </select>
+              </label>
+
+              <button id="btnHitungHujan">Hitung Hujan Rencana</button>
+
+              <div id="hasilHujanRencana"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -239,27 +353,20 @@
     map.getPane("panePrimer").style.zIndex = 440;
     map.getPane("paneStasiun").style.zIndex = 450;
 
-    // Layer stasiun hujan
+    // ==============================
+    // BAGIAN LAYER PETA
+    // ==============================
+
     var layerStasiunHujan = L.layerGroup().addTo(map);
 
     fetch("data_stasiun_hujan.csv")
       .then(response => response.text())
       .then(csvText => {
-        const rows = csvText.trim().split("\n");
-        const headers = rows[0].split(";").map(header => header.trim());
+        const dataCsv = parseCsvOtomatis(csvText);
 
-        rows.slice(1).forEach(row => {
-          const values = row.split(";");
-          const data = {};
-
-          headers.forEach((header, index) => {
-            if (header !== "") {
-              data[header] = values[index] ? values[index].trim() : "";
-            }
-          });
-
-          const latitude = parseFloat(data.latitude);
-          const longitude = parseFloat(data.longitude);
+        dataCsv.forEach(data => {
+          const latitude = parseFloat(String(data.latitude).replace(",", "."));
+          const longitude = parseFloat(String(data.longitude).replace(",", "."));
 
           if (!isNaN(latitude) && !isNaN(longitude)) {
             const marker = L.marker([latitude, longitude], {
@@ -276,7 +383,6 @@
         });
       });
 
-    // Daftar saluran mikro
     const daftarSaluranMikro = [
       { nama: "Saluran Mikro Cakung", file: "saluran_mikro_cakung.geojson" },
       { nama: "Saluran Mikro Cipayung", file: "saluran_mikro_cipayung.geojson" },
@@ -290,7 +396,6 @@
       { nama: "Saluran Mikro Pulo Gadung", file: "saluran_mikro_pulo_gadung.geojson" }
     ];
 
-    // Daftar saluran PHB
     const daftarSaluranPHB = [
       { nama: "Saluran PHB Cakung", file: "saluran_phb_cakung.geojson" },
       { nama: "Saluran PHB Cipayung", file: "saluran_phb_cipayung.geojson" },
@@ -307,7 +412,6 @@
     const layerSaluranPrimer = L.layerGroup();
     const layerSaluranSekunder = L.layerGroup();
 
-    // Style layer
     const layerOptions = {
       mikro: {
         color: "#ff00ff",
@@ -352,6 +456,7 @@
     function ambilNilai(properties, daftarField) {
       for (let i = 0; i < daftarField.length; i++) {
         const field = daftarField[i];
+
         if (
           properties[field] !== null &&
           properties[field] !== "" &&
@@ -360,10 +465,10 @@
           return properties[field];
         }
       }
+
       return "";
     }
 
-    // Popup Mikro & PHB
     function buatPopupSaluranKecil(namaLayer, properties) {
       if (!properties || Object.keys(properties).length === 0) {
         return `
@@ -411,7 +516,6 @@
       return isiPopup;
     }
 
-    // Popup Primer & Sekunder
     function buatPopupSaluranUtama(namaLayer, properties) {
       if (!properties || Object.keys(properties).length === 0) {
         return `
@@ -572,11 +676,9 @@
       });
     }
 
-    // Load layer bertingkat
     buatSubLayer("groupMikro", daftarSaluranMikro, layerOptions.mikro, true);
     buatSubLayer("groupPHB", daftarSaluranPHB, layerOptions.phb, true);
 
-    // Load primer & sekunder
     loadGeoJsonLayer(
       "saluran_drainase_primer_jaktim.geojson",
       "Saluran Primer",
@@ -593,7 +695,6 @@
       false
     );
 
-    // Checkbox stasiun hujan
     document.getElementById("cekStasiunHujan").addEventListener("change", function () {
       if (this.checked) {
         map.addLayer(layerStasiunHujan);
@@ -602,7 +703,6 @@
       }
     });
 
-    // Checkbox primer
     document.getElementById("cekSaluranPrimer").addEventListener("change", function () {
       if (this.checked) {
         map.addLayer(layerSaluranPrimer);
@@ -611,7 +711,6 @@
       }
     });
 
-    // Checkbox sekunder
     document.getElementById("cekSaluranSekunder").addEventListener("change", function () {
       if (this.checked) {
         map.addLayer(layerSaluranSekunder);
@@ -620,7 +719,265 @@
       }
     });
 
-    // Buka/tutup grup
+    // ==============================
+    // BAGIAN KALKULATOR HUJAN RENCANA
+    // ==============================
+
+    let dataHujanBMKG = [];
+
+    fetch("data_hujan_bmkg_3stasiun.csv")
+      .then(response => response.text())
+      .then(csvText => {
+        dataHujanBMKG = parseCsvOtomatis(csvText);
+      });
+
+    function parseCsvOtomatis(csvText) {
+      const rows = csvText.trim().split(/\r?\n/);
+      const firstLine = rows[0];
+
+      const delimiter = firstLine.includes(";") ? ";" : ",";
+      const headers = firstLine.split(delimiter).map(h => h.trim());
+
+      return rows.slice(1).map(row => {
+        const values = row.split(delimiter);
+        const obj = {};
+
+        headers.forEach((header, index) => {
+          obj[header] = values[index] ? values[index].trim() : "";
+        });
+
+        return obj;
+      });
+    }
+
+    function angka(value) {
+      return parseFloat(String(value).replace(",", "."));
+    }
+
+    function rataRata(data) {
+      return data.reduce((sum, x) => sum + x, 0) / data.length;
+    }
+
+    function standarDeviasi(data) {
+      const mean = rataRata(data);
+      const jumlahKuadrat = data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0);
+      return Math.sqrt(jumlahKuadrat / (data.length - 1));
+    }
+
+    function skewness(data) {
+      const n = data.length;
+      const mean = rataRata(data);
+      const sd = standarDeviasi(data);
+
+      const jumlahPangkatTiga = data.reduce((sum, x) => {
+        return sum + Math.pow((x - mean) / sd, 3);
+      }, 0);
+
+      return (n / ((n - 1) * (n - 2))) * jumlahPangkatTiga;
+    }
+
+    function inverseNormal(p) {
+      const a1 = -39.6968302866538;
+      const a2 = 220.946098424521;
+      const a3 = -275.928510446969;
+      const a4 = 138.357751867269;
+      const a5 = -30.6647980661472;
+      const a6 = 2.50662827745924;
+
+      const b1 = -54.4760987982241;
+      const b2 = 161.585836858041;
+      const b3 = -155.698979859887;
+      const b4 = 66.8013118877197;
+      const b5 = -13.2806815528857;
+
+      const c1 = -0.00778489400243029;
+      const c2 = -0.322396458041136;
+      const c3 = -2.40075827716184;
+      const c4 = -2.54973253934373;
+      const c5 = 4.37466414146497;
+      const c6 = 2.93816398269878;
+
+      const d1 = 0.00778469570904146;
+      const d2 = 0.32246712907004;
+      const d3 = 2.445134137143;
+      const d4 = 3.75440866190742;
+
+      const pLow = 0.02425;
+      const pHigh = 1 - pLow;
+
+      let q;
+      let r;
+
+      if (p < pLow) {
+        q = Math.sqrt(-2 * Math.log(p));
+        return (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+          ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+      }
+
+      if (p <= pHigh) {
+        q = p - 0.5;
+        r = q * q;
+        return (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q /
+          (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+      }
+
+      q = Math.sqrt(-2 * Math.log(1 - p));
+      return -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+        ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+    }
+
+    function faktorKLogPearson(z, cs) {
+      return z +
+        ((Math.pow(z, 2) - 1) * cs / 6) +
+        ((Math.pow(z, 3) - 6 * z) * Math.pow(cs, 2) / 24) -
+        ((Math.pow(z, 2) - 1) * Math.pow(cs, 3) / 36) +
+        (z * Math.pow(cs, 4) / 48) +
+        (Math.pow(cs, 5) / 1296);
+    }
+
+    function hitungHujanRencana(data, metode) {
+      const kalaUlang = [2, 5, 10];
+      const hasil = [];
+
+      const dataValid = data
+        .map(x => angka(x))
+        .filter(x => !isNaN(x) && x > 0);
+
+      if (dataValid.length < 3) {
+        return {
+          error: "Data valid terlalu sedikit."
+        };
+      }
+
+      const mean = rataRata(dataValid);
+      const sd = standarDeviasi(dataValid);
+
+      const logData = dataValid.map(x => Math.log10(x));
+      const meanLog = rataRata(logData);
+      const sdLog = standarDeviasi(logData);
+      const csLog = skewness(logData);
+
+      kalaUlang.forEach(T => {
+        const peluang = 1 - (1 / T);
+        const z = inverseNormal(peluang);
+
+        let xt = 0;
+
+        if (metode === "normal") {
+          xt = mean + z * sd;
+        }
+
+        if (metode === "lognormal") {
+          xt = Math.pow(10, meanLog + z * sdLog);
+        }
+
+        if (metode === "gumbel") {
+          const yt = -Math.log(-Math.log((T - 1) / T));
+          const yn = 0.5772;
+          const sn = 1.2825;
+          const k = (yt - yn) / sn;
+
+          xt = mean + k * sd;
+        }
+
+        if (metode === "logpearson3") {
+          const k = faktorKLogPearson(z, csLog);
+          xt = Math.pow(10, meanLog + k * sdLog);
+        }
+
+        hasil.push({
+          T: T,
+          hujan: xt
+        });
+      });
+
+      return {
+        jumlahData: dataValid.length,
+        rataRata: mean,
+        standarDeviasi: sd,
+        rataRataLog: meanLog,
+        standarDeviasiLog: sdLog,
+        skewnessLog: csLog,
+        hasil: hasil
+      };
+    }
+
+    document.getElementById("btnHitungHujan").addEventListener("click", function () {
+      const stasiun = document.getElementById("pilihStasiun").value;
+      const metode = document.getElementById("pilihMetode").value;
+      const hasilDiv = document.getElementById("hasilHujanRencana");
+
+      if (dataHujanBMKG.length === 0) {
+        hasilDiv.innerHTML = `
+          <div class="hasil-box">
+            Data hujan belum terbaca. Coba refresh halaman.
+          </div>
+        `;
+        return;
+      }
+
+      const dataStasiun = dataHujanBMKG.map(row => row[stasiun]);
+      const hasil = hitungHujanRencana(dataStasiun, metode);
+
+      if (hasil.error) {
+        hasilDiv.innerHTML = `
+          <div class="hasil-box">
+            ${hasil.error}
+          </div>
+        `;
+        return;
+      }
+
+      const namaMetode = {
+        normal: "Normal",
+        lognormal: "Log Normal",
+        gumbel: "Gumbel",
+        logpearson3: "Log Pearson Tipe III"
+      }[metode];
+
+      let html = `
+        <div class="hasil-box">
+          <b>Metode ${namaMetode}</b><br>
+          Jumlah data valid: ${hasil.jumlahData}
+
+          <table>
+            <tr>
+              <th>Kala Ulang</th>
+              <th>Hujan Rencana</th>
+            </tr>
+      `;
+
+      hasil.hasil.forEach(item => {
+        html += `
+          <tr>
+            <td>${item.T} tahun</td>
+            <td>${item.hujan.toFixed(2)} mm</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </table>
+
+          <div class="statistik-kecil">
+            Rata-rata X: ${hasil.rataRata.toFixed(4)}<br>
+            Standar deviasi X: ${hasil.standarDeviasi.toFixed(4)}<br>
+            Rata-rata log X: ${hasil.rataRataLog.toFixed(4)}<br>
+            Standar deviasi log X: ${hasil.standarDeviasiLog.toFixed(4)}<br>
+            Cs log X: ${hasil.skewnessLog.toFixed(4)}<br>
+            <br>
+            Catatan: log memakai log10 dan standar deviasi memakai n-1.
+          </div>
+        </div>
+      `;
+
+      hasilDiv.innerHTML = html;
+    });
+
+    // ==============================
+    // BAGIAN UI PANEL
+    // ==============================
+
     function toggleGroup(groupId, iconId) {
       var group = document.getElementById(groupId);
       var icon = document.getElementById(iconId);
@@ -634,7 +991,6 @@
       }
     }
 
-    // Minimize panel
     document.getElementById("togglePanel").addEventListener("click", function () {
       var panel = document.getElementById("layerPanel");
       panel.classList.toggle("minimized");
