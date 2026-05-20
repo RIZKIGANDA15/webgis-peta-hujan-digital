@@ -360,12 +360,24 @@
               fillOpacity: options.fillOpacity || 0
             },
             onEachFeature: function (feature, layer) {
-              layer.bindPopup(`<b>${namaLayer}</b>`);
+  let isiPopup = `<b>${namaLayer}</b><br>`;
 
-              if (pakaiPanah) {
-                tambahPanah(layer, layerGroup, options.color, options.weight);
-              }
-            }
+  if (feature.properties) {
+    Object.keys(feature.properties).forEach(function (key) {
+      const value = feature.properties[key];
+
+      if (value !== null && value !== "" && value !== undefined) {
+        isiPopup += `${key}: ${value}<br>`;
+      }
+    });
+  }
+
+  layer.bindPopup(isiPopup);
+
+  if (pakaiPanah) {
+    tambahPanah(layer, layerGroup, options.color, options.weight);
+  }
+}
           });
 
           geojsonLayer.addTo(layerGroup);
