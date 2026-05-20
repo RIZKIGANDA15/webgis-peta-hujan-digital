@@ -354,6 +354,104 @@
     map.getPane("paneStasiun").style.zIndex = 450;
 
     // ==============================
+    // FUNGSI UMUM
+    // ==============================
+
+    function parseCsvOtomatis(csvText) {
+      const rows = csvText.trim().split(/\r?\n/);
+      const firstLine = rows[0];
+      const delimiter = firstLine.includes(";") ? ";" : ",";
+      const headers = firstLine.split(delimiter).map(h => h.trim());
+
+      return rows.slice(1).map(row => {
+        const values = row.split(delimiter);
+        const obj = {};
+
+        headers.forEach((header, index) => {
+          obj[header] = values[index] ? values[index].trim() : "";
+        });
+
+        return obj;
+      });
+    }
+
+    function angka(value) {
+      return parseFloat(String(value).replace(",", "."));
+    }
+
+    function rataRata(data) {
+      return data.reduce((sum, x) => sum + x, 0) / data.length;
+    }
+
+    function standarDeviasi(data) {
+      const mean = rataRata(data);
+      const jumlahKuadrat = data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0);
+      return Math.sqrt(jumlahKuadrat / (data.length - 1));
+    }
+
+    function skewness(data) {
+      const n = data.length;
+      const mean = rataRata(data);
+      const sd = standarDeviasi(data);
+
+      const jumlahPangkatTiga = data.reduce((sum, x) => {
+        return sum + Math.pow((x - mean) / sd, 3);
+      }, 0);
+
+      return (n / ((n - 1) * (n - 2))) * jumlahPangkatTiga;
+    }
+
+    function inverseNormal(p) {
+      const a1 = -39.6968302866538;
+      const a2 = 220.946098424521;
+      const a3 = -275.928510446969;
+      const a4 = 138.357751867269;
+      const a5 = -30.6647980661472;
+      const a6 = 2.50662827745924;
+
+      const b1 = -54.4760987982241;
+      const b2 = 161.585836858041;
+      const b3 = -155.698979859887;
+      const b4 = 66.8013118877197;
+      const b5 = -13.2806815528857;
+
+      const c1 = -0.00778489400243029;
+      const c2 = -0.322396458041136;
+      const c3 = -2.40075827716184;
+      const c4 = -2.54973253934373;
+      const c5 = 4.37466414146497;
+      const c6 = 2.93816398269878;
+
+      const d1 = 0.00778469570904146;
+      const d2 = 0.32246712907004;
+      const d3 = 2.445134137143;
+      const d4 = 3.75440866190742;
+
+      const pLow = 0.02425;
+      const pHigh = 1 - pLow;
+
+      let q;
+      let r;
+
+      if (p < pLow) {
+        q = Math.sqrt(-2 * Math.log(p));
+        return (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+          ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+      }
+
+      if (p <= pHigh) {
+        q = p - 0.5;
+        r = q * q;
+        return (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q /
+          (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+      }
+
+      q = Math.sqrt(-2 * Math.log(1 - p));
+      return -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+        ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+    }
+
+    // ==============================
     // BAGIAN LAYER PETA
     // ==============================
 
@@ -365,8 +463,8 @@
         const dataCsv = parseCsvOtomatis(csvText);
 
         dataCsv.forEach(data => {
-          const latitude = parseFloat(String(data.latitude).replace(",", "."));
-          const longitude = parseFloat(String(data.longitude).replace(",", "."));
+          const latitude = angka(data.latitude);
+          const longitude = angka(data.longitude);
 
           if (!isNaN(latitude) && !isNaN(longitude)) {
             const marker = L.marker([latitude, longitude], {
@@ -724,6 +822,8 @@
     // ==============================
 
     let dataHujanBMKG = [];
+    let tabelGumbel = [];
+    let tabelPearson3 = [];
 
     fetch("data_hujan_bmkg_3stasiun.csv")
       .then(response => response.text())
@@ -731,108 +831,80 @@
         dataHujanBMKG = parseCsvOtomatis(csvText);
       });
 
-    function parseCsvOtomatis(csvText) {
-      const rows = csvText.trim().split(/\r?\n/);
-      const firstLine = rows[0];
-
-      const delimiter = firstLine.includes(";") ? ";" : ",";
-      const headers = firstLine.split(delimiter).map(h => h.trim());
-
-      return rows.slice(1).map(row => {
-        const values = row.split(delimiter);
-        const obj = {};
-
-        headers.forEach((header, index) => {
-          obj[header] = values[index] ? values[index].trim() : "";
-        });
-
-        return obj;
+    fetch("tabel_gumbel.csv")
+      .then(response => response.text())
+      .then(csvText => {
+        tabelGumbel = parseCsvOtomatis(csvText);
       });
-    }
 
-    function angka(value) {
-      return parseFloat(String(value).replace(",", "."));
-    }
+    fetch("tabel_pearson_3.csv")
+      .then(response => response.text())
+      .then(csvText => {
+        tabelPearson3 = parseCsvOtomatis(csvText);
+      });
 
-    function rataRata(data) {
-      return data.reduce((sum, x) => sum + x, 0) / data.length;
-    }
+    function ambilGumbelDariTabel(n) {
+      const data = tabelGumbel
+        .map(row => ({
+          n: angka(row.n),
+          Yn: angka(row.Yn),
+          Sn: angka(row.Sn)
+        }))
+        .filter(row => !isNaN(row.n) && !isNaN(row.Yn) && !isNaN(row.Sn))
+        .sort((a, b) => a.n - b.n);
 
-    function standarDeviasi(data) {
-      const mean = rataRata(data);
-      const jumlahKuadrat = data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0);
-      return Math.sqrt(jumlahKuadrat / (data.length - 1));
-    }
+      const exact = data.find(row => row.n === n);
 
-    function skewness(data) {
-      const n = data.length;
-      const mean = rataRata(data);
-      const sd = standarDeviasi(data);
-
-      const jumlahPangkatTiga = data.reduce((sum, x) => {
-        return sum + Math.pow((x - mean) / sd, 3);
-      }, 0);
-
-      return (n / ((n - 1) * (n - 2))) * jumlahPangkatTiga;
-    }
-
-    function inverseNormal(p) {
-      const a1 = -39.6968302866538;
-      const a2 = 220.946098424521;
-      const a3 = -275.928510446969;
-      const a4 = 138.357751867269;
-      const a5 = -30.6647980661472;
-      const a6 = 2.50662827745924;
-
-      const b1 = -54.4760987982241;
-      const b2 = 161.585836858041;
-      const b3 = -155.698979859887;
-      const b4 = 66.8013118877197;
-      const b5 = -13.2806815528857;
-
-      const c1 = -0.00778489400243029;
-      const c2 = -0.322396458041136;
-      const c3 = -2.40075827716184;
-      const c4 = -2.54973253934373;
-      const c5 = 4.37466414146497;
-      const c6 = 2.93816398269878;
-
-      const d1 = 0.00778469570904146;
-      const d2 = 0.32246712907004;
-      const d3 = 2.445134137143;
-      const d4 = 3.75440866190742;
-
-      const pLow = 0.02425;
-      const pHigh = 1 - pLow;
-
-      let q;
-      let r;
-
-      if (p < pLow) {
-        q = Math.sqrt(-2 * Math.log(p));
-        return (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
-          ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+      if (exact) {
+        return exact;
       }
 
-      if (p <= pHigh) {
-        q = p - 0.5;
-        r = q * q;
-        return (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q /
-          (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+      for (let i = 0; i < data.length - 1; i++) {
+        const bawah = data[i];
+        const atas = data[i + 1];
+
+        if (n > bawah.n && n < atas.n) {
+          const rasio = (n - bawah.n) / (atas.n - bawah.n);
+
+          return {
+            n: n,
+            Yn: bawah.Yn + rasio * (atas.Yn - bawah.Yn),
+            Sn: bawah.Sn + rasio * (atas.Sn - bawah.Sn)
+          };
+        }
       }
 
-      q = Math.sqrt(-2 * Math.log(1 - p));
-      return -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
-        ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+      return null;
     }
 
-    function faktorKLogPearson(z, cs) {
-      return z +
-        ((Math.pow(z, 2) - 1) * cs / 6) +
-        ((Math.pow(z, 3) - 6 * z) * Math.pow(cs, 2) / 24) -
-        ((Math.pow(z, 2) - 1) * Math.pow(cs, 3) / 36) +
-        (z * Math.pow(cs, 4) / 48) +
-        (Math.pow(cs, 5) / 1296);
+    function ambilKPearsonDariTabel(cs, T) {
+      const kolom = "T" + T;
+
+      const data = tabelPearson3
+        .map(row => ({
+          Cs: angka(row.Cs),
+          K: angka(row[kolom])
+        }))
+        .filter(row => !isNaN(row.Cs) && !isNaN(row.K))
+        .sort((a, b) => a.Cs - b.Cs);
+
+      const exact = data.find(row => Math.abs(row.Cs - cs) < 0.0000001);
+
+      if (exact) {
+        return exact.K;
+      }
+
+      for (let i = 0; i < data.length - 1; i++) {
+        const bawah = data[i];
+        const atas = data[i + 1];
+
+        if (cs >= bawah.Cs && cs <= atas.Cs) {
+          const rasio = (cs - bawah.Cs) / (atas.Cs - bawah.Cs);
+          return bawah.K + rasio * (atas.K - bawah.K);
+        }
+      }
+
+      return null;
     }
 
     function hitungHujanRencana(data, metode) {
@@ -849,6 +921,8 @@
         };
       }
 
+      const n = dataValid.length;
+
       const mean = rataRata(dataValid);
       const sd = standarDeviasi(dataValid);
 
@@ -857,39 +931,62 @@
       const sdLog = standarDeviasi(logData);
       const csLog = skewness(logData);
 
+      const dataGumbel = ambilGumbelDariTabel(n);
+
+      if (metode === "gumbel" && !dataGumbel) {
+        return {
+          error: "Nilai Yn dan Sn untuk jumlah data ini tidak ditemukan di tabel_gumbel.csv."
+        };
+      }
+
       kalaUlang.forEach(T => {
         const peluang = 1 - (1 / T);
         const z = inverseNormal(peluang);
 
         let xt = 0;
+        let k = 0;
 
         if (metode === "normal") {
-          xt = mean + z * sd;
+          k = z;
+          xt = mean + k * sd;
         }
 
         if (metode === "lognormal") {
-          xt = Math.pow(10, meanLog + z * sdLog);
+          k = z;
+          xt = Math.pow(10, meanLog + k * sdLog);
         }
 
         if (metode === "gumbel") {
           const yt = -Math.log(-Math.log((T - 1) / T));
-          const yn = 0.5772;
-          const sn = 1.2825;
-          const k = (yt - yn) / sn;
+          const yn = dataGumbel.Yn;
+          const sn = dataGumbel.Sn;
 
+          k = (yt - yn) / sn;
           xt = mean + k * sd;
         }
 
         if (metode === "logpearson3") {
-          const k = faktorKLogPearson(z, csLog);
-          xt = Math.pow(10, meanLog + k * sdLog);
+          k = ambilKPearsonDariTabel(csLog, T);
+
+          if (k === null) {
+            xt = null;
+          } else {
+            xt = Math.pow(10, meanLog + k * sdLog);
+          }
         }
 
         hasil.push({
           T: T,
+          K: k,
           hujan: xt
         });
       });
+
+      if (metode === "logpearson3" && hasil.some(item => item.hujan === null)) {
+        return {
+          error: "Nilai K Log Pearson III tidak ditemukan di tabel_pearson_3.csv. Cek rentang Cs tabel."
+        };
+      }
 
       return {
         jumlahData: dataValid.length,
@@ -898,6 +995,8 @@
         rataRataLog: meanLog,
         standarDeviasiLog: sdLog,
         skewnessLog: csLog,
+        gumbelYn: dataGumbel ? dataGumbel.Yn : null,
+        gumbelSn: dataGumbel ? dataGumbel.Sn : null,
         hasil: hasil
       };
     }
@@ -911,6 +1010,24 @@
         hasilDiv.innerHTML = `
           <div class="hasil-box">
             Data hujan belum terbaca. Coba refresh halaman.
+          </div>
+        `;
+        return;
+      }
+
+      if (metode === "gumbel" && tabelGumbel.length === 0) {
+        hasilDiv.innerHTML = `
+          <div class="hasil-box">
+            tabel_gumbel.csv belum terbaca. Coba refresh halaman.
+          </div>
+        `;
+        return;
+      }
+
+      if (metode === "logpearson3" && tabelPearson3.length === 0) {
+        hasilDiv.innerHTML = `
+          <div class="hasil-box">
+            tabel_pearson_3.csv belum terbaca. Coba refresh halaman.
           </div>
         `;
         return;
@@ -943,7 +1060,8 @@
           <table>
             <tr>
               <th>Kala Ulang</th>
-              <th>Hujan Rencana</th>
+              <th>K</th>
+              <th>Hujan</th>
             </tr>
       `;
 
@@ -951,6 +1069,7 @@
         html += `
           <tr>
             <td>${item.T} tahun</td>
+            <td>${item.K.toFixed(5)}</td>
             <td>${item.hujan.toFixed(2)} mm</td>
           </tr>
         `;
@@ -965,8 +1084,18 @@
             Rata-rata log X: ${hasil.rataRataLog.toFixed(4)}<br>
             Standar deviasi log X: ${hasil.standarDeviasiLog.toFixed(4)}<br>
             Cs log X: ${hasil.skewnessLog.toFixed(4)}<br>
+      `;
+
+      if (metode === "gumbel") {
+        html += `
+            Yn: ${hasil.gumbelYn.toFixed(4)}<br>
+            Sn: ${hasil.gumbelSn.toFixed(4)}<br>
+        `;
+      }
+
+      html += `
             <br>
-            Catatan: log memakai log10 dan standar deviasi memakai n-1.
+            Catatan: Log memakai log10. Standar deviasi memakai n-1.
           </div>
         </div>
       `;
