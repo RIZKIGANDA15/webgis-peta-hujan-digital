@@ -137,6 +137,30 @@
       cursor: pointer;
       font-size: 13px;
     }
+
+    .popup-title {
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .popup-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+
+    .popup-table td {
+      padding: 3px 5px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+
+    .popup-table td:first-child {
+      font-weight: bold;
+      color: #333;
+      white-space: nowrap;
+    }
   </style>
 </head>
 
@@ -293,13 +317,17 @@
         color: "#ff00ff",
         weight: 1,
         opacity: 0.9,
-        pane: "paneMikro"
+        fillOpacity: 0,
+        pane: "paneMikro",
+        jenisPopup: "saluranKecil"
       },
       phb: {
         color: "#00a6d6",
         weight: 1.5,
         opacity: 0.95,
-        pane: "panePHB"
+        fillOpacity: 0,
+        pane: "panePHB",
+        jenisPopup: "saluranKecil"
       },
       sekunder: {
         color: "#0066cc",
@@ -307,7 +335,8 @@
         opacity: 0.9,
         fillColor: "#0066cc",
         fillOpacity: 0.25,
-        pane: "paneSekunder"
+        pane: "paneSekunder",
+        jenisPopup: "umum"
       },
       primer: {
         color: "#003b8e",
@@ -315,12 +344,114 @@
         opacity: 0.95,
         fillColor: "#003b8e",
         fillOpacity: 0.3,
-        pane: "panePrimer"
+        pane: "panePrimer",
+        jenisPopup: "umum"
       }
     };
 
     function buatIdDariNama(nama) {
       return "cek" + nama.replace(/\s+/g, "").replace(/[^a-zA-Z0-9]/g, "");
+    }
+
+    function ambilNilai(properties, daftarField) {
+      for (let i = 0; i < daftarField.length; i++) {
+        const field = daftarField[i];
+
+        if (
+          properties[field] !== null &&
+          properties[field] !== "" &&
+          properties[field] !== undefined
+        ) {
+          return properties[field];
+        }
+      }
+
+      return "";
+    }
+
+    function buatPopupSaluranKecil(namaLayer, properties) {
+      if (!properties || Object.keys(properties).length === 0) {
+        return `
+          <div class="popup-title">${namaLayer}</div>
+          Tidak ada atribut.
+        `;
+      }
+
+      const judul = ambilNilai(properties, ["TOPONIMI", "toponimi"]) || namaLayer;
+
+      const panjang = ambilNilai(properties, ["PANJANG", "panjang"]);
+      const lebar = ambilNilai(properties, ["LEBAR", "lebar"]);
+      const kedalaman = ambilNilai(properties, ["KEDALAMAN", "kedalaman"]);
+
+      let isiPopup = `<div class="popup-title">${judul}</div>`;
+      isiPopup += `<table class="popup-table">`;
+
+      if (panjang !== "") {
+        isiPopup += `
+          <tr>
+            <td>Panjang</td>
+            <td>${panjang}</td>
+          </tr>
+        `;
+      }
+
+      if (lebar !== "") {
+        isiPopup += `
+          <tr>
+            <td>Lebar</td>
+            <td>${lebar}</td>
+          </tr>
+        `;
+      }
+
+      if (kedalaman !== "") {
+        isiPopup += `
+          <tr>
+            <td>Kedalaman</td>
+            <td>${kedalaman}</td>
+          </tr>
+        `;
+      }
+
+      isiPopup += `</table>`;
+
+      return isiPopup;
+    }
+
+    function buatPopupUmum(namaLayer, properties) {
+      let isiPopup = `<div class="popup-title">${namaLayer}</div>`;
+
+      if (!properties || Object.keys(properties).length === 0) {
+        isiPopup += "Tidak ada atribut.";
+        return isiPopup;
+      }
+
+      isiPopup += `<table class="popup-table">`;
+
+      Object.keys(properties).forEach(function (key) {
+        const value = properties[key];
+
+        if (value !== null && value !== "" && value !== undefined) {
+          isiPopup += `
+            <tr>
+              <td>${key}</td>
+              <td>${value}</td>
+            </tr>
+          `;
+        }
+      });
+
+      isiPopup += `</table>`;
+
+      return isiPopup;
+    }
+
+    function buatPopup(namaLayer, properties, jenisPopup) {
+      if (jenisPopup === "saluranKecil") {
+        return buatPopupSaluranKecil(namaLayer, properties);
+      }
+
+      return buatPopupUmum(namaLayer, properties);
     }
 
     function tambahPanah(layer, layerGroup, warna, tebal) {
@@ -360,24 +491,16 @@
               fillOpacity: options.fillOpacity || 0
             },
             onEachFeature: function (feature, layer) {
-  let isiPopup = `<b>${namaLayer}</b><br>`;
+              const isiPopup = buatPopup(namaLayer, feature.properties, options.jenisPopup);
 
-  if (feature.properties) {
-    Object.keys(feature.properties).forEach(function (key) {
-      const value = feature.properties[key];
+              layer.bindPopup(isiPopup, {
+                maxWidth: 350
+              });
 
-      if (value !== null && value !== "" && value !== undefined) {
-        isiPopup += `${key}: ${value}<br>`;
-      }
-    });
-  }
-
-  layer.bindPopup(isiPopup);
-
-  if (pakaiPanah) {
-    tambahPanah(layer, layerGroup, options.color, options.weight);
-  }
-}
+              if (pakaiPanah) {
+                tambahPanah(layer, layerGroup, options.color, options.weight);
+              }
+            }
           });
 
           geojsonLayer.addTo(layerGroup);
