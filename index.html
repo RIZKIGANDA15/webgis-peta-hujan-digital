@@ -213,14 +213,10 @@
   </div>
 
   <!-- Leaflet JS -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Plugin untuk panah arah aliran pada garis -->
-  <script
-    src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js">
-  </script>
+  <!-- Plugin panah arah -->
+  <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
 
   <script>
     var map = L.map("map").setView([-6.225, 106.900], 11);
@@ -280,7 +276,7 @@
         });
       });
 
-    // Daftar saluran mikro per kecamatan
+    // Daftar saluran mikro
     const daftarSaluranMikro = [
       { nama: "Saluran Mikro Cakung", file: "saluran_mikro_cakung.geojson" },
       { nama: "Saluran Mikro Cipayung", file: "saluran_mikro_cipayung.geojson" },
@@ -294,7 +290,7 @@
       { nama: "Saluran Mikro Pulo Gadung", file: "saluran_mikro_pulo_gadung.geojson" }
     ];
 
-    // Daftar saluran PHB per kecamatan
+    // Daftar saluran PHB
     const daftarSaluranPHB = [
       { nama: "Saluran PHB Cakung", file: "saluran_phb_cakung.geojson" },
       { nama: "Saluran PHB Cipayung", file: "saluran_phb_cipayung.geojson" },
@@ -336,7 +332,7 @@
         fillColor: "#0066cc",
         fillOpacity: 0.25,
         pane: "paneSekunder",
-        jenisPopup: "umum"
+        jenisPopup: "saluranUtama"
       },
       primer: {
         color: "#003b8e",
@@ -345,7 +341,7 @@
         fillColor: "#003b8e",
         fillOpacity: 0.3,
         pane: "panePrimer",
-        jenisPopup: "umum"
+        jenisPopup: "saluranUtama"
       }
     };
 
@@ -356,7 +352,6 @@
     function ambilNilai(properties, daftarField) {
       for (let i = 0; i < daftarField.length; i++) {
         const field = daftarField[i];
-
         if (
           properties[field] !== null &&
           properties[field] !== "" &&
@@ -365,10 +360,10 @@
           return properties[field];
         }
       }
-
       return "";
     }
 
+    // Popup Mikro & PHB
     function buatPopupSaluranKecil(namaLayer, properties) {
       if (!properties || Object.keys(properties).length === 0) {
         return `
@@ -378,7 +373,6 @@
       }
 
       const judul = ambilNilai(properties, ["TOPONIMI", "toponimi"]) || namaLayer;
-
       const panjang = ambilNilai(properties, ["PANJANG", "panjang"]);
       const lebar = ambilNilai(properties, ["LEBAR", "lebar"]);
       const kedalaman = ambilNilai(properties, ["KEDALAMAN", "kedalaman"]);
@@ -414,35 +408,74 @@
       }
 
       isiPopup += `</table>`;
-
       return isiPopup;
     }
 
-    function buatPopupUmum(namaLayer, properties) {
-      let isiPopup = `<div class="popup-title">${namaLayer}</div>`;
-
+    // Popup Primer & Sekunder
+    function buatPopupSaluranUtama(namaLayer, properties) {
       if (!properties || Object.keys(properties).length === 0) {
-        isiPopup += "Tidak ada atribut.";
-        return isiPopup;
+        return `
+          <div class="popup-title">${namaLayer}</div>
+          Tidak ada atribut.
+        `;
       }
 
+      const judul = ambilNilai(properties, ["toponimi", "TOPONIMI"]) || namaLayer;
+      const lebarMin = ambilNilai(properties, ["lebar_min", "LEBAR_MIN"]);
+      const lebarMax = ambilNilai(properties, ["lebar_max", "LEBAR_MAX"]);
+      const kedMin = ambilNilai(properties, ["ked_min", "KED_MIN"]);
+      const kedMax = ambilNilai(properties, ["ked_max", "KED_MAX"]);
+      const panjangSungai = ambilNilai(properties, ["panjang_su", "PANJANG_SU", "panjang_sungai", "PANJANG_SUNGAI"]);
+
+      let isiPopup = `<div class="popup-title">${judul}</div>`;
       isiPopup += `<table class="popup-table">`;
 
-      Object.keys(properties).forEach(function (key) {
-        const value = properties[key];
+      if (lebarMin !== "") {
+        isiPopup += `
+          <tr>
+            <td>Lebar Minimum</td>
+            <td>${lebarMin}</td>
+          </tr>
+        `;
+      }
 
-        if (value !== null && value !== "" && value !== undefined) {
-          isiPopup += `
-            <tr>
-              <td>${key}</td>
-              <td>${value}</td>
-            </tr>
-          `;
-        }
-      });
+      if (lebarMax !== "") {
+        isiPopup += `
+          <tr>
+            <td>Lebar Maksimum</td>
+            <td>${lebarMax}</td>
+          </tr>
+        `;
+      }
+
+      if (kedMin !== "") {
+        isiPopup += `
+          <tr>
+            <td>Kedalaman Minimum</td>
+            <td>${kedMin}</td>
+          </tr>
+        `;
+      }
+
+      if (kedMax !== "") {
+        isiPopup += `
+          <tr>
+            <td>Kedalaman Maksimum</td>
+            <td>${kedMax}</td>
+          </tr>
+        `;
+      }
+
+      if (panjangSungai !== "") {
+        isiPopup += `
+          <tr>
+            <td>Panjang Sungai</td>
+            <td>${panjangSungai}</td>
+          </tr>
+        `;
+      }
 
       isiPopup += `</table>`;
-
       return isiPopup;
     }
 
@@ -451,7 +484,11 @@
         return buatPopupSaluranKecil(namaLayer, properties);
       }
 
-      return buatPopupUmum(namaLayer, properties);
+      if (jenisPopup === "saluranUtama") {
+        return buatPopupSaluranUtama(namaLayer, properties);
+      }
+
+      return `<div class="popup-title">${namaLayer}</div>`;
     }
 
     function tambahPanah(layer, layerGroup, warna, tebal) {
@@ -535,11 +572,11 @@
       });
     }
 
-    // Load saluran mikro dan PHB
+    // Load layer bertingkat
     buatSubLayer("groupMikro", daftarSaluranMikro, layerOptions.mikro, true);
     buatSubLayer("groupPHB", daftarSaluranPHB, layerOptions.phb, true);
 
-    // Load saluran primer dan sekunder sebagai polygon, tanpa arah panah
+    // Load primer & sekunder
     loadGeoJsonLayer(
       "saluran_drainase_primer_jaktim.geojson",
       "Saluran Primer",
@@ -565,7 +602,7 @@
       }
     });
 
-    // Checkbox saluran primer
+    // Checkbox primer
     document.getElementById("cekSaluranPrimer").addEventListener("change", function () {
       if (this.checked) {
         map.addLayer(layerSaluranPrimer);
@@ -574,7 +611,7 @@
       }
     });
 
-    // Checkbox saluran sekunder
+    // Checkbox sekunder
     document.getElementById("cekSaluranSekunder").addEventListener("change", function () {
       if (this.checked) {
         map.addLayer(layerSaluranSekunder);
@@ -583,7 +620,7 @@
       }
     });
 
-    // Buka tutup grup layer
+    // Buka/tutup grup
     function toggleGroup(groupId, iconId) {
       var group = document.getElementById(groupId);
       var icon = document.getElementById(iconId);
@@ -597,7 +634,7 @@
       }
     }
 
-    // Minimize / maximize panel layer
+    // Minimize panel
     document.getElementById("togglePanel").addEventListener("click", function () {
       var panel = document.getElementById("layerPanel");
       panel.classList.toggle("minimized");
