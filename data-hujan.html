@@ -345,8 +345,8 @@
     <div class="card">
       <h2>Detail Uji Statistik Data Hujan</h2>
       <p class="note">
-        Panel ini merupakan versi awal untuk pemeriksaan data hujan sebelum analisis frekuensi.
-        Nilai kritis dan metode dapat disesuaikan lagi mengikuti format SNI/rujukan yang kamu pakai.
+        Rekap di atas mengambil langsung dari hasil perhitungan detail di bawah. Jika rumus detail direvisi,
+        tabel rekap akan ikut berubah otomatis.
       </p>
 
       <div id="hasilUjiStatistik">
@@ -408,7 +408,10 @@
       const urut = [...data].sort((a, b) => a - b);
       const n = urut.length;
 
-      if (n % 2 === 1) return urut[Math.floor(n / 2)];
+      if (n % 2 === 1) {
+        return urut[Math.floor(n / 2)];
+      }
+
       return (urut[n / 2 - 1] + urut[n / 2]) / 2;
     }
 
@@ -485,7 +488,9 @@
         Standar deviasi: ${sd.toFixed(2)} mm
       `;
 
-      if (chartHujan) chartHujan.destroy();
+      if (chartHujan) {
+        chartHujan.destroy();
+      }
 
       const ctx = document.getElementById("grafikHujan").getContext("2d");
 
@@ -601,7 +606,11 @@
       const qKritis = 1.36;
       const rKritis = 1.55;
 
-      const lulus = qAkarN < qKritis && rAkarN < rKritis;
+      const kesimpulanQ = qAkarN < qKritis ? "Ho diterima" : "Ho ditolak";
+      const kesimpulanR = rAkarN < rKritis ? "Ho diterima" : "Ho ditolak";
+      const keterangan = kesimpulanQ === "Ho diterima" && kesimpulanR === "Ho diterima"
+        ? "Konsisten"
+        : "Tidak konsisten";
 
       return {
         qHitung,
@@ -610,9 +619,9 @@
         rAkarN,
         qKritis,
         rKritis,
-        kesimpulanQ: qAkarN < qKritis ? "Ho diterima" : "Ho ditolak",
-        kesimpulanR: rAkarN < rKritis ? "Ho diterima" : "Ho ditolak",
-        keterangan: lulus ? "Konsisten" : "Tidak konsisten"
+        kesimpulanQ,
+        kesimpulanR,
+        keterangan
       };
     }
 
@@ -755,7 +764,10 @@
     }
 
     function formatAngka(value, digit = 2) {
-      if (value === null || value === undefined || isNaN(value)) return "-";
+      if (value === null || value === undefined || isNaN(value)) {
+        return "-";
+      }
+
       return Number(value).toFixed(digit);
     }
 
@@ -796,115 +808,112 @@
                 <th>Analisa</th>
                 <th>Nilai</th>
                 <th>Kesimpulan</th>
-                <th>Metode</th>
-                <th>Analisa</th>
-                <th>Nilai</th>
-                <th>Kesimpulan</th>
+                <th>Keterangan</th>
               </tr>
             </thead>
+
             <tbody>
               <tr>
-                <td class="rekap-metode" rowspan="3">Uji RAPS</td>
+                <td class="rekap-metode" rowspan="4">Uji RAPS</td>
                 <td class="rekap-analisa">Q / √n</td>
-                <td>${formatAngka(hasilRAPS.qAkarN, 2)}</td>
+                <td>${formatAngka(hasilRAPS.qAkarN, 4)}</td>
                 <td>${badge(hasilRAPS.kesimpulanQ)}</td>
-
-                <td class="rekap-metode" rowspan="2">Uji Ketiadaan Trend</td>
-                <td class="rekap-analisa">t hitung</td>
-                <td>${formatAngka(hasilTrend.tHitung, 2)}</td>
-                <td>${badge(hasilTrend.kesimpulan)}</td>
+                <td rowspan="4">${badge(hasilRAPS.keterangan)}</td>
               </tr>
-
+              <tr>
+                <td class="rekap-analisa">Q kritis</td>
+                <td>${formatAngka(hasilRAPS.qKritis, 4)}</td>
+                <td>${badge(hasilRAPS.kesimpulanQ)}</td>
+              </tr>
               <tr>
                 <td class="rekap-analisa">R / √n</td>
-                <td>${formatAngka(hasilRAPS.rAkarN, 2)}</td>
+                <td>${formatAngka(hasilRAPS.rAkarN, 4)}</td>
                 <td>${badge(hasilRAPS.kesimpulanR)}</td>
-
-                <td class="rekap-analisa">t tabel</td>
-                <td>${formatAngka(hasilTrend.tKritis, 2)}</td>
-                <td>${badge(hasilTrend.keterangan)}</td>
+              </tr>
+              <tr>
+                <td class="rekap-analisa">R kritis</td>
+                <td>${formatAngka(hasilRAPS.rKritis, 4)}</td>
+                <td>${badge(hasilRAPS.kesimpulanR)}</td>
               </tr>
 
               <tr>
-                <td class="rekap-analisa">Keterangan</td>
-                <td colspan="2">${badge(hasilRAPS.keterangan)}</td>
-
-                <td class="rekap-metode" rowspan="2">Uji Persistensi</td>
+                <td class="rekap-metode" rowspan="2">Uji Ketiadaan Trend</td>
                 <td class="rekap-analisa">t hitung</td>
-                <td>${formatAngka(hasilPersistensi.tHitung, 2)}</td>
-                <td>${badge(hasilPersistensi.kesimpulan)}</td>
+                <td>${formatAngka(hasilTrend.tHitung, 4)}</td>
+                <td>${badge(hasilTrend.kesimpulan)}</td>
+                <td rowspan="2">${badge(hasilTrend.keterangan)}</td>
+              </tr>
+              <tr>
+                <td class="rekap-analisa">t tabel</td>
+                <td>${formatAngka(hasilTrend.tKritis, 4)}</td>
+                <td>${badge(hasilTrend.kesimpulan)}</td>
               </tr>
 
               <tr>
                 <td class="rekap-metode" rowspan="4">Uji Stasioner</td>
                 <td class="rekap-analisa">F hitung</td>
-                <td>${formatAngka(hasilStasioner.fHitung, 2)}</td>
+                <td>${formatAngka(hasilStasioner.fHitung, 4)}</td>
                 <td>${badge(hasilStasioner.kesimpulanF)}</td>
-
-                <td class="rekap-analisa">t tabel</td>
-                <td>${formatAngka(hasilPersistensi.tKritis, 2)}</td>
-                <td>${badge(hasilPersistensi.keterangan)}</td>
+                <td>${badge(hasilStasioner.keteranganF)}</td>
               </tr>
-
               <tr>
                 <td class="rekap-analisa">F tabel</td>
-                <td>${formatAngka(hasilStasioner.fKritis, 2)}</td>
+                <td>${formatAngka(hasilStasioner.fKritis, 4)}</td>
+                <td>${badge(hasilStasioner.kesimpulanF)}</td>
                 <td>${badge(hasilStasioner.keteranganF)}</td>
-
-                <td class="rekap-metode" rowspan="4">Uji Inlier-Outlier</td>
-                <td class="rekap-analisa">Xh Max</td>
-                <td>${formatAngka(hasilOutlier.batasAtas, 2)}</td>
-                <td>${badge(hasilOutlier.kesimpulanAtas)}</td>
               </tr>
-
               <tr>
                 <td class="rekap-analisa">t hitung</td>
-                <td>${formatAngka(hasilStasioner.tHitung, 2)}</td>
+                <td>${formatAngka(hasilStasioner.tHitung, 4)}</td>
                 <td>${badge(hasilStasioner.kesimpulanT)}</td>
-
-                <td class="rekap-analisa">Xh Min</td>
-                <td>${formatAngka(hasilOutlier.batasBawah, 2)}</td>
-                <td>${badge(hasilOutlier.kesimpulanBawah)}</td>
+                <td>${badge(hasilStasioner.keteranganT)}</td>
               </tr>
-
               <tr>
                 <td class="rekap-analisa">t tabel</td>
-                <td>${formatAngka(hasilStasioner.tKritis, 2)}</td>
+                <td>${formatAngka(hasilStasioner.tKritis, 4)}</td>
+                <td>${badge(hasilStasioner.kesimpulanT)}</td>
                 <td>${badge(hasilStasioner.keteranganT)}</td>
-
-                <td class="rekap-analisa">XL</td>
-                <td>${formatAngka(hasilOutlier.xl, 2)}</td>
-                <td>${badge(hasilOutlier.keterangan)}</td>
               </tr>
 
               <tr>
-                <td class="rekap-metode">Status Data</td>
-                <td class="rekap-analisa">Kesimpulan</td>
-                <td colspan="2">${badge("Perlu kurasi")}</td>
+                <td class="rekap-metode" rowspan="2">Uji Persistensi</td>
+                <td class="rekap-analisa">t hitung</td>
+                <td>${formatAngka(hasilPersistensi.tHitung, 4)}</td>
+                <td>${badge(hasilPersistensi.kesimpulan)}</td>
+                <td rowspan="2">${badge(hasilPersistensi.keterangan)}</td>
+              </tr>
+              <tr>
+                <td class="rekap-analisa">t tabel</td>
+                <td>${formatAngka(hasilPersistensi.tKritis, 4)}</td>
+                <td>${badge(hasilPersistensi.kesimpulan)}</td>
+              </tr>
 
-                <td class="rekap-analisa">Outlier</td>
+              <tr>
+                <td class="rekap-metode" rowspan="4">Uji Inlier-Outlier</td>
+                <td class="rekap-analisa">Xh Max</td>
+                <td>${formatAngka(hasilOutlier.batasAtas, 4)}</td>
+                <td>${badge(hasilOutlier.kesimpulanAtas)}</td>
+                <td rowspan="4">${badge(hasilOutlier.keterangan)}</td>
+              </tr>
+              <tr>
+                <td class="rekap-analisa">Xh Min</td>
+                <td>${formatAngka(hasilOutlier.batasBawah, 4)}</td>
+                <td>${badge(hasilOutlier.kesimpulanBawah)}</td>
+              </tr>
+              <tr>
+                <td class="rekap-analisa">XL</td>
+                <td>${formatAngka(hasilOutlier.xl, 4)}</td>
+                <td>${badge(hasilOutlier.kesimpulanBawah)}</td>
+              </tr>
+              <tr>
+                <td class="rekap-analisa">Jumlah Outlier</td>
                 <td>${hasilOutlier.outlier.length} data</td>
-                <td>${badge(hasilOutlier.keterangan)}</td>
+                <td>${badge(hasilOutlier.outlier.length === 0 ? "Ho diterima" : "Ho ditolak")}</td>
               </tr>
             </tbody>
           </table>
         </div>
       `;
-    }
-
-    function kelasKesimpulan(teks) {
-      const lower = teks.toLowerCase();
-
-      if (
-        lower.includes("ho diterima") ||
-        lower.includes("tidak ada") ||
-        lower.includes("homogen") ||
-        lower.includes("konsisten")
-      ) {
-        return "hasil-diterima";
-      }
-
-      return "hasil-warning";
     }
 
     function tampilkanUjiStatistik() {
@@ -929,7 +938,13 @@
       const hasilPersistensi = ujiPersistensi(data);
       const hasilOutlier = ujiOutlier(data);
 
-      tampilkanRekapUji(hasilRAPS, hasilTrend, hasilStasioner, hasilPersistensi, hasilOutlier);
+      tampilkanRekapUji(
+        hasilRAPS,
+        hasilTrend,
+        hasilStasioner,
+        hasilPersistensi,
+        hasilOutlier
+      );
 
       let daftarOutlier = "Tidak ada";
 
@@ -958,10 +973,12 @@
               <tr><td>Q hitung</td><td>${formatAngka(hasilRAPS.qHitung, 4)}</td></tr>
               <tr><td>R hitung</td><td>${formatAngka(hasilRAPS.rHitung, 4)}</td></tr>
               <tr><td>Q / √n</td><td>${formatAngka(hasilRAPS.qAkarN, 4)}</td></tr>
+              <tr><td>Q kritis</td><td>${formatAngka(hasilRAPS.qKritis, 4)}</td></tr>
               <tr><td>R / √n</td><td>${formatAngka(hasilRAPS.rAkarN, 4)}</td></tr>
-              <tr><td>Q kritis awal</td><td>${formatAngka(hasilRAPS.qKritis, 4)}</td></tr>
-              <tr><td>R kritis awal</td><td>${formatAngka(hasilRAPS.rKritis, 4)}</td></tr>
-              <tr><td>Kesimpulan</td><td>${badge(hasilRAPS.keterangan)}</td></tr>
+              <tr><td>R kritis</td><td>${formatAngka(hasilRAPS.rKritis, 4)}</td></tr>
+              <tr><td>Kesimpulan Q</td><td>${badge(hasilRAPS.kesimpulanQ)}</td></tr>
+              <tr><td>Kesimpulan R</td><td>${badge(hasilRAPS.kesimpulanR)}</td></tr>
+              <tr><td>Keterangan</td><td>${badge(hasilRAPS.keterangan)}</td></tr>
             </table>
             <div class="note">
               Catatan: nilai kritis RAPS masih nilai awal untuk kurasi.
@@ -976,7 +993,8 @@
               <tr><td>t hitung</td><td>${formatAngka(hasilTrend.tHitung, 4)}</td></tr>
               <tr><td>t tabel</td><td>${formatAngka(hasilTrend.tKritis, 4)}</td></tr>
               <tr><td>Derajat bebas</td><td>${hasilTrend.df}</td></tr>
-              <tr><td>Kesimpulan</td><td>${badge(hasilTrend.keterangan)}</td></tr>
+              <tr><td>Kesimpulan</td><td>${badge(hasilTrend.kesimpulan)}</td></tr>
+              <tr><td>Keterangan</td><td>${badge(hasilTrend.keterangan)}</td></tr>
             </table>
           </div>
 
@@ -989,10 +1007,12 @@
               <tr><td>Rata-rata bagian 2</td><td>${formatAngka(hasilStasioner.mean2, 4)}</td></tr>
               <tr><td>F hitung</td><td>${formatAngka(hasilStasioner.fHitung, 4)}</td></tr>
               <tr><td>F tabel</td><td>${formatAngka(hasilStasioner.fKritis, 4)}</td></tr>
+              <tr><td>Kesimpulan F</td><td>${badge(hasilStasioner.kesimpulanF)}</td></tr>
+              <tr><td>Keterangan F</td><td>${badge(hasilStasioner.keteranganF)}</td></tr>
               <tr><td>t hitung</td><td>${formatAngka(hasilStasioner.tHitung, 4)}</td></tr>
               <tr><td>t tabel</td><td>${formatAngka(hasilStasioner.tKritis, 4)}</td></tr>
-              <tr><td>Kesimpulan F</td><td>${badge(hasilStasioner.keteranganF)}</td></tr>
-              <tr><td>Kesimpulan t</td><td>${badge(hasilStasioner.keteranganT)}</td></tr>
+              <tr><td>Kesimpulan t</td><td>${badge(hasilStasioner.kesimpulanT)}</td></tr>
+              <tr><td>Keterangan t</td><td>${badge(hasilStasioner.keteranganT)}</td></tr>
             </table>
           </div>
 
@@ -1004,21 +1024,24 @@
               <tr><td>t hitung</td><td>${formatAngka(hasilPersistensi.tHitung, 4)}</td></tr>
               <tr><td>t tabel</td><td>${formatAngka(hasilPersistensi.tKritis, 4)}</td></tr>
               <tr><td>Derajat bebas</td><td>${hasilPersistensi.df}</td></tr>
-              <tr><td>Kesimpulan</td><td>${badge(hasilPersistensi.keterangan)}</td></tr>
+              <tr><td>Kesimpulan</td><td>${badge(hasilPersistensi.kesimpulan)}</td></tr>
+              <tr><td>Keterangan</td><td>${badge(hasilPersistensi.keterangan)}</td></tr>
             </table>
           </div>
 
           <div class="uji-box full-width">
-            <h3>Uji Outlier</h3>
+            <h3>Uji Inlier-Outlier</h3>
             <table class="uji-table">
               <tr><td>Metode awal</td><td>Grubbs dua sisi pada data log10</td></tr>
               <tr><td>Rata-rata log</td><td>${formatAngka(hasilOutlier.meanLog, 4)}</td></tr>
               <tr><td>Standar deviasi log</td><td>${formatAngka(hasilOutlier.sdLog, 4)}</td></tr>
               <tr><td>G kritis</td><td>${formatAngka(hasilOutlier.gKritis, 4)}</td></tr>
-              <tr><td>Batas bawah</td><td>${formatAngka(hasilOutlier.batasBawah, 2)} mm</td></tr>
-              <tr><td>Batas atas</td><td>${formatAngka(hasilOutlier.batasAtas, 2)} mm</td></tr>
+              <tr><td>Xh Max / Batas atas</td><td>${formatAngka(hasilOutlier.batasAtas, 4)} mm</td></tr>
+              <tr><td>Xh Min / Batas bawah</td><td>${formatAngka(hasilOutlier.batasBawah, 4)} mm</td></tr>
+              <tr><td>XL / Data minimum</td><td>${formatAngka(hasilOutlier.xl, 4)} mm</td></tr>
+              <tr><td>Jumlah outlier</td><td>${hasilOutlier.outlier.length} data</td></tr>
               <tr><td>Data outlier</td><td>${daftarOutlier}</td></tr>
-              <tr><td>Kesimpulan</td><td>${badge(hasilOutlier.keterangan)}</td></tr>
+              <tr><td>Keterangan</td><td>${badge(hasilOutlier.keterangan)}</td></tr>
             </table>
             <div class="note">
               Catatan: uji outlier ini masih metode awal. Jika kamu ingin pakai tabel Kn hidrologi/SNI,
@@ -1047,11 +1070,13 @@
 
     document.getElementById("pilihStasiun").addEventListener("change", function () {
       tampilkanDataHujan();
+
       document.getElementById("hasilUjiStatistik").innerHTML = `
         <div class="summary">
           Pilih stasiun, lalu klik <b>Hitung Uji Statistik</b>.
         </div>
       `;
+
       document.getElementById("rekapUjiStatistik").innerHTML = `
         <div class="summary">
           Pilih stasiun, lalu klik <b>Hitung Uji Statistik</b> untuk menampilkan rekap.
