@@ -637,7 +637,7 @@
 
     var layerStasiunHujan = L.layerGroup().addTo(map);
 
-    fetch("data_stasiun_hujan.csv?v=3")
+    fetch("data_stasiun_hujan.csv")
       .then(response => response.text())
       .then(csvText => {
         const dataCsv = parseCsvOtomatis(csvText);
@@ -899,13 +899,13 @@
         dataHujanBMKG = parseCsvOtomatis(csvText);
       });
 
-    fetch("tabel_gumbel.csv?v=3")
+    fetch("tabel_gumbel.csv")
       .then(response => response.text())
       .then(csvText => {
         tabelGumbel = parseCsvOtomatis(csvText);
       });
 
-    fetch("tabel_pearson_3.csv?v=3")
+    fetch("tabel_pearson_3.csv")
       .then(response => response.text())
       .then(csvText => {
         tabelPearson3 = parseCsvOtomatis(csvText);
