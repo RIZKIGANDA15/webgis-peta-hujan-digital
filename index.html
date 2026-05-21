@@ -38,7 +38,7 @@
     #layerPanel {
       width: 22%;
       min-width: 280px;
-      max-width: 400px;
+      max-width: 420px;
       height: 100%;
       background: white;
       z-index: 1000;
@@ -637,7 +637,7 @@
 
     var layerStasiunHujan = L.layerGroup().addTo(map);
 
-    fetch("data_stasiun_hujan.csv")
+    fetch("data_stasiun_hujan.csv?v=3")
       .then(response => response.text())
       .then(csvText => {
         const dataCsv = parseCsvOtomatis(csvText);
@@ -815,7 +815,7 @@
     }
 
     function loadGeoJsonLayer(namaFile, namaLayer, layerGroup, options, pakaiPanah) {
-      fetch(namaFile)
+      fetch(namaFile + "?v=3")
         .then(response => response.json())
         .then(data => {
           const geojsonLayer = L.geoJSON(data, {
@@ -893,22 +893,23 @@
     let tabelGumbel = [];
     let tabelPearson3 = [];
 
-    fetch("data_hujan_bmkg_3stasiun.csv")
+    fetch("data_hujan_bmkg_3stasiun.csv?v=3")
       .then(response => response.text())
       .then(csvText => {
         dataHujanBMKG = parseCsvOtomatis(csvText);
       });
 
-    fetch("tabel_gumbel.csv")
+    fetch("tabel_gumbel.csv?v=3")
       .then(response => response.text())
       .then(csvText => {
         tabelGumbel = parseCsvOtomatis(csvText);
       });
 
-    fetch("tabel_pearson_3.csv")
+    fetch("tabel_pearson_3.csv?v=3")
       .then(response => response.text())
       .then(csvText => {
         tabelPearson3 = parseCsvOtomatis(csvText);
+        console.log("tabelPearson3 terbaca:", tabelPearson3.slice(0, 5));
       });
 
     function ambilGumbelDariTabel(n) {
@@ -1041,12 +1042,17 @@
       const jumlahKelas = 5;
       const expected = n / jumlahKelas;
       let batas = [];
+      let faktorBatas = [];
 
       if (metode === "normal") {
         const peluangBatas = [0.2, 0.4, 0.6, 0.8];
 
         batas = peluangBatas.map(p => {
           const k = inverseNormal(p);
+          faktorBatas.push({
+            kolom: "P" + Math.round(p * 100),
+            faktor: k
+          });
           return statistik.mean + k * statistik.sd;
         });
       }
@@ -1056,6 +1062,10 @@
 
         batas = peluangBatas.map(p => {
           const k = inverseNormal(p);
+          faktorBatas.push({
+            kolom: "P" + Math.round(p * 100),
+            faktor: k
+          });
           const logBatas = statistik.meanLog + k * statistik.sdLog;
           return Math.pow(10, logBatas);
         });
@@ -1067,12 +1077,17 @@
         batas = peluangBatas.map(p => {
           const yt = -Math.log(-Math.log(p));
           const k = (yt - dataGumbel.Yn) / dataGumbel.Sn;
+
+          faktorBatas.push({
+            kolom: "P" + Math.round(p * 100),
+            faktor: k
+          });
+
           return statistik.mean + k * statistik.sd;
         });
       }
 
       if (metode === "logpearson3") {
-        // Penting:
         // P80 = luasan kiri 20%
         // P60 = luasan kiri 40%
         // P40 = luasan kiri 60%
@@ -1082,12 +1097,29 @@
         batas = kolomBatas.map(kolom => {
           const g = ambilGPearsonDariTabel(statistik.csLog, kolom);
 
+          console.log("Log Pearson batas:", {
+            kolom: kolom,
+            csLog: statistik.csLog,
+            G: g,
+            meanLog: statistik.meanLog,
+            sdLog: statistik.sdLog
+          });
+
           if (g === null) {
             return null;
           }
 
+          faktorBatas.push({
+            kolom: kolom,
+            faktor: g
+          });
+
           const logBatas = statistik.meanLog + g * statistik.sdLog;
-          return Math.pow(10, logBatas);
+          const hasilBatas = Math.pow(10, logBatas);
+
+          console.log("Batas Log Pearson", kolom, "=", hasilBatas);
+
+          return hasilBatas;
         });
 
         if (batas.some(x => x === null || isNaN(x))) {
@@ -1097,9 +1129,19 @@
         }
       }
 
-      batas = batas
-        .filter(x => !isNaN(x))
-        .sort((a, b) => a - b);
+      const gabunganBatas = batas.map((nilai, index) => ({
+        batas: nilai,
+        faktor: faktorBatas[index] ? faktorBatas[index].faktor : null,
+        kolom: faktorBatas[index] ? faktorBatas[index].kolom : ""
+      }));
+
+      gabunganBatas.sort((a, b) => a.batas - b.batas);
+
+      batas = gabunganBatas.map(item => item.batas);
+      faktorBatas = gabunganBatas.map(item => ({
+        kolom: item.kolom,
+        faktor: item.faktor
+      }));
 
       const observed = new Array(jumlahKelas).fill(0);
 
@@ -1127,18 +1169,23 @@
         x2Hitung += x2;
 
         let interval = "";
+        let faktorInfo = "";
 
         if (i === 0) {
           interval = "≤ " + batas[0].toFixed(2);
+          faktorInfo = faktorBatas[0] ? faktorBatas[0].kolom + " / " + faktorBatas[0].faktor.toFixed(5) : "";
         } else if (i === jumlahKelas - 1) {
           interval = "> " + batas[batas.length - 1].toFixed(2);
+          faktorInfo = "-";
         } else {
           interval = batas[i - 1].toFixed(2) + " - " + batas[i].toFixed(2);
+          faktorInfo = faktorBatas[i] ? faktorBatas[i].kolom + " / " + faktorBatas[i].faktor.toFixed(5) : "";
         }
 
         detail.push({
           kelas: i + 1,
           interval: interval,
+          faktorInfo: faktorInfo,
           Oi: oi,
           Ei: ei,
           X2: x2
@@ -1416,6 +1463,7 @@
             <tr>
               <th>Kelas</th>
               <th>Interval</th>
+              <th>Faktor</th>
               <th>Oi</th>
               <th>Ei</th>
               <th>X²</th>
@@ -1427,6 +1475,7 @@
           <tr>
             <td>${item.kelas}</td>
             <td>${item.interval}</td>
+            <td>${item.faktorInfo}</td>
             <td>${item.Oi}</td>
             <td>${item.Ei.toFixed(2)}</td>
             <td>${item.X2.toFixed(4)}</td>
@@ -1462,7 +1511,8 @@
             - Chi-Square memakai 5 kelas.<br>
             - Gumbel Chi-Square memakai batas kelas X̄ + K × S.<br>
             - Log Pearson III Chi-Square memakai batas kelas logX̄ + G × Slog.<br>
-            - Untuk Log Pearson III, urutan batas kelas memakai P80, P60, P40, P20 agar sesuai luasan kiri 20%, 40%, 60%, 80%.
+            - Untuk Log Pearson III, urutan batas kelas memakai P80, P60, P40, P20 agar sesuai luasan kiri 20%, 40%, 60%, 80%.<br>
+            - File CSV dipanggil dengan cache-buster ?v=3.
           </div>
         </div>
       `;
