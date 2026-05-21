@@ -126,11 +126,6 @@
       text-align: center;
     }
 
-    .data-table {
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
     .data-table th {
       background: #0f766e;
       color: white;
@@ -367,6 +362,20 @@
       stasiun_meteorologi_bogor: "Stasiun Meteorologi Bogor"
     };
 
+    const tabelKn = {
+      10: 2.036, 11: 2.088, 12: 2.134, 13: 2.175, 14: 2.213,
+      15: 2.247, 16: 2.279, 17: 2.309, 18: 2.335, 19: 2.361,
+      20: 2.385, 21: 2.408, 22: 2.429, 23: 2.448, 24: 2.467,
+      25: 2.486, 26: 2.502, 27: 2.519, 28: 2.534, 29: 2.549,
+      30: 2.563, 31: 2.577, 32: 2.591, 33: 2.604, 34: 2.616,
+      35: 2.628, 36: 2.639, 37: 2.650, 38: 2.661, 39: 2.671,
+      40: 2.682, 41: 2.692, 42: 2.700, 43: 2.710, 44: 2.719,
+      45: 2.727, 46: 2.736, 47: 2.744, 48: 2.753, 49: 2.760,
+      50: 2.768, 55: 2.804, 60: 2.837, 65: 2.866, 70: 2.893,
+      75: 2.917, 80: 2.940, 85: 2.961, 90: 2.981, 95: 3.000,
+      100: 3.017, 110: 3.049, 120: 3.078, 130: 3.104, 140: 3.129
+    };
+
     function parseCsvOtomatis(csvText) {
       const rows = csvText.trim().split(/\r?\n/);
       const firstLine = rows[0];
@@ -397,6 +406,12 @@
       const mean = rataRata(data);
       const jumlahKuadrat = data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0);
       return Math.sqrt(jumlahKuadrat / (data.length - 1));
+    }
+
+    function standarDeviasiPopulasi(data) {
+      const mean = rataRata(data);
+      const jumlahKuadrat = data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0);
+      return Math.sqrt(jumlahKuadrat / data.length);
     }
 
     function varians(data) {
@@ -540,10 +555,10 @@
       });
     }
 
-    function rankData(data) {
+    function rankData(data, descending = false) {
       const sorted = data
         .map((value, index) => ({ value, index }))
-        .sort((a, b) => a.value - b.value);
+        .sort((a, b) => descending ? b.value - a.value : a.value - b.value);
 
       const ranks = new Array(data.length);
 
@@ -583,36 +598,87 @@
       return atas / Math.sqrt(bawahX * bawahY);
     }
 
+    function ambilKn(n) {
+      if (tabelKn[n]) {
+        return tabelKn[n];
+      }
+
+      const daftarN = Object.keys(tabelKn).map(Number).sort((a, b) => a - b);
+
+      if (n < daftarN[0]) {
+        return tabelKn[daftarN[0]];
+      }
+
+      if (n > daftarN[daftarN.length - 1]) {
+        return tabelKn[daftarN[daftarN.length - 1]];
+      }
+
+      for (let i = 0; i < daftarN.length - 1; i++) {
+        const n1 = daftarN[i];
+        const n2 = daftarN[i + 1];
+
+        if (n > n1 && n < n2) {
+          const rasio = (n - n1) / (n2 - n1);
+          return tabelKn[n1] + rasio * (tabelKn[n2] - tabelKn[n1]);
+        }
+      }
+
+      return null;
+    }
+
     function ujiRAPS(data) {
       const nilai = data.map(row => row.hujan);
       const n = nilai.length;
       const mean = rataRata(nilai);
-      const sd = standarDeviasi(nilai);
+
+      const y = nilai.map(x => x - mean);
+      const yMean = rataRata(y);
+      const dy2 = y.reduce((sum, value) => sum + Math.pow(value - yMean, 2), 0) / n;
+      const dy = Math.sqrt(dy2);
 
       let kumulatif = 0;
-      const sk = [];
+      const detail = [];
 
-      nilai.forEach(x => {
-        kumulatif += x - mean;
-        sk.push(kumulatif / sd);
+      y.forEach((value, index) => {
+        kumulatif += value;
+        const skBintang = kumulatif;
+        const skDuaBintang = skBintang / dy;
+
+        detail.push({
+          tahun: data[index].tahun,
+          x: nilai[index],
+          y: value,
+          skBintang: skBintang,
+          yKuadrat: Math.pow(value - yMean, 2),
+          skDuaBintang: skDuaBintang,
+          absSkDuaBintang: Math.abs(skDuaBintang)
+        });
       });
 
-      const qHitung = Math.max(...sk.map(x => Math.abs(x)));
-      const rHitung = Math.max(...sk) - Math.min(...sk);
+      const daftarSk = detail.map(row => row.skDuaBintang);
+      const daftarAbs = detail.map(row => row.absSkDuaBintang);
+
+      const qHitung = Math.max(...daftarAbs);
+      const rHitung = Math.max(...daftarSk) - Math.min(...daftarSk);
 
       const qAkarN = qHitung / Math.sqrt(n);
       const rAkarN = rHitung / Math.sqrt(n);
 
-      const qKritis = 1.36;
-      const rKritis = 1.55;
+      const qKritis = 1.22;
+      const rKritis = 1.43;
 
-      const kesimpulanQ = qAkarN < qKritis ? "Ho diterima" : "Ho ditolak";
-      const kesimpulanR = rAkarN < rKritis ? "Ho diterima" : "Ho ditolak";
-      const keterangan = kesimpulanQ === "Ho diterima" && kesimpulanR === "Ho diterima"
+      const kesimpulanQ = qAkarN < qKritis ? "Diterima" : "Ditolak";
+      const kesimpulanR = rAkarN < rKritis ? "Diterima" : "Ditolak";
+      const keterangan = kesimpulanQ === "Diterima" && kesimpulanR === "Diterima"
         ? "Konsisten"
         : "Tidak konsisten";
 
       return {
+        n,
+        mean,
+        yMean,
+        dy2,
+        dy,
         qHitung,
         rHitung,
         qAkarN,
@@ -621,7 +687,8 @@
         rKritis,
         kesimpulanQ,
         kesimpulanR,
-        keterangan
+        keterangan,
+        detail
       };
     }
 
@@ -630,19 +697,23 @@
       const tahun = data.map((row, index) => index + 1);
       const hujan = data.map(row => row.hujan);
 
-      const rankTahun = rankData(tahun);
-      const rankHujan = rankData(hujan);
+      const rankTahun = rankData(tahun, false);
+      const rankHujan = rankData(hujan, true);
 
-      const rs = korelasiPearson(rankTahun, rankHujan);
-      const tHitung = rs * Math.sqrt((n - 2) / (1 - rs * rs));
+      const dt2 = rankTahun.map((rank, index) => Math.pow(rank - rankHujan[index], 2));
+      const jumlahDt2 = dt2.reduce((sum, value) => sum + value, 0);
+
+      const kp = 1 - ((6 * jumlahDt2) / (n * (n * n - 1)));
+      const tHitung = Math.abs(kp) * Math.sqrt((n - 2) / (1 - kp * kp));
       const df = n - 2;
       const alpha = 0.05;
       const tKritis = jStat.studentt.inv(1 - alpha / 2, df);
 
-      const lulus = Math.abs(tHitung) < tKritis;
+      const lulus = tHitung < tKritis;
 
       return {
-        rs,
+        kp,
+        jumlahDt2,
         tHitung,
         tKritis,
         df,
@@ -664,28 +735,32 @@
 
       const mean1 = rataRata(data1);
       const mean2 = rataRata(data2);
+      const sd1 = standarDeviasi(data1);
+      const sd2 = standarDeviasi(data2);
       const var1 = varians(data1);
       const var2 = varians(data2);
 
-      const fHitung = var1 > var2 ? var1 / var2 : var2 / var1;
-      const df1 = var1 > var2 ? n1 - 1 : n2 - 1;
-      const df2 = var1 > var2 ? n2 - 1 : n1 - 1;
-
+      const fHitung = var1 / var2;
+      const df1 = n1 - 1;
+      const df2 = n2 - 1;
       const alpha = 0.05;
-      const fKritis = jStat.centralF.inv(1 - alpha / 2, df1, df2);
+      const fKritis = jStat.centralF.inv(1 - alpha, df1, df2);
       const variansLulus = fHitung < fKritis;
 
-      const sp2 = (((n1 - 1) * var1) + ((n2 - 1) * var2)) / (n1 + n2 - 2);
-      const tHitung = (mean1 - mean2) / Math.sqrt(sp2 * (1 / n1 + 1 / n2));
-      const dfT = n1 + n2 - 2;
+      const sigma = standarDeviasi(nilai);
+      const tHitung = Math.abs(mean1 - mean2) / (sigma * Math.sqrt(1 / n1 + 1 / n2));
+
+      const dfT = n;
       const tKritis = jStat.studentt.inv(1 - alpha / 2, dfT);
-      const rerataLulus = Math.abs(tHitung) < tKritis;
+      const rerataLulus = tHitung < tKritis;
 
       return {
         n1,
         n2,
         mean1,
         mean2,
+        sd1,
+        sd2,
         var1,
         var2,
         fHitung,
@@ -695,6 +770,7 @@
         df1,
         df2,
         dfT,
+        sigma,
         kesimpulanF: variansLulus ? "Ho diterima" : "Ho ditolak",
         kesimpulanT: rerataLulus ? "Ho diterima" : "Ho ditolak",
         keteranganF: variansLulus ? "Homogen" : "Tidak homogen",
@@ -711,11 +787,12 @@
 
       const r = korelasiPearson(x1, x2);
       const df = n - 2;
-      const tHitung = r * Math.sqrt(df / (1 - r * r));
-      const alpha = 0.05;
+      const tHitung = Math.abs(r) * Math.sqrt(df / (1 - r * r));
+
+      const alpha = 0.01;
       const tKritis = jStat.studentt.inv(1 - alpha / 2, df);
 
-      const lulus = Math.abs(tHitung) < tKritis;
+      const lulus = tHitung < tKritis;
 
       return {
         r,
@@ -723,7 +800,7 @@
         tKritis,
         df,
         kesimpulan: lulus ? "Ho diterima" : "Ho ditolak",
-        keterangan: lulus ? "Tidak ada persistensi" : "Ada persistensi"
+        keterangan: lulus ? "Data bersifat random" : "Data tidak random / ada persistensi"
       };
     }
 
@@ -734,32 +811,41 @@
 
       const meanLog = rataRata(logData);
       const sdLog = standarDeviasi(logData);
+      const kn = ambilKn(n);
 
-      const alpha = 0.05;
-      const t = jStat.studentt.inv(1 - alpha / (2 * n), n - 2);
-      const gKritis = ((n - 1) / Math.sqrt(n)) * Math.sqrt((t * t) / (n - 2 + t * t));
+      const batasAtasLog = meanLog + kn * sdLog;
+      const batasBawahLog = meanLog - kn * sdLog;
 
-      const batasBawahLog = meanLog - gKritis * sdLog;
-      const batasAtasLog = meanLog + gKritis * sdLog;
-
-      const batasBawah = Math.pow(10, batasBawahLog);
       const batasAtas = Math.pow(10, batasAtasLog);
+      const batasBawah = Math.pow(10, batasBawahLog);
 
-      const xl = Math.min(...nilaiAsli);
-      const outlier = data.filter(row => row.hujan < batasBawah || row.hujan > batasAtas);
-      const lulus = outlier.length === 0;
+      const xMax = Math.max(...nilaiAsli);
+      const xMin = Math.min(...nilaiAsli);
+
+      const outlierAtas = data.filter(row => row.hujan > batasAtas);
+      const outlierBawah = data.filter(row => row.hujan < batasBawah);
+      const outlier = [...outlierAtas, ...outlierBawah];
+
+      const atasLulus = xMax < batasAtas;
+      const bawahLulus = xMin > batasBawah;
 
       return {
+        n,
         meanLog,
         sdLog,
-        gKritis,
-        batasBawah,
+        kn,
+        batasAtasLog,
+        batasBawahLog,
         batasAtas,
-        xl,
+        batasBawah,
+        xMax,
+        xMin,
+        outlierAtas,
+        outlierBawah,
         outlier,
-        kesimpulanAtas: lulus ? "Ho diterima" : "Ho ditolak",
-        kesimpulanBawah: lulus ? "Ho diterima" : "Ho ditolak",
-        keterangan: lulus ? "Homogen" : "Terdapat outlier"
+        kesimpulanAtas: atasLulus ? "Diterima" : "Ditolak",
+        kesimpulanBawah: bawahLulus ? "Diterima" : "Ditolak",
+        keterangan: outlier.length === 0 ? "Tidak terdapat outlier" : "Terdapat outlier"
       };
     }
 
@@ -778,7 +864,9 @@
         lower.includes("diterima") ||
         lower.includes("tidak ada") ||
         lower.includes("homogen") ||
-        lower.includes("konsisten")
+        lower.includes("konsisten") ||
+        lower.includes("random") ||
+        lower.includes("tidak terdapat")
       ) {
         return `<span class="badge badge-ok">${teks}</span>`;
       }
@@ -788,7 +876,8 @@
         lower.includes("tidak homogen") ||
         lower.includes("outlier") ||
         lower.includes("ada trend") ||
-        lower.includes("tidak konsisten")
+        lower.includes("tidak konsisten") ||
+        lower.includes("tidak random")
       ) {
         return `<span class="badge badge-danger">${teks}</span>`;
       }
@@ -901,14 +990,14 @@
                 <td>${badge(hasilOutlier.kesimpulanBawah)}</td>
               </tr>
               <tr>
-                <td class="rekap-analisa">XL</td>
-                <td>${formatAngka(hasilOutlier.xl, 4)}</td>
-                <td>${badge(hasilOutlier.kesimpulanBawah)}</td>
+                <td class="rekap-analisa">X Max</td>
+                <td>${formatAngka(hasilOutlier.xMax, 4)}</td>
+                <td>${badge(hasilOutlier.kesimpulanAtas)}</td>
               </tr>
               <tr>
-                <td class="rekap-analisa">Jumlah Outlier</td>
-                <td>${hasilOutlier.outlier.length} data</td>
-                <td>${badge(hasilOutlier.outlier.length === 0 ? "Ho diterima" : "Ho ditolak")}</td>
+                <td class="rekap-analisa">X Min</td>
+                <td>${formatAngka(hasilOutlier.xMin, 4)}</td>
+                <td>${badge(hasilOutlier.kesimpulanBawah)}</td>
               </tr>
             </tbody>
           </table>
@@ -954,6 +1043,39 @@
           .join("<br>");
       }
 
+      let tabelRAPS = `
+        <table class="uji-table">
+          <thead>
+            <tr>
+              <th>Tahun</th>
+              <th>X</th>
+              <th>Y = X - X̄</th>
+              <th>SK*</th>
+              <th>SK**</th>
+              <th>|SK**|</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      hasilRAPS.detail.forEach(row => {
+        tabelRAPS += `
+          <tr>
+            <td>${row.tahun}</td>
+            <td>${formatAngka(row.x, 2)}</td>
+            <td>${formatAngka(row.y, 2)}</td>
+            <td>${formatAngka(row.skBintang, 2)}</td>
+            <td>${formatAngka(row.skDuaBintang, 4)}</td>
+            <td>${formatAngka(row.absSkDuaBintang, 4)}</td>
+          </tr>
+        `;
+      });
+
+      tabelRAPS += `
+          </tbody>
+        </table>
+      `;
+
       hasilDiv.innerHTML = `
         <div class="summary">
           <b>Stasiun:</b> ${namaStasiun[stasiun]}<br>
@@ -967,29 +1089,32 @@
 
         <div class="uji-grid">
 
-          <div class="uji-box">
+          <div class="uji-box full-width">
             <h3>Uji RAPS</h3>
             <table class="uji-table">
-              <tr><td>Q hitung</td><td>${formatAngka(hasilRAPS.qHitung, 4)}</td></tr>
-              <tr><td>R hitung</td><td>${formatAngka(hasilRAPS.rHitung, 4)}</td></tr>
-              <tr><td>Q / √n</td><td>${formatAngka(hasilRAPS.qAkarN, 4)}</td></tr>
+              <tr><td>Rata-rata X</td><td>${formatAngka(hasilRAPS.mean, 4)}</td></tr>
+              <tr><td>Dy²</td><td>${formatAngka(hasilRAPS.dy2, 4)}</td></tr>
+              <tr><td>Dy</td><td>${formatAngka(hasilRAPS.dy, 4)}</td></tr>
+              <tr><td>Q hitung</td><td>${formatAngka(hasilRAPS.qAkarN, 4)}</td></tr>
               <tr><td>Q kritis</td><td>${formatAngka(hasilRAPS.qKritis, 4)}</td></tr>
-              <tr><td>R / √n</td><td>${formatAngka(hasilRAPS.rAkarN, 4)}</td></tr>
+              <tr><td>R hitung</td><td>${formatAngka(hasilRAPS.rAkarN, 4)}</td></tr>
               <tr><td>R kritis</td><td>${formatAngka(hasilRAPS.rKritis, 4)}</td></tr>
               <tr><td>Kesimpulan Q</td><td>${badge(hasilRAPS.kesimpulanQ)}</td></tr>
               <tr><td>Kesimpulan R</td><td>${badge(hasilRAPS.kesimpulanR)}</td></tr>
               <tr><td>Keterangan</td><td>${badge(hasilRAPS.keterangan)}</td></tr>
             </table>
             <div class="note">
-              Catatan: nilai kritis RAPS masih nilai awal untuk kurasi.
+              Detail RAPS menggunakan SK* kumulatif dan SK** = SK* / Dy.
             </div>
+            ${tabelRAPS}
           </div>
 
           <div class="uji-box">
             <h3>Uji Ketiadaan Trend</h3>
             <table class="uji-table">
               <tr><td>Metode</td><td>Spearman Rank</td></tr>
-              <tr><td>Koef. korelasi rs</td><td>${formatAngka(hasilTrend.rs, 4)}</td></tr>
+              <tr><td>KP</td><td>${formatAngka(hasilTrend.kp, 5)}</td></tr>
+              <tr><td>Σdt²</td><td>${formatAngka(hasilTrend.jumlahDt2, 2)}</td></tr>
               <tr><td>t hitung</td><td>${formatAngka(hasilTrend.tHitung, 4)}</td></tr>
               <tr><td>t tabel</td><td>${formatAngka(hasilTrend.tKritis, 4)}</td></tr>
               <tr><td>Derajat bebas</td><td>${hasilTrend.df}</td></tr>
@@ -1001,16 +1126,19 @@
           <div class="uji-box">
             <h3>Uji Stasioner</h3>
             <table class="uji-table">
-              <tr><td>Data bagian 1</td><td>${hasilStasioner.n1} data</td></tr>
-              <tr><td>Data bagian 2</td><td>${hasilStasioner.n2} data</td></tr>
-              <tr><td>Rata-rata bagian 1</td><td>${formatAngka(hasilStasioner.mean1, 4)}</td></tr>
-              <tr><td>Rata-rata bagian 2</td><td>${formatAngka(hasilStasioner.mean2, 4)}</td></tr>
+              <tr><td>Data kelompok 1</td><td>${hasilStasioner.n1} data</td></tr>
+              <tr><td>Data kelompok 2</td><td>${hasilStasioner.n2} data</td></tr>
+              <tr><td>Rata-rata kelompok 1</td><td>${formatAngka(hasilStasioner.mean1, 4)}</td></tr>
+              <tr><td>Rata-rata kelompok 2</td><td>${formatAngka(hasilStasioner.mean2, 4)}</td></tr>
+              <tr><td>S kelompok 1</td><td>${formatAngka(hasilStasioner.sd1, 4)}</td></tr>
+              <tr><td>S kelompok 2</td><td>${formatAngka(hasilStasioner.sd2, 4)}</td></tr>
               <tr><td>F hitung</td><td>${formatAngka(hasilStasioner.fHitung, 4)}</td></tr>
-              <tr><td>F tabel</td><td>${formatAngka(hasilStasioner.fKritis, 4)}</td></tr>
+              <tr><td>F tabel 5%</td><td>${formatAngka(hasilStasioner.fKritis, 4)}</td></tr>
               <tr><td>Kesimpulan F</td><td>${badge(hasilStasioner.kesimpulanF)}</td></tr>
               <tr><td>Keterangan F</td><td>${badge(hasilStasioner.keteranganF)}</td></tr>
+              <tr><td>σ total</td><td>${formatAngka(hasilStasioner.sigma, 4)}</td></tr>
               <tr><td>t hitung</td><td>${formatAngka(hasilStasioner.tHitung, 4)}</td></tr>
-              <tr><td>t tabel</td><td>${formatAngka(hasilStasioner.tKritis, 4)}</td></tr>
+              <tr><td>t tabel 5%</td><td>${formatAngka(hasilStasioner.tKritis, 4)}</td></tr>
               <tr><td>Kesimpulan t</td><td>${badge(hasilStasioner.kesimpulanT)}</td></tr>
               <tr><td>Keterangan t</td><td>${badge(hasilStasioner.keteranganT)}</td></tr>
             </table>
@@ -1019,34 +1147,34 @@
           <div class="uji-box">
             <h3>Uji Persistensi</h3>
             <table class="uji-table">
-              <tr><td>Metode</td><td>Korelasi lag-1</td></tr>
-              <tr><td>Koef. korelasi r</td><td>${formatAngka(hasilPersistensi.r, 4)}</td></tr>
+              <tr><td>Metode</td><td>Autokorelasi lag-1</td></tr>
+              <tr><td>Koefisien r</td><td>${formatAngka(hasilPersistensi.r, 4)}</td></tr>
               <tr><td>t hitung</td><td>${formatAngka(hasilPersistensi.tHitung, 4)}</td></tr>
-              <tr><td>t tabel</td><td>${formatAngka(hasilPersistensi.tKritis, 4)}</td></tr>
+              <tr><td>t tabel 1%</td><td>${formatAngka(hasilPersistensi.tKritis, 4)}</td></tr>
               <tr><td>Derajat bebas</td><td>${hasilPersistensi.df}</td></tr>
               <tr><td>Kesimpulan</td><td>${badge(hasilPersistensi.kesimpulan)}</td></tr>
               <tr><td>Keterangan</td><td>${badge(hasilPersistensi.keterangan)}</td></tr>
             </table>
           </div>
 
-          <div class="uji-box full-width">
+          <div class="uji-box">
             <h3>Uji Inlier-Outlier</h3>
             <table class="uji-table">
-              <tr><td>Metode awal</td><td>Grubbs dua sisi pada data log10</td></tr>
-              <tr><td>Rata-rata log</td><td>${formatAngka(hasilOutlier.meanLog, 4)}</td></tr>
-              <tr><td>Standar deviasi log</td><td>${formatAngka(hasilOutlier.sdLog, 4)}</td></tr>
-              <tr><td>G kritis</td><td>${formatAngka(hasilOutlier.gKritis, 4)}</td></tr>
-              <tr><td>Xh Max / Batas atas</td><td>${formatAngka(hasilOutlier.batasAtas, 4)} mm</td></tr>
-              <tr><td>Xh Min / Batas bawah</td><td>${formatAngka(hasilOutlier.batasBawah, 4)} mm</td></tr>
-              <tr><td>XL / Data minimum</td><td>${formatAngka(hasilOutlier.xl, 4)} mm</td></tr>
+              <tr><td>Metode</td><td>Log10 + Kn Chow</td></tr>
+              <tr><td>n</td><td>${hasilOutlier.n}</td></tr>
+              <tr><td>Kn</td><td>${formatAngka(hasilOutlier.kn, 4)}</td></tr>
+              <tr><td>Rata-rata log X</td><td>${formatAngka(hasilOutlier.meanLog, 4)}</td></tr>
+              <tr><td>S log X</td><td>${formatAngka(hasilOutlier.sdLog, 4)}</td></tr>
+              <tr><td>YH / batas atas log</td><td>${formatAngka(hasilOutlier.batasAtasLog, 4)}</td></tr>
+              <tr><td>YL / batas bawah log</td><td>${formatAngka(hasilOutlier.batasBawahLog, 4)}</td></tr>
+              <tr><td>XH / batas atas</td><td>${formatAngka(hasilOutlier.batasAtas, 4)} mm</td></tr>
+              <tr><td>XL / batas bawah</td><td>${formatAngka(hasilOutlier.batasBawah, 4)} mm</td></tr>
+              <tr><td>X maksimum</td><td>${formatAngka(hasilOutlier.xMax, 4)} mm</td></tr>
+              <tr><td>X minimum</td><td>${formatAngka(hasilOutlier.xMin, 4)} mm</td></tr>
               <tr><td>Jumlah outlier</td><td>${hasilOutlier.outlier.length} data</td></tr>
               <tr><td>Data outlier</td><td>${daftarOutlier}</td></tr>
               <tr><td>Keterangan</td><td>${badge(hasilOutlier.keterangan)}</td></tr>
             </table>
-            <div class="note">
-              Catatan: uji outlier ini masih metode awal. Jika kamu ingin pakai tabel Kn hidrologi/SNI,
-              nanti rumusnya bisa kita sesuaikan.
-            </div>
           </div>
 
         </div>
