@@ -408,12 +408,6 @@
       return Math.sqrt(jumlahKuadrat / (data.length - 1));
     }
 
-    function standarDeviasiPopulasi(data) {
-      const mean = rataRata(data);
-      const jumlahKuadrat = data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0);
-      return Math.sqrt(jumlahKuadrat / data.length);
-    }
-
     function varians(data) {
       const sd = standarDeviasi(data);
       return sd * sd;
@@ -633,7 +627,11 @@
 
       const y = nilai.map(x => x - mean);
       const yMean = rataRata(y);
-      const dy2 = y.reduce((sum, value) => sum + Math.pow(value - yMean, 2), 0) / n;
+
+      const dy2 = y.reduce((sum, value) => {
+        return sum + Math.pow(value - yMean, 2);
+      }, 0) / n;
+
       const dy = Math.sqrt(dy2);
 
       let kumulatif = 0;
@@ -641,6 +639,7 @@
 
       y.forEach((value, index) => {
         kumulatif += value;
+
         const skBintang = kumulatif;
         const skDuaBintang = skBintang / dy;
 
@@ -648,8 +647,8 @@
           tahun: data[index].tahun,
           x: nilai[index],
           y: value,
-          skBintang: skBintang,
           yKuadrat: Math.pow(value - yMean, 2),
+          skBintang: skBintang,
           skDuaBintang: skDuaBintang,
           absSkDuaBintang: Math.abs(skDuaBintang)
         });
@@ -658,17 +657,18 @@
       const daftarSk = detail.map(row => row.skDuaBintang);
       const daftarAbs = detail.map(row => row.absSkDuaBintang);
 
-      const qHitung = Math.max(...daftarAbs);
-      const rHitung = Math.max(...daftarSk) - Math.min(...daftarSk);
+      const qMurni = Math.max(...daftarAbs);
+      const rMurni = Math.max(...daftarSk) - Math.min(...daftarSk);
 
-      const qAkarN = qHitung / Math.sqrt(n);
-      const rAkarN = rHitung / Math.sqrt(n);
+      const qHitung = qMurni / Math.sqrt(n);
+      const rHitung = rMurni / Math.sqrt(n);
 
       const qKritis = 1.22;
       const rKritis = 1.43;
 
-      const kesimpulanQ = qAkarN < qKritis ? "Diterima" : "Ditolak";
-      const kesimpulanR = rAkarN < rKritis ? "Diterima" : "Ditolak";
+      const kesimpulanQ = qHitung < qKritis ? "Diterima" : "Ditolak";
+      const kesimpulanR = rHitung < rKritis ? "Diterima" : "Ditolak";
+
       const keterangan = kesimpulanQ === "Diterima" && kesimpulanR === "Diterima"
         ? "Konsisten"
         : "Tidak konsisten";
@@ -679,10 +679,10 @@
         yMean,
         dy2,
         dy,
+        qMurni,
+        rMurni,
         qHitung,
         rHitung,
-        qAkarN,
-        rAkarN,
         qKritis,
         rKritis,
         kesimpulanQ,
@@ -700,11 +700,15 @@
       const rankTahun = rankData(tahun, false);
       const rankHujan = rankData(hujan, true);
 
-      const dt2 = rankTahun.map((rank, index) => Math.pow(rank - rankHujan[index], 2));
+      const dt2 = rankTahun.map((rank, index) => {
+        return Math.pow(rank - rankHujan[index], 2);
+      });
+
       const jumlahDt2 = dt2.reduce((sum, value) => sum + value, 0);
 
       const kp = 1 - ((6 * jumlahDt2) / (n * (n * n - 1)));
       const tHitung = Math.abs(kp) * Math.sqrt((n - 2) / (1 - kp * kp));
+
       const df = n - 2;
       const alpha = 0.05;
       const tKritis = jStat.studentt.inv(1 - alpha / 2, df);
@@ -735,14 +739,17 @@
 
       const mean1 = rataRata(data1);
       const mean2 = rataRata(data2);
+
       const sd1 = standarDeviasi(data1);
       const sd2 = standarDeviasi(data2);
+
       const var1 = varians(data1);
       const var2 = varians(data2);
 
       const fHitung = var1 / var2;
       const df1 = n1 - 1;
       const df2 = n2 - 1;
+
       const alpha = 0.05;
       const fKritis = jStat.centralF.inv(1 - alpha, df1, df2);
       const variansLulus = fHitung < fKritis;
@@ -904,23 +911,23 @@
             <tbody>
               <tr>
                 <td class="rekap-metode" rowspan="4">Uji RAPS</td>
-                <td class="rekap-analisa">Q / √n</td>
-                <td>${formatAngka(hasilRAPS.qAkarN, 4)}</td>
+                <td class="rekap-analisa">Q hitung = Q / √n</td>
+                <td>${formatAngka(hasilRAPS.qHitung, 4)}</td>
                 <td>${badge(hasilRAPS.kesimpulanQ)}</td>
                 <td rowspan="4">${badge(hasilRAPS.keterangan)}</td>
               </tr>
               <tr>
-                <td class="rekap-analisa">Q kritis</td>
+                <td class="rekap-analisa">Q kritis 99%</td>
                 <td>${formatAngka(hasilRAPS.qKritis, 4)}</td>
                 <td>${badge(hasilRAPS.kesimpulanQ)}</td>
               </tr>
               <tr>
-                <td class="rekap-analisa">R / √n</td>
-                <td>${formatAngka(hasilRAPS.rAkarN, 4)}</td>
+                <td class="rekap-analisa">R hitung = R / √n</td>
+                <td>${formatAngka(hasilRAPS.rHitung, 4)}</td>
                 <td>${badge(hasilRAPS.kesimpulanR)}</td>
               </tr>
               <tr>
-                <td class="rekap-analisa">R kritis</td>
+                <td class="rekap-analisa">R kritis 99%</td>
                 <td>${formatAngka(hasilRAPS.rKritis, 4)}</td>
                 <td>${badge(hasilRAPS.kesimpulanR)}</td>
               </tr>
@@ -933,7 +940,7 @@
                 <td rowspan="2">${badge(hasilTrend.keterangan)}</td>
               </tr>
               <tr>
-                <td class="rekap-analisa">t tabel</td>
+                <td class="rekap-analisa">t tabel 5%</td>
                 <td>${formatAngka(hasilTrend.tKritis, 4)}</td>
                 <td>${badge(hasilTrend.kesimpulan)}</td>
               </tr>
@@ -946,7 +953,7 @@
                 <td>${badge(hasilStasioner.keteranganF)}</td>
               </tr>
               <tr>
-                <td class="rekap-analisa">F tabel</td>
+                <td class="rekap-analisa">F tabel 5%</td>
                 <td>${formatAngka(hasilStasioner.fKritis, 4)}</td>
                 <td>${badge(hasilStasioner.kesimpulanF)}</td>
                 <td>${badge(hasilStasioner.keteranganF)}</td>
@@ -958,7 +965,7 @@
                 <td>${badge(hasilStasioner.keteranganT)}</td>
               </tr>
               <tr>
-                <td class="rekap-analisa">t tabel</td>
+                <td class="rekap-analisa">t tabel 5%</td>
                 <td>${formatAngka(hasilStasioner.tKritis, 4)}</td>
                 <td>${badge(hasilStasioner.kesimpulanT)}</td>
                 <td>${badge(hasilStasioner.keteranganT)}</td>
@@ -972,7 +979,7 @@
                 <td rowspan="2">${badge(hasilPersistensi.keterangan)}</td>
               </tr>
               <tr>
-                <td class="rekap-analisa">t tabel</td>
+                <td class="rekap-analisa">t tabel 1%</td>
                 <td>${formatAngka(hasilPersistensi.tKritis, 4)}</td>
                 <td>${badge(hasilPersistensi.kesimpulan)}</td>
               </tr>
@@ -1095,16 +1102,18 @@
               <tr><td>Rata-rata X</td><td>${formatAngka(hasilRAPS.mean, 4)}</td></tr>
               <tr><td>Dy²</td><td>${formatAngka(hasilRAPS.dy2, 4)}</td></tr>
               <tr><td>Dy</td><td>${formatAngka(hasilRAPS.dy, 4)}</td></tr>
-              <tr><td>Q hitung</td><td>${formatAngka(hasilRAPS.qAkarN, 4)}</td></tr>
-              <tr><td>Q kritis</td><td>${formatAngka(hasilRAPS.qKritis, 4)}</td></tr>
-              <tr><td>R hitung</td><td>${formatAngka(hasilRAPS.rAkarN, 4)}</td></tr>
-              <tr><td>R kritis</td><td>${formatAngka(hasilRAPS.rKritis, 4)}</td></tr>
+              <tr><td>Q murni = max |SK**|</td><td>${formatAngka(hasilRAPS.qMurni, 4)}</td></tr>
+              <tr><td>R murni = max SK** - min SK**</td><td>${formatAngka(hasilRAPS.rMurni, 4)}</td></tr>
+              <tr><td>Q hitung = Q / √n</td><td>${formatAngka(hasilRAPS.qHitung, 4)}</td></tr>
+              <tr><td>Q kritis 99%</td><td>${formatAngka(hasilRAPS.qKritis, 4)}</td></tr>
+              <tr><td>R hitung = R / √n</td><td>${formatAngka(hasilRAPS.rHitung, 4)}</td></tr>
+              <tr><td>R kritis 99%</td><td>${formatAngka(hasilRAPS.rKritis, 4)}</td></tr>
               <tr><td>Kesimpulan Q</td><td>${badge(hasilRAPS.kesimpulanQ)}</td></tr>
               <tr><td>Kesimpulan R</td><td>${badge(hasilRAPS.kesimpulanR)}</td></tr>
               <tr><td>Keterangan</td><td>${badge(hasilRAPS.keterangan)}</td></tr>
             </table>
             <div class="note">
-              Detail RAPS menggunakan SK* kumulatif dan SK** = SK* / Dy.
+              Detail RAPS menggunakan SK* kumulatif, SK** = SK* / Dy, Q hitung = Q / √n, dan R hitung = R / √n.
             </div>
             ${tabelRAPS}
           </div>
@@ -1116,7 +1125,7 @@
               <tr><td>KP</td><td>${formatAngka(hasilTrend.kp, 5)}</td></tr>
               <tr><td>Σdt²</td><td>${formatAngka(hasilTrend.jumlahDt2, 2)}</td></tr>
               <tr><td>t hitung</td><td>${formatAngka(hasilTrend.tHitung, 4)}</td></tr>
-              <tr><td>t tabel</td><td>${formatAngka(hasilTrend.tKritis, 4)}</td></tr>
+              <tr><td>t tabel 5%</td><td>${formatAngka(hasilTrend.tKritis, 4)}</td></tr>
               <tr><td>Derajat bebas</td><td>${hasilTrend.df}</td></tr>
               <tr><td>Kesimpulan</td><td>${badge(hasilTrend.kesimpulan)}</td></tr>
               <tr><td>Keterangan</td><td>${badge(hasilTrend.keterangan)}</td></tr>
