@@ -230,13 +230,18 @@
       margin-top: 8px;
       line-height: 1.5;
     }
+
+    .leaflet-control-layers {
+      font-size: 13px;
+      border-radius: 8px;
+    }
   </style>
 </head>
 
 <body>
   <header>
     <h1>WebGIS Data Hujan</h1>
-    <p>Peta digital untuk visualisasi data hujan</p>
+    <p>Peta digital untuk visualisasi data hujan dan jaringan drainase</p>
   </header>
 
   <div id="appContainer">
@@ -325,6 +330,12 @@
             </div>
           </div>
         </div>
+
+        <div class="layer-group">
+          <a href="index.html" style="color:#0f766e; font-weight:bold; text-decoration:none;">
+            ← Kembali ke Home
+          </a>
+        </div>
       </div>
     </div>
 
@@ -335,11 +346,55 @@
   <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
 
   <script>
-    var map = L.map("map").setView([-6.225, 106.900], 11);
+    var map = L.map("map", {
+      center: [-6.225, 106.900],
+      zoom: 11
+    });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    var osmMap = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: "&copy; OpenStreetMap contributors"
+    });
+
+    var googleMaps = L.tileLayer("https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Maps"
+    });
+
+    var googleSatellite = L.tileLayer("https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Satellite"
+    });
+
+    var googleHybrid = L.tileLayer("https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Hybrid"
+    });
+
+    var esriSatellite = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        maxZoom: 20,
+        attribution: "Tiles &copy; Esri"
+      }
+    );
+
+    googleMaps.addTo(map);
+
+    var baseMaps = {
+      "Google Maps": googleMaps,
+      "Google Satellite / Earth": googleSatellite,
+      "Google Hybrid": googleHybrid,
+      "OpenStreetMap": osmMap,
+      "Esri Satellite": esriSatellite
+    };
+
+    L.control.layers(baseMaps, null, {
+      position: "topright",
+      collapsed: false
     }).addTo(map);
 
     map.createPane("paneMikro");
@@ -815,7 +870,7 @@
     }
 
     function loadGeoJsonLayer(namaFile, namaLayer, layerGroup, options, pakaiPanah) {
-      fetch(namaFile + "?v=3")
+      fetch(namaFile)
         .then(response => response.json())
         .then(data => {
           const geojsonLayer = L.geoJSON(data, {
@@ -893,7 +948,7 @@
     let tabelGumbel = [];
     let tabelPearson3 = [];
 
-    fetch("data_hujan_bmkg_3stasiun.csv?v=3")
+    fetch("data_hujan_bmkg_3stasiun.csv")
       .then(response => response.text())
       .then(csvText => {
         dataHujanBMKG = parseCsvOtomatis(csvText);
@@ -909,7 +964,6 @@
       .then(response => response.text())
       .then(csvText => {
         tabelPearson3 = parseCsvOtomatis(csvText);
-        console.log("tabelPearson3 terbaca:", tabelPearson3.slice(0, 5));
       });
 
     function ambilGumbelDariTabel(n) {
@@ -1049,10 +1103,7 @@
 
         batas = peluangBatas.map(p => {
           const k = inverseNormal(p);
-          faktorBatas.push({
-            kolom: "P" + Math.round(p * 100),
-            faktor: k
-          });
+          faktorBatas.push({ kolom: "P" + Math.round(p * 100), faktor: k });
           return statistik.mean + k * statistik.sd;
         });
       }
@@ -1062,10 +1113,7 @@
 
         batas = peluangBatas.map(p => {
           const k = inverseNormal(p);
-          faktorBatas.push({
-            kolom: "P" + Math.round(p * 100),
-            faktor: k
-          });
+          faktorBatas.push({ kolom: "P" + Math.round(p * 100), faktor: k });
           const logBatas = statistik.meanLog + k * statistik.sdLog;
           return Math.pow(10, logBatas);
         });
@@ -1078,32 +1126,16 @@
           const yt = -Math.log(-Math.log(p));
           const k = (yt - dataGumbel.Yn) / dataGumbel.Sn;
 
-          faktorBatas.push({
-            kolom: "P" + Math.round(p * 100),
-            faktor: k
-          });
-
+          faktorBatas.push({ kolom: "P" + Math.round(p * 100), faktor: k });
           return statistik.mean + k * statistik.sd;
         });
       }
 
       if (metode === "logpearson3") {
-        // P80 = luasan kiri 20%
-        // P60 = luasan kiri 40%
-        // P40 = luasan kiri 60%
-        // P20 = luasan kiri 80%
         const kolomBatas = ["P80", "P60", "P40", "P20"];
 
         batas = kolomBatas.map(kolom => {
           const g = ambilGPearsonDariTabel(statistik.csLog, kolom);
-
-          console.log("Log Pearson batas:", {
-            kolom: kolom,
-            csLog: statistik.csLog,
-            G: g,
-            meanLog: statistik.meanLog,
-            sdLog: statistik.sdLog
-          });
 
           if (g === null) {
             return null;
@@ -1115,11 +1147,7 @@
           });
 
           const logBatas = statistik.meanLog + g * statistik.sdLog;
-          const hasilBatas = Math.pow(10, logBatas);
-
-          console.log("Batas Log Pearson", kolom, "=", hasilBatas);
-
-          return hasilBatas;
+          return Math.pow(10, logBatas);
         });
 
         if (batas.some(x => x === null || isNaN(x))) {
@@ -1511,8 +1539,7 @@
             - Chi-Square memakai 5 kelas.<br>
             - Gumbel Chi-Square memakai batas kelas X̄ + K × S.<br>
             - Log Pearson III Chi-Square memakai batas kelas logX̄ + G × Slog.<br>
-            - Untuk Log Pearson III, urutan batas kelas memakai P80, P60, P40, P20 agar sesuai luasan kiri 20%, 40%, 60%, 80%.<br>
-            - File CSV dipanggil dengan cache-buster ?v=3.
+            - Untuk Log Pearson III, urutan batas kelas memakai P80, P60, P40, P20 agar sesuai luasan kiri 20%, 40%, 60%, 80%.
           </div>
         </div>
       `;
