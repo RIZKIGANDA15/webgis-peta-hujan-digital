@@ -5,7 +5,11 @@
   <title>Data Hujan Tahunan</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Chart.js untuk grafik -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- jStat untuk uji statistik -->
+  <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
 
   <style>
     body {
@@ -33,7 +37,7 @@
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1250px;
       margin: 32px auto;
       padding: 0 24px;
     }
@@ -72,6 +76,8 @@
       font-size: 14px;
       font-weight: bold;
       display: inline-block;
+      border: none;
+      cursor: pointer;
     }
 
     .btn:hover {
@@ -80,9 +86,10 @@
 
     .content-grid {
       display: grid;
-      grid-template-columns: 330px 1fr;
+      grid-template-columns: 340px 1fr;
       gap: 22px;
       align-items: start;
+      margin-bottom: 22px;
     }
 
     .card {
@@ -90,12 +97,19 @@
       border-radius: 14px;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
       padding: 18px;
+      margin-bottom: 22px;
     }
 
     .card h2 {
       margin: 0 0 14px;
       font-size: 18px;
       color: #0f766e;
+    }
+
+    .card h3 {
+      margin: 14px 0 8px;
+      font-size: 15px;
+      color: #111827;
     }
 
     table {
@@ -108,6 +122,7 @@
       border: 1px solid #d1d5db;
       padding: 7px;
       text-align: right;
+      vertical-align: top;
     }
 
     th {
@@ -141,8 +156,56 @@
       line-height: 1.5;
     }
 
-    @media (max-width: 900px) {
-      .content-grid {
+    .uji-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .uji-box {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      background: #f9fafb;
+    }
+
+    .uji-box h3 {
+      margin-top: 0;
+      color: #0f766e;
+    }
+
+    .hasil-diterima {
+      color: #166534;
+      font-weight: bold;
+    }
+
+    .hasil-ditolak {
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    .hasil-warning {
+      color: #92400e;
+      font-weight: bold;
+    }
+
+    .uji-table td:first-child {
+      text-align: left;
+      font-weight: bold;
+      width: 55%;
+    }
+
+    .uji-table td:last-child {
+      text-align: right;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    @media (max-width: 950px) {
+      .content-grid,
+      .uji-grid {
         grid-template-columns: 1fr;
       }
 
@@ -160,7 +223,7 @@
 <body>
   <header>
     <h1>Data Hujan Tahunan</h1>
-    <p>Tabel dan grafik hujan maksimum tahunan stasiun BMKG</p>
+    <p>Tabel, grafik, dan uji statistik data hujan maksimum tahunan stasiun BMKG</p>
   </header>
 
   <main class="container">
@@ -172,6 +235,7 @@
         <option value="stasiun_meteorologi_bogor">Stasiun Meteorologi Bogor</option>
       </select>
 
+      <button class="btn" id="btnHitungUji">Hitung Uji Statistik</button>
       <a href="index.html" class="btn">Kembali ke Home</a>
       <a href="webgis.html" class="btn">Buka WebGIS</a>
     </div>
@@ -200,6 +264,20 @@
         <h2 id="judulGrafik">Grafik Hujan Maksimum Tahunan</h2>
         <div class="chart-wrap">
           <canvas id="grafikHujan"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Uji Statistik Data Hujan</h2>
+      <p class="note">
+        Panel ini merupakan versi awal untuk pemeriksaan data hujan sebelum analisis frekuensi.
+        Nilai kritis dan metode dapat disesuaikan lagi mengikuti format SNI/rujukan yang kamu pakai.
+      </p>
+
+      <div id="hasilUjiStatistik">
+        <div class="summary">
+          Pilih stasiun, lalu klik <b>Hitung Uji Statistik</b>.
         </div>
       </div>
     </div>
@@ -237,18 +315,66 @@
       return parseFloat(String(value).replace(",", "."));
     }
 
+    function rataRata(data) {
+      return data.reduce((sum, x) => sum + x, 0) / data.length;
+    }
+
+    function standarDeviasi(data) {
+      const mean = rataRata(data);
+      const jumlahKuadrat = data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0);
+      return Math.sqrt(jumlahKuadrat / (data.length - 1));
+    }
+
+    function varians(data) {
+      const sd = standarDeviasi(data);
+      return sd * sd;
+    }
+
+    function median(data) {
+      const urut = [...data].sort((a, b) => a - b);
+      const n = urut.length;
+
+      if (n % 2 === 1) {
+        return urut[Math.floor(n / 2)];
+      }
+
+      return (urut[n / 2 - 1] + urut[n / 2]) / 2;
+    }
+
+    function koefVariasi(data) {
+      return standarDeviasi(data) / rataRata(data);
+    }
+
+    function skewness(data) {
+      const n = data.length;
+      const mean = rataRata(data);
+      const sd = standarDeviasi(data);
+
+      const jumlahPangkatTiga = data.reduce((sum, x) => {
+        return sum + Math.pow((x - mean) / sd, 3);
+      }, 0);
+
+      return (n / ((n - 1) * (n - 2))) * jumlahPangkatTiga;
+    }
+
+    function ambilDataStasiun() {
+      const stasiun = document.getElementById("pilihStasiun").value;
+
+      return dataHujanBMKG
+        .map(row => ({
+          tahun: row.tahun,
+          hujan: angka(row[stasiun])
+        }))
+        .filter(row => row.tahun && !isNaN(row.hujan) && row.hujan > 0);
+    }
+
     function tampilkanDataHujan() {
       const stasiun = document.getElementById("pilihStasiun").value;
       const tbody = document.getElementById("tabelHujan");
       const judulGrafik = document.getElementById("judulGrafik");
       const ringkasanData = document.getElementById("ringkasanData");
 
-      const dataValid = dataHujanBMKG
-        .map(row => ({
-          tahun: row.tahun,
-          hujan: angka(row[stasiun])
-        }))
-        .filter(row => row.tahun && !isNaN(row.hujan));
+      const dataValid = ambilDataStasiun();
 
       tbody.innerHTML = "";
 
@@ -271,7 +397,8 @@
 
       const maksimum = Math.max(...hujan);
       const minimum = Math.min(...hujan);
-      const rataRata = hujan.reduce((sum, value) => sum + value, 0) / hujan.length;
+      const mean = rataRata(hujan);
+      const sd = standarDeviasi(hujan);
 
       const dataMaksimum = dataValid.find(row => row.hujan === maksimum);
       const dataMinimum = dataValid.find(row => row.hujan === minimum);
@@ -283,7 +410,8 @@
         Jumlah data: ${dataValid.length} tahun<br>
         Hujan maksimum: ${maksimum.toFixed(1)} mm pada tahun ${dataMaksimum.tahun}<br>
         Hujan minimum: ${minimum.toFixed(1)} mm pada tahun ${dataMinimum.tahun}<br>
-        Rata-rata: ${rataRata.toFixed(2)} mm
+        Rata-rata: ${mean.toFixed(2)} mm<br>
+        Standar deviasi: ${sd.toFixed(2)} mm
       `;
 
       if (chartHujan) {
@@ -340,6 +468,478 @@
       });
     }
 
+    function rankData(data) {
+      const sorted = data
+        .map((value, index) => ({ value, index }))
+        .sort((a, b) => a.value - b.value);
+
+      const ranks = new Array(data.length);
+
+      for (let i = 0; i < sorted.length; i++) {
+        let j = i;
+
+        while (j + 1 < sorted.length && sorted[j + 1].value === sorted[i].value) {
+          j++;
+        }
+
+        const avgRank = (i + 1 + j + 1) / 2;
+
+        for (let k = i; k <= j; k++) {
+          ranks[sorted[k].index] = avgRank;
+        }
+
+        i = j;
+      }
+
+      return ranks;
+    }
+
+    function korelasiPearson(x, y) {
+      const meanX = rataRata(x);
+      const meanY = rataRata(y);
+
+      let atas = 0;
+      let bawahX = 0;
+      let bawahY = 0;
+
+      for (let i = 0; i < x.length; i++) {
+        atas += (x[i] - meanX) * (y[i] - meanY);
+        bawahX += Math.pow(x[i] - meanX, 2);
+        bawahY += Math.pow(y[i] - meanY, 2);
+      }
+
+      return atas / Math.sqrt(bawahX * bawahY);
+    }
+
+    function ujiRAPS(data) {
+      const nilai = data.map(row => row.hujan);
+      const n = nilai.length;
+      const mean = rataRata(nilai);
+      const sd = standarDeviasi(nilai);
+
+      let kumulatif = 0;
+      const sk = [];
+
+      nilai.forEach(x => {
+        kumulatif += x - mean;
+        sk.push(kumulatif / sd);
+      });
+
+      const qHitung = Math.max(...sk.map(x => Math.abs(x)));
+      const rHitung = Math.max(...sk) - Math.min(...sk);
+
+      const qAkarN = qHitung / Math.sqrt(n);
+      const rAkarN = rHitung / Math.sqrt(n);
+
+      // Nilai kritis awal untuk kurasi.
+      // Jika nanti punya tabel kritis RAPS dari rujukan/SNI, nilai ini bisa diganti.
+      const qKritis = 1.36;
+      const rKritis = 1.55;
+
+      const lulus = qAkarN < qKritis && rAkarN < rKritis;
+
+      return {
+        qHitung,
+        rHitung,
+        qAkarN,
+        rAkarN,
+        qKritis,
+        rKritis,
+        kesimpulan: lulus ? "Data konsisten" : "Data perlu diperiksa"
+      };
+    }
+
+    function ujiKetiadaanTrend(data) {
+      const n = data.length;
+      const tahun = data.map((row, index) => index + 1);
+      const hujan = data.map(row => row.hujan);
+
+      const rankTahun = rankData(tahun);
+      const rankHujan = rankData(hujan);
+
+      const rs = korelasiPearson(rankTahun, rankHujan);
+      const tHitung = rs * Math.sqrt((n - 2) / (1 - rs * rs));
+      const df = n - 2;
+      const alpha = 0.05;
+      const tKritis = jStat.studentt.inv(1 - alpha / 2, df);
+
+      const lulus = Math.abs(tHitung) < tKritis;
+
+      return {
+        rs,
+        tHitung,
+        tKritis,
+        df,
+        kesimpulan: lulus ? "Tidak terdapat trend signifikan" : "Terdapat trend signifikan"
+      };
+    }
+
+    function ujiStasioner(data) {
+      const nilai = data.map(row => row.hujan);
+      const n = nilai.length;
+
+      const tengah = Math.floor(n / 2);
+      const data1 = nilai.slice(0, tengah);
+      const data2 = nilai.slice(tengah);
+
+      const n1 = data1.length;
+      const n2 = data2.length;
+
+      const mean1 = rataRata(data1);
+      const mean2 = rataRata(data2);
+      const var1 = varians(data1);
+      const var2 = varians(data2);
+
+      const fHitung = var1 > var2 ? var1 / var2 : var2 / var1;
+      const df1 = var1 > var2 ? n1 - 1 : n2 - 1;
+      const df2 = var1 > var2 ? n2 - 1 : n1 - 1;
+
+      const alpha = 0.05;
+      const fKritis = jStat.centralF.inv(1 - alpha / 2, df1, df2);
+
+      const variansStasioner = fHitung < fKritis;
+
+      const sp2 = (((n1 - 1) * var1) + ((n2 - 1) * var2)) / (n1 + n2 - 2);
+      const tHitung = (mean1 - mean2) / Math.sqrt(sp2 * (1 / n1 + 1 / n2));
+      const dfT = n1 + n2 - 2;
+      const tKritis = jStat.studentt.inv(1 - alpha / 2, dfT);
+
+      const rerataStasioner = Math.abs(tHitung) < tKritis;
+
+      const lulus = variansStasioner && rerataStasioner;
+
+      return {
+        n1,
+        n2,
+        mean1,
+        mean2,
+        var1,
+        var2,
+        fHitung,
+        fKritis,
+        df1,
+        df2,
+        tHitung,
+        tKritis,
+        dfT,
+        kesimpulan: lulus ? "Data stasioner" : "Data tidak stasioner / perlu diperiksa"
+      };
+    }
+
+    function ujiPersistensi(data) {
+      const nilai = data.map(row => row.hujan);
+      const n = nilai.length;
+
+      const x1 = nilai.slice(0, n - 1);
+      const x2 = nilai.slice(1);
+
+      const r = korelasiPearson(x1, x2);
+      const df = n - 2;
+      const tHitung = r * Math.sqrt(df / (1 - r * r));
+      const alpha = 0.05;
+      const tKritis = jStat.studentt.inv(1 - alpha / 2, df);
+
+      const lulus = Math.abs(tHitung) < tKritis;
+
+      return {
+        r,
+        tHitung,
+        tKritis,
+        df,
+        kesimpulan: lulus ? "Tidak terdapat persistensi signifikan" : "Terdapat persistensi signifikan"
+      };
+    }
+
+    function ujiOutlier(data) {
+      const nilaiAsli = data.map(row => row.hujan);
+      const logData = nilaiAsli.map(x => Math.log10(x));
+      const n = logData.length;
+
+      const meanLog = rataRata(logData);
+      const sdLog = standarDeviasi(logData);
+
+      // Metode awal: Grubbs dua sisi pada data log.
+      // Jika nanti ingin pakai tabel Kn khusus hidrologi/SNI, bagian ini bisa diganti.
+      const alpha = 0.05;
+      const t = jStat.studentt.inv(1 - alpha / (2 * n), n - 2);
+      const gKritis = ((n - 1) / Math.sqrt(n)) * Math.sqrt((t * t) / (n - 2 + t * t));
+
+      const batasBawahLog = meanLog - gKritis * sdLog;
+      const batasAtasLog = meanLog + gKritis * sdLog;
+
+      const batasBawah = Math.pow(10, batasBawahLog);
+      const batasAtas = Math.pow(10, batasAtasLog);
+
+      const outlier = data.filter(row => row.hujan < batasBawah || row.hujan > batasAtas);
+
+      return {
+        meanLog,
+        sdLog,
+        gKritis,
+        batasBawah,
+        batasAtas,
+        outlier,
+        kesimpulan: outlier.length === 0 ? "Tidak terdapat outlier" : "Terdapat data outlier"
+      };
+    }
+
+    function formatAngka(value, digit = 4) {
+      if (value === null || value === undefined || isNaN(value)) {
+        return "-";
+      }
+
+      return Number(value).toFixed(digit);
+    }
+
+    function kelasKesimpulan(teks) {
+      const lower = teks.toLowerCase();
+
+      if (
+        lower.includes("tidak terdapat") ||
+        lower.includes("data konsisten") ||
+        lower.includes("data stasioner")
+      ) {
+        return "hasil-diterima";
+      }
+
+      if (
+        lower.includes("terdapat") ||
+        lower.includes("tidak stasioner") ||
+        lower.includes("perlu diperiksa")
+      ) {
+        return "hasil-warning";
+      }
+
+      return "";
+    }
+
+    function tampilkanUjiStatistik() {
+      const data = ambilDataStasiun();
+      const hasilDiv = document.getElementById("hasilUjiStatistik");
+      const stasiun = document.getElementById("pilihStasiun").value;
+
+      if (data.length < 10) {
+        hasilDiv.innerHTML = `
+          <div class="summary">
+            Data terlalu sedikit untuk uji statistik.
+          </div>
+        `;
+        return;
+      }
+
+      const nilai = data.map(row => row.hujan);
+      const hasilRAPS = ujiRAPS(data);
+      const hasilTrend = ujiKetiadaanTrend(data);
+      const hasilStasioner = ujiStasioner(data);
+      const hasilPersistensi = ujiPersistensi(data);
+      const hasilOutlier = ujiOutlier(data);
+
+      let daftarOutlier = "Tidak ada";
+
+      if (hasilOutlier.outlier.length > 0) {
+        daftarOutlier = hasilOutlier.outlier
+          .map(row => `${row.tahun}: ${row.hujan.toFixed(1)} mm`)
+          .join("<br>");
+      }
+
+      hasilDiv.innerHTML = `
+        <div class="summary">
+          <b>Stasiun:</b> ${namaStasiun[stasiun]}<br>
+          <b>Jumlah data:</b> ${data.length} tahun<br>
+          <b>Rata-rata:</b> ${rataRata(nilai).toFixed(4)} mm<br>
+          <b>Standar deviasi:</b> ${standarDeviasi(nilai).toFixed(4)} mm<br>
+          <b>Median:</b> ${median(nilai).toFixed(4)} mm<br>
+          <b>Koefisien variasi:</b> ${koefVariasi(nilai).toFixed(4)}<br>
+          <b>Skewness:</b> ${skewness(nilai).toFixed(4)}
+        </div>
+
+        <div class="uji-grid">
+
+          <div class="uji-box">
+            <h3>Uji RAPS</h3>
+            <table class="uji-table">
+              <tr>
+                <td>Q hitung</td>
+                <td>${formatAngka(hasilRAPS.qHitung)}</td>
+              </tr>
+              <tr>
+                <td>R hitung</td>
+                <td>${formatAngka(hasilRAPS.rHitung)}</td>
+              </tr>
+              <tr>
+                <td>Q / √n</td>
+                <td>${formatAngka(hasilRAPS.qAkarN)}</td>
+              </tr>
+              <tr>
+                <td>R / √n</td>
+                <td>${formatAngka(hasilRAPS.rAkarN)}</td>
+              </tr>
+              <tr>
+                <td>Q kritis awal</td>
+                <td>${formatAngka(hasilRAPS.qKritis)}</td>
+              </tr>
+              <tr>
+                <td>R kritis awal</td>
+                <td>${formatAngka(hasilRAPS.rKritis)}</td>
+              </tr>
+              <tr>
+                <td>Kesimpulan</td>
+                <td class="${kelasKesimpulan(hasilRAPS.kesimpulan)}">${hasilRAPS.kesimpulan}</td>
+              </tr>
+            </table>
+            <div class="note">
+              Catatan: nilai kritis RAPS masih nilai awal untuk kurasi. Nanti bisa disesuaikan dengan tabel kritis yang kamu pakai.
+            </div>
+          </div>
+
+          <div class="uji-box">
+            <h3>Uji Ketiadaan Trend</h3>
+            <table class="uji-table">
+              <tr>
+                <td>Metode</td>
+                <td>Spearman Rank</td>
+              </tr>
+              <tr>
+                <td>Koef. korelasi rs</td>
+                <td>${formatAngka(hasilTrend.rs)}</td>
+              </tr>
+              <tr>
+                <td>t hitung</td>
+                <td>${formatAngka(hasilTrend.tHitung)}</td>
+              </tr>
+              <tr>
+                <td>t kritis 5%</td>
+                <td>${formatAngka(hasilTrend.tKritis)}</td>
+              </tr>
+              <tr>
+                <td>Derajat bebas</td>
+                <td>${hasilTrend.df}</td>
+              </tr>
+              <tr>
+                <td>Kesimpulan</td>
+                <td class="${kelasKesimpulan(hasilTrend.kesimpulan)}">${hasilTrend.kesimpulan}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="uji-box">
+            <h3>Uji Stasioner</h3>
+            <table class="uji-table">
+              <tr>
+                <td>Data bagian 1</td>
+                <td>${hasilStasioner.n1} data</td>
+              </tr>
+              <tr>
+                <td>Data bagian 2</td>
+                <td>${hasilStasioner.n2} data</td>
+              </tr>
+              <tr>
+                <td>Rata-rata bagian 1</td>
+                <td>${formatAngka(hasilStasioner.mean1)}</td>
+              </tr>
+              <tr>
+                <td>Rata-rata bagian 2</td>
+                <td>${formatAngka(hasilStasioner.mean2)}</td>
+              </tr>
+              <tr>
+                <td>F hitung</td>
+                <td>${formatAngka(hasilStasioner.fHitung)}</td>
+              </tr>
+              <tr>
+                <td>F kritis 5%</td>
+                <td>${formatAngka(hasilStasioner.fKritis)}</td>
+              </tr>
+              <tr>
+                <td>t hitung</td>
+                <td>${formatAngka(hasilStasioner.tHitung)}</td>
+              </tr>
+              <tr>
+                <td>t kritis 5%</td>
+                <td>${formatAngka(hasilStasioner.tKritis)}</td>
+              </tr>
+              <tr>
+                <td>Kesimpulan</td>
+                <td class="${kelasKesimpulan(hasilStasioner.kesimpulan)}">${hasilStasioner.kesimpulan}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="uji-box">
+            <h3>Uji Persistensi</h3>
+            <table class="uji-table">
+              <tr>
+                <td>Metode</td>
+                <td>Korelasi lag-1</td>
+              </tr>
+              <tr>
+                <td>Koef. korelasi r</td>
+                <td>${formatAngka(hasilPersistensi.r)}</td>
+              </tr>
+              <tr>
+                <td>t hitung</td>
+                <td>${formatAngka(hasilPersistensi.tHitung)}</td>
+              </tr>
+              <tr>
+                <td>t kritis 5%</td>
+                <td>${formatAngka(hasilPersistensi.tKritis)}</td>
+              </tr>
+              <tr>
+                <td>Derajat bebas</td>
+                <td>${hasilPersistensi.df}</td>
+              </tr>
+              <tr>
+                <td>Kesimpulan</td>
+                <td class="${kelasKesimpulan(hasilPersistensi.kesimpulan)}">${hasilPersistensi.kesimpulan}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="uji-box full-width">
+            <h3>Uji Outlier</h3>
+            <table class="uji-table">
+              <tr>
+                <td>Metode awal</td>
+                <td>Grubbs dua sisi pada data log10</td>
+              </tr>
+              <tr>
+                <td>Rata-rata log</td>
+                <td>${formatAngka(hasilOutlier.meanLog)}</td>
+              </tr>
+              <tr>
+                <td>Standar deviasi log</td>
+                <td>${formatAngka(hasilOutlier.sdLog)}</td>
+              </tr>
+              <tr>
+                <td>G kritis</td>
+                <td>${formatAngka(hasilOutlier.gKritis)}</td>
+              </tr>
+              <tr>
+                <td>Batas bawah</td>
+                <td>${formatAngka(hasilOutlier.batasBawah, 2)} mm</td>
+              </tr>
+              <tr>
+                <td>Batas atas</td>
+                <td>${formatAngka(hasilOutlier.batasAtas, 2)} mm</td>
+              </tr>
+              <tr>
+                <td>Data outlier</td>
+                <td>${daftarOutlier}</td>
+              </tr>
+              <tr>
+                <td>Kesimpulan</td>
+                <td class="${kelasKesimpulan(hasilOutlier.kesimpulan)}">${hasilOutlier.kesimpulan}</td>
+              </tr>
+            </table>
+            <div class="note">
+              Catatan: uji outlier ini masih metode awal. Jika kamu ingin pakai batas outlier sesuai tabel Kn hidrologi/SNI,
+              nanti rumusnya bisa kita sesuaikan.
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
     fetch("data_hujan_bmkg_3stasiun.csv")
       .then(response => response.text())
       .then(csvText => {
@@ -355,7 +955,16 @@
         console.error(error);
       });
 
-    document.getElementById("pilihStasiun").addEventListener("change", tampilkanDataHujan);
+    document.getElementById("pilihStasiun").addEventListener("change", function () {
+      tampilkanDataHujan();
+      document.getElementById("hasilUjiStatistik").innerHTML = `
+        <div class="summary">
+          Pilih stasiun, lalu klik <b>Hitung Uji Statistik</b>.
+        </div>
+      `;
+    });
+
+    document.getElementById("btnHitungUji").addEventListener("click", tampilkanUjiStatistik);
   </script>
 </body>
 </html>
