@@ -5,11 +5,7 @@
   <title>WebGIS Data Hujan</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
     body {
@@ -314,6 +310,15 @@
                 </select>
               </label>
 
+              <label>
+                Taraf Signifikansi Chi-Square
+                <select id="pilihAlphaChiSquare">
+                  <option value="0.05">5%</option>
+                  <option value="0.01">1%</option>
+                  <option value="0.001">0.1%</option>
+                </select>
+              </label>
+
               <button id="btnHitungHujan">Hitung Hujan Rencana</button>
 
               <div id="hasilHujanRencana"></div>
@@ -326,10 +331,7 @@
     <div id="map"></div>
   </div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Plugin panah arah -->
   <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
 
   <script>
@@ -579,44 +581,59 @@
       }
     }
 
-    function pearson3Quantile(p, mean, sd, cs) {
-      let bawah = mean - 8 * sd;
-      let atas = mean + 8 * sd;
-
-      for (let i = 0; i < 80; i++) {
-        const tengah = (bawah + atas) / 2;
-        const cdf = pearson3CDF(tengah, mean, sd, cs);
-
-        if (cdf < p) {
-          bawah = tengah;
-        } else {
-          atas = tengah;
-        }
-      }
-
-      return (bawah + atas) / 2;
-    }
-
-    function chiSquareCritical(df) {
+    function chiSquareCritical(df, alpha) {
       const tabel = {
-        1: 3.841,
-        2: 5.991,
-        3: 7.815,
-        4: 9.488,
-        5: 11.070,
-        6: 12.592,
-        7: 14.067,
-        8: 15.507,
-        9: 16.919,
-        10: 18.307
+        "0.05": {
+          1: 3.841,
+          2: 5.991,
+          3: 7.815,
+          4: 9.488,
+          5: 11.070,
+          6: 12.592,
+          7: 14.067,
+          8: 15.507,
+          9: 16.919,
+          10: 18.307
+        },
+        "0.01": {
+          1: 6.635,
+          2: 9.210,
+          3: 11.345,
+          4: 13.277,
+          5: 15.086,
+          6: 16.812,
+          7: 18.475,
+          8: 20.090,
+          9: 21.666,
+          10: 23.209
+        },
+        "0.001": {
+          1: 10.828,
+          2: 13.816,
+          3: 16.266,
+          4: 18.467,
+          5: 20.515,
+          6: 22.458,
+          7: 24.322,
+          8: 26.124,
+          9: 27.877,
+          10: 29.588
+        }
       };
 
-      return tabel[df] || null;
+      if (!tabel[alpha]) {
+        return null;
+      }
+
+      return tabel[alpha][df] || null;
     }
 
-    // ==============================
-    // BAGIAN LAYER PETA
-    // ==============================
+    function labelAlpha(alpha) {
+      if (alpha === "0.05") return "5%";
+      if (alpha === "0.01") return "1%";
+      if (alpha === "0.001") return "0.1%";
+      return alpha;
+    }
 
     var layerStasiunHujan = L.layerGroup().addTo(map);
 
@@ -980,10 +997,6 @@
       }
     });
 
-    // ==============================
-    // BAGIAN KALKULATOR HUJAN RENCANA
-    // ==============================
-
     let dataHujanBMKG = [];
     let tabelGumbel = [];
     let tabelPearson3 = [];
@@ -1070,6 +1083,34 @@
       return null;
     }
 
+    function ambilGPearsonDariTabel(cs, kolom) {
+      const data = tabelPearson3
+        .map(row => ({
+          Cs: angka(row.Cs),
+          G: angka(row[kolom])
+        }))
+        .filter(row => !isNaN(row.Cs) && !isNaN(row.G))
+        .sort((a, b) => a.Cs - b.Cs);
+
+      const exact = data.find(row => Math.abs(row.Cs - cs) < 0.0000001);
+
+      if (exact) {
+        return exact.G;
+      }
+
+      for (let i = 0; i < data.length - 1; i++) {
+        const bawah = data[i];
+        const atas = data[i + 1];
+
+        if (cs >= bawah.Cs && cs <= atas.Cs) {
+          const rasio = (cs - bawah.Cs) / (atas.Cs - bawah.Cs);
+          return bawah.G + rasio * (atas.G - bawah.G);
+        }
+      }
+
+      return null;
+    }
+
     function hitungSmirnovKolmogorov(dataValid, metode, statistik, dataGumbel) {
       const n = dataValid.length;
       const dataUrut = [...dataValid].sort((a, b) => a - b);
@@ -1089,9 +1130,9 @@
         }
 
         if (metode === "gumbel") {
-          const alpha = statistik.sd / dataGumbel.Sn;
-          const u = statistik.mean - alpha * dataGumbel.Yn;
-          peluangTeoritis = Math.exp(-Math.exp(-(x - u) / alpha));
+          const alphaGumbel = statistik.sd / dataGumbel.Sn;
+          const u = statistik.mean - alphaGumbel * dataGumbel.Yn;
+          peluangTeoritis = Math.exp(-Math.exp(-(x - u) / alphaGumbel));
         }
 
         if (metode === "logpearson3") {
@@ -1120,46 +1161,66 @@
       };
     }
 
-    function hitungChiSquare(dataValid, metode, statistik, dataGumbel) {
+    function hitungChiSquare(dataValid, metode, statistik, dataGumbel, alphaChiSquare) {
       const n = dataValid.length;
       const jumlahKelas = 5;
       const expected = n / jumlahKelas;
-      const batas = [];
+      let batas = [];
 
-      for (let i = 1; i < jumlahKelas; i++) {
-        const p = i / jumlahKelas;
-        let nilaiBatas = 0;
+      if (metode === "normal") {
+        const peluangBatas = [0.2, 0.4, 0.6, 0.8];
 
-        if (metode === "normal") {
-          nilaiBatas = statistik.mean + inverseNormal(p) * statistik.sd;
-        }
-
-        if (metode === "lognormal") {
-          nilaiBatas = Math.pow(
-            10,
-            statistik.meanLog + inverseNormal(p) * statistik.sdLog
-          );
-        }
-
-        if (metode === "gumbel") {
-          const alpha = statistik.sd / dataGumbel.Sn;
-          const u = statistik.mean - alpha * dataGumbel.Yn;
-          nilaiBatas = u - alpha * Math.log(-Math.log(p));
-        }
-
-        if (metode === "logpearson3") {
-          const logBatas = pearson3Quantile(
-            p,
-            statistik.meanLog,
-            statistik.sdLog,
-            statistik.csLog
-          );
-
-          nilaiBatas = Math.pow(10, logBatas);
-        }
-
-        batas.push(nilaiBatas);
+        batas = peluangBatas.map(p => {
+          const k = inverseNormal(p);
+          return statistik.mean + k * statistik.sd;
+        });
       }
+
+      if (metode === "lognormal") {
+        const peluangBatas = [0.2, 0.4, 0.6, 0.8];
+
+        batas = peluangBatas.map(p => {
+          const k = inverseNormal(p);
+          const logBatas = statistik.meanLog + k * statistik.sdLog;
+          return Math.pow(10, logBatas);
+        });
+      }
+
+      if (metode === "gumbel") {
+        const peluangBatas = [0.2, 0.4, 0.6, 0.8];
+
+        batas = peluangBatas.map(p => {
+          const yt = -Math.log(-Math.log(p));
+          const k = (yt - dataGumbel.Yn) / dataGumbel.Sn;
+
+          return statistik.mean + k * statistik.sd;
+        });
+      }
+
+      if (metode === "logpearson3") {
+        const kolomBatas = ["P20", "P40", "P60", "P80"];
+
+        batas = kolomBatas.map(kolom => {
+          const g = ambilGPearsonDariTabel(statistik.csLog, kolom);
+
+          if (g === null) {
+            return null;
+          }
+
+          const logBatas = statistik.meanLog + g * statistik.sdLog;
+          return Math.pow(10, logBatas);
+        });
+
+        if (batas.some(x => x === null || isNaN(x))) {
+          return {
+            error: "Nilai G untuk batas kelas Log Pearson III tidak ditemukan di tabel_pearson_3.csv."
+          };
+        }
+      }
+
+      batas = batas
+        .filter(x => !isNaN(x))
+        .sort((a, b) => a - b);
 
       const observed = new Array(jumlahKelas).fill(0);
 
@@ -1183,6 +1244,7 @@
         const oi = observed[i];
         const ei = expected;
         const x2 = Math.pow(oi - ei, 2) / ei;
+
         x2Hitung += x2;
 
         let interval = "";
@@ -1216,7 +1278,7 @@
         derajatBebas = 1;
       }
 
-      const x2Tabel = chiSquareCritical(derajatBebas);
+      const x2Tabel = chiSquareCritical(derajatBebas, alphaChiSquare);
 
       return {
         jumlahKelas: jumlahKelas,
@@ -1224,12 +1286,15 @@
         derajatBebas: derajatBebas,
         x2Hitung: x2Hitung,
         x2Tabel: x2Tabel,
+        alpha: alphaChiSquare,
+        alphaLabel: labelAlpha(alphaChiSquare),
         kesimpulan: x2Tabel !== null && x2Hitung < x2Tabel ? "Diterima" : "Ditolak",
-        detail: detail
+        detail: detail,
+        batas: batas
       };
     }
 
-    function hitungHujanRencana(data, metode) {
+    function hitungHujanRencana(data, metode, alphaChiSquare) {
       const kalaUlang = [2, 5, 10];
       const hasil = [];
 
@@ -1319,7 +1384,13 @@
       };
 
       const hasilSK = hitungSmirnovKolmogorov(dataValid, metode, statistik, dataGumbel);
-      const hasilChiSquare = hitungChiSquare(dataValid, metode, statistik, dataGumbel);
+      const hasilChiSquare = hitungChiSquare(dataValid, metode, statistik, dataGumbel, alphaChiSquare);
+
+      if (hasilChiSquare.error) {
+        return {
+          error: hasilChiSquare.error
+        };
+      }
 
       return {
         jumlahData: dataValid.length,
@@ -1339,6 +1410,7 @@
     document.getElementById("btnHitungHujan").addEventListener("click", function () {
       const stasiun = document.getElementById("pilihStasiun").value;
       const metode = document.getElementById("pilihMetode").value;
+      const alphaChiSquare = document.getElementById("pilihAlphaChiSquare").value;
       const hasilDiv = document.getElementById("hasilHujanRencana");
 
       if (dataHujanBMKG.length === 0) {
@@ -1369,7 +1441,7 @@
       }
 
       const dataStasiun = dataHujanBMKG.map(row => row[stasiun]);
-      const hasil = hitungHujanRencana(dataStasiun, metode);
+      const hasil = hitungHujanRencana(dataStasiun, metode, alphaChiSquare);
 
       if (hasil.error) {
         hasilDiv.innerHTML = `
@@ -1436,6 +1508,10 @@
 
           <table>
             <tr>
+              <td>Taraf Signifikansi</td>
+              <td>${hasil.chiSquare.alphaLabel}</td>
+            </tr>
+            <tr>
               <td>Jumlah Kelas</td>
               <td>${hasil.chiSquare.jumlahKelas}</td>
             </tr>
@@ -1452,7 +1528,7 @@
               <td>${hasil.chiSquare.x2Hitung.toFixed(5)}</td>
             </tr>
             <tr>
-              <td>X² Tabel 5%</td>
+              <td>X² Tabel ${hasil.chiSquare.alphaLabel}</td>
               <td>${hasil.chiSquare.x2Tabel.toFixed(5)}</td>
             </tr>
             <tr>
@@ -1464,6 +1540,7 @@
           <table>
             <tr>
               <th>Kelas</th>
+              <th>Interval</th>
               <th>Oi</th>
               <th>Ei</th>
               <th>X²</th>
@@ -1474,6 +1551,7 @@
         html += `
           <tr>
             <td>${item.kelas}</td>
+            <td>${item.interval}</td>
             <td>${item.Oi}</td>
             <td>${item.Ei.toFixed(2)}</td>
             <td>${item.X2.toFixed(4)}</td>
@@ -1506,8 +1584,9 @@
             - Standar deviasi memakai n-1.<br>
             - Uji Smirnov-Kolmogorov memakai D tabel = 1.36 / √n untuk α = 5%.<br>
             - Peluang empiris Smirnov memakai m / (n + 1).<br>
-            - Uji Chi-Square sementara memakai 5 kelas dengan peluang teoritis sama besar.<br>
-            - Log Pearson III untuk uji SK dan Chi-Square memakai pendekatan CDF Pearson III.
+            - Chi-Square memakai 5 kelas.<br>
+            - Gumbel Chi-Square memakai batas kelas X̄ + K × S.<br>
+            - Log Pearson III Chi-Square memakai batas kelas logX̄ + G × Slog.
           </div>
         </div>
       `;
