@@ -748,13 +748,6 @@
     }
 
     function buatPopupSaluranKecil(namaLayer, properties) {
-      if (!properties || Object.keys(properties).length === 0) {
-        return `
-          <div class="popup-title">${namaLayer}</div>
-          Tidak ada atribut.
-        `;
-      }
-
       const judul = ambilNilai(properties, ["TOPONIMI", "toponimi"]) || namaLayer;
       const panjang = ambilNilai(properties, ["PANJANG", "panjang"]);
       const lebar = ambilNilai(properties, ["LEBAR", "lebar"]);
@@ -763,45 +756,15 @@
       let isiPopup = `<div class="popup-title">${judul}</div>`;
       isiPopup += `<table class="popup-table">`;
 
-      if (panjang !== "") {
-        isiPopup += `
-          <tr>
-            <td>Panjang</td>
-            <td>${panjang}</td>
-          </tr>
-        `;
-      }
-
-      if (lebar !== "") {
-        isiPopup += `
-          <tr>
-            <td>Lebar</td>
-            <td>${lebar}</td>
-          </tr>
-        `;
-      }
-
-      if (kedalaman !== "") {
-        isiPopup += `
-          <tr>
-            <td>Kedalaman</td>
-            <td>${kedalaman}</td>
-          </tr>
-        `;
-      }
+      if (panjang !== "") isiPopup += `<tr><td>Panjang</td><td>${panjang}</td></tr>`;
+      if (lebar !== "") isiPopup += `<tr><td>Lebar</td><td>${lebar}</td></tr>`;
+      if (kedalaman !== "") isiPopup += `<tr><td>Kedalaman</td><td>${kedalaman}</td></tr>`;
 
       isiPopup += `</table>`;
       return isiPopup;
     }
 
     function buatPopupSaluranUtama(namaLayer, properties) {
-      if (!properties || Object.keys(properties).length === 0) {
-        return `
-          <div class="popup-title">${namaLayer}</div>
-          Tidak ada atribut.
-        `;
-      }
-
       const judul = ambilNilai(properties, ["toponimi", "TOPONIMI"]) || namaLayer;
       const lebarMin = ambilNilai(properties, ["lebar_min", "LEBAR_MIN"]);
       const lebarMax = ambilNilai(properties, ["lebar_max", "LEBAR_MAX"]);
@@ -812,64 +775,19 @@
       let isiPopup = `<div class="popup-title">${judul}</div>`;
       isiPopup += `<table class="popup-table">`;
 
-      if (lebarMin !== "") {
-        isiPopup += `
-          <tr>
-            <td>Lebar Minimum</td>
-            <td>${lebarMin}</td>
-          </tr>
-        `;
-      }
-
-      if (lebarMax !== "") {
-        isiPopup += `
-          <tr>
-            <td>Lebar Maksimum</td>
-            <td>${lebarMax}</td>
-          </tr>
-        `;
-      }
-
-      if (kedMin !== "") {
-        isiPopup += `
-          <tr>
-            <td>Kedalaman Minimum</td>
-            <td>${kedMin}</td>
-          </tr>
-        `;
-      }
-
-      if (kedMax !== "") {
-        isiPopup += `
-          <tr>
-            <td>Kedalaman Maksimum</td>
-            <td>${kedMax}</td>
-          </tr>
-        `;
-      }
-
-      if (panjangSungai !== "") {
-        isiPopup += `
-          <tr>
-            <td>Panjang Sungai</td>
-            <td>${panjangSungai}</td>
-          </tr>
-        `;
-      }
+      if (lebarMin !== "") isiPopup += `<tr><td>Lebar Minimum</td><td>${lebarMin}</td></tr>`;
+      if (lebarMax !== "") isiPopup += `<tr><td>Lebar Maksimum</td><td>${lebarMax}</td></tr>`;
+      if (kedMin !== "") isiPopup += `<tr><td>Kedalaman Minimum</td><td>${kedMin}</td></tr>`;
+      if (kedMax !== "") isiPopup += `<tr><td>Kedalaman Maksimum</td><td>${kedMax}</td></tr>`;
+      if (panjangSungai !== "") isiPopup += `<tr><td>Panjang Sungai</td><td>${panjangSungai}</td></tr>`;
 
       isiPopup += `</table>`;
       return isiPopup;
     }
 
     function buatPopup(namaLayer, properties, jenisPopup) {
-      if (jenisPopup === "saluranKecil") {
-        return buatPopupSaluranKecil(namaLayer, properties);
-      }
-
-      if (jenisPopup === "saluranUtama") {
-        return buatPopupSaluranUtama(namaLayer, properties);
-      }
-
+      if (jenisPopup === "saluranKecil") return buatPopupSaluranKecil(namaLayer, properties);
+      if (jenisPopup === "saluranUtama") return buatPopupSaluranUtama(namaLayer, properties);
       return `<div class="popup-title">${namaLayer}</div>`;
     }
 
@@ -911,10 +829,7 @@
             },
             onEachFeature: function (feature, layer) {
               const isiPopup = buatPopup(namaLayer, feature.properties, options.jenisPopup);
-
-              layer.bindPopup(isiPopup, {
-                maxWidth: 350
-              });
+              layer.bindPopup(isiPopup, { maxWidth: 350 });
 
               if (pakaiPanah) {
                 tambahPanah(layer, layerGroup, options.color, options.weight);
@@ -941,7 +856,6 @@
         `;
 
         container.appendChild(label);
-
         loadGeoJsonLayer(item.file, item.nama, layerGroup, options, pakaiPanah);
 
         document.getElementById(checkboxId).addEventListener("change", function () {
@@ -957,44 +871,22 @@
     buatSubLayer("groupMikro", daftarSaluranMikro, layerOptions.mikro, true);
     buatSubLayer("groupPHB", daftarSaluranPHB, layerOptions.phb, true);
 
-    loadGeoJsonLayer(
-      "saluran_drainase_primer_jaktim.geojson",
-      "Saluran Primer",
-      layerSaluranPrimer,
-      layerOptions.primer,
-      false
-    );
-
-    loadGeoJsonLayer(
-      "saluran_drainase_sekunder_jaktim.geojson",
-      "Saluran Sekunder",
-      layerSaluranSekunder,
-      layerOptions.sekunder,
-      false
-    );
+    loadGeoJsonLayer("saluran_drainase_primer_jaktim.geojson", "Saluran Primer", layerSaluranPrimer, layerOptions.primer, false);
+    loadGeoJsonLayer("saluran_drainase_sekunder_jaktim.geojson", "Saluran Sekunder", layerSaluranSekunder, layerOptions.sekunder, false);
 
     document.getElementById("cekStasiunHujan").addEventListener("change", function () {
-      if (this.checked) {
-        map.addLayer(layerStasiunHujan);
-      } else {
-        map.removeLayer(layerStasiunHujan);
-      }
+      if (this.checked) map.addLayer(layerStasiunHujan);
+      else map.removeLayer(layerStasiunHujan);
     });
 
     document.getElementById("cekSaluranPrimer").addEventListener("change", function () {
-      if (this.checked) {
-        map.addLayer(layerSaluranPrimer);
-      } else {
-        map.removeLayer(layerSaluranPrimer);
-      }
+      if (this.checked) map.addLayer(layerSaluranPrimer);
+      else map.removeLayer(layerSaluranPrimer);
     });
 
     document.getElementById("cekSaluranSekunder").addEventListener("change", function () {
-      if (this.checked) {
-        map.addLayer(layerSaluranSekunder);
-      } else {
-        map.removeLayer(layerSaluranSekunder);
-      }
+      if (this.checked) map.addLayer(layerSaluranSekunder);
+      else map.removeLayer(layerSaluranSekunder);
     });
 
     let dataHujanBMKG = [];
@@ -1030,10 +922,7 @@
         .sort((a, b) => a.n - b.n);
 
       const exact = data.find(row => row.n === n);
-
-      if (exact) {
-        return exact;
-      }
+      if (exact) return exact;
 
       for (let i = 0; i < data.length - 1; i++) {
         const bawah = data[i];
@@ -1065,10 +954,7 @@
         .sort((a, b) => a.Cs - b.Cs);
 
       const exact = data.find(row => Math.abs(row.Cs - cs) < 0.0000001);
-
-      if (exact) {
-        return exact.K;
-      }
+      if (exact) return exact.K;
 
       for (let i = 0; i < data.length - 1; i++) {
         const bawah = data[i];
@@ -1093,10 +979,7 @@
         .sort((a, b) => a.Cs - b.Cs);
 
       const exact = data.find(row => Math.abs(row.Cs - cs) < 0.0000001);
-
-      if (exact) {
-        return exact.G;
-      }
+      if (exact) return exact.G;
 
       for (let i = 0; i < data.length - 1; i++) {
         const bawah = data[i];
@@ -1137,19 +1020,11 @@
 
         if (metode === "logpearson3") {
           const logX = Math.log10(x);
-          peluangTeoritis = pearson3CDF(
-            logX,
-            statistik.meanLog,
-            statistik.sdLog,
-            statistik.csLog
-          );
+          peluangTeoritis = pearson3CDF(logX, statistik.meanLog, statistik.sdLog, statistik.csLog);
         }
 
         const selisih = Math.abs(peluangEmpiris - peluangTeoritis);
-
-        if (selisih > dMaks) {
-          dMaks = selisih;
-        }
+        if (selisih > dMaks) dMaks = selisih;
       });
 
       const dTabel = 1.36 / Math.sqrt(n);
@@ -1192,13 +1067,17 @@
         batas = peluangBatas.map(p => {
           const yt = -Math.log(-Math.log(p));
           const k = (yt - dataGumbel.Yn) / dataGumbel.Sn;
-
           return statistik.mean + k * statistik.sd;
         });
       }
 
       if (metode === "logpearson3") {
-        const kolomBatas = ["P20", "P40", "P60", "P80"];
+        // Penting:
+        // P80 = luasan kiri 20%
+        // P60 = luasan kiri 40%
+        // P40 = luasan kiri 60%
+        // P20 = luasan kiri 80%
+        const kolomBatas = ["P80", "P60", "P40", "P20"];
 
         batas = kolomBatas.map(kolom => {
           const g = ambilGPearsonDariTabel(statistik.csLog, kolom);
@@ -1303,9 +1182,7 @@
         .filter(x => !isNaN(x) && x > 0);
 
       if (dataValid.length < 3) {
-        return {
-          error: "Data valid terlalu sedikit."
-        };
+        return { error: "Data valid terlalu sedikit." };
       }
 
       const n = dataValid.length;
@@ -1387,9 +1264,7 @@
       const hasilChiSquare = hitungChiSquare(dataValid, metode, statistik, dataGumbel, alphaChiSquare);
 
       if (hasilChiSquare.error) {
-        return {
-          error: hasilChiSquare.error
-        };
+        return { error: hasilChiSquare.error };
       }
 
       return {
@@ -1586,7 +1461,8 @@
             - Peluang empiris Smirnov memakai m / (n + 1).<br>
             - Chi-Square memakai 5 kelas.<br>
             - Gumbel Chi-Square memakai batas kelas X̄ + K × S.<br>
-            - Log Pearson III Chi-Square memakai batas kelas logX̄ + G × Slog.
+            - Log Pearson III Chi-Square memakai batas kelas logX̄ + G × Slog.<br>
+            - Untuk Log Pearson III, urutan batas kelas memakai P80, P60, P40, P20 agar sesuai luasan kiri 20%, 40%, 60%, 80%.
           </div>
         </div>
       `;
