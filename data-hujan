@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Data Hujan Tahunan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      color: #1f2937;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f766e, #115e59);
+      color: white;
+      padding: 28px 24px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      font-size: 14px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+
+    .toolbar {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .toolbar label {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    select {
+      padding: 9px 10px;
+      border-radius: 6px;
+      border: 1px solid #bbb;
+      min-width: 320px;
+      font-size: 14px;
+    }
+
+    .btn {
+      background: #0f766e;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    .btn:hover {
+      background: #0b5f59;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 330px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
+      padding: 18px;
+    }
+
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+      color: #0f766e;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #d1d5db;
+      padding: 7px;
+      text-align: right;
+    }
+
+    th {
+      background: #e5e7eb;
+      text-align: center;
+    }
+
+    td:first-child {
+      text-align: center;
+    }
+
+    .chart-wrap {
+      height: 440px;
+    }
+
+    .summary {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.6;
+      background: #f9fafb;
+      border-radius: 10px;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .note {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      select {
+        min-width: 100%;
+      }
+
+      .toolbar {
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Data Hujan Tahunan</h1>
+    <p>Tabel dan grafik hujan maksimum tahunan stasiun BMKG</p>
+  </header>
+
+  <main class="container">
+    <div class="toolbar">
+      <label for="pilihStasiun">Pilih Stasiun</label>
+      <select id="pilihStasiun">
+        <option value="stasiun_meteorologi_halim_perdana_kusuma">Stasiun Meteorologi Halim Perdana Kusuma</option>
+        <option value="stasiun_meteorologi_kemayoran">Stasiun Meteorologi Kemayoran</option>
+        <option value="stasiun_meteorologi_bogor">Stasiun Meteorologi Bogor</option>
+      </select>
+
+      <a href="index.html" class="btn">Kembali ke Home</a>
+      <a href="webgis.html" class="btn">Buka WebGIS</a>
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <h2>Tabel Data Hujan</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Tahun</th>
+              <th>Hujan Maks Tahunan (mm)</th>
+            </tr>
+          </thead>
+          <tbody id="tabelHujan"></tbody>
+        </table>
+
+        <div class="summary" id="ringkasanData"></div>
+
+        <div class="note">
+          Data diambil dari file <b>data_hujan_bmkg_3stasiun.csv</b>.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 id="judulGrafik">Grafik Hujan Maksimum Tahunan</h2>
+        <div class="chart-wrap">
+          <canvas id="grafikHujan"></canvas>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let dataHujanBMKG = [];
+    let chartHujan = null;
+
+    const namaStasiun = {
+      stasiun_meteorologi_halim_perdana_kusuma: "Stasiun Meteorologi Halim Perdana Kusuma",
+      stasiun_meteorologi_kemayoran: "Stasiun Meteorologi Kemayoran",
+      stasiun_meteorologi_bogor: "Stasiun Meteorologi Bogor"
+    };
+
+    function parseCsvOtomatis(csvText) {
+      const rows = csvText.trim().split(/\r?\n/);
+      const firstLine = rows[0];
+      const delimiter = firstLine.includes(";") ? ";" : ",";
+      const headers = firstLine.split(delimiter).map(h => h.trim());
+
+      return rows.slice(1).map(row => {
+        const values = row.split(delimiter);
+        const obj = {};
+
+        headers.forEach((header, index) => {
+          obj[header] = values[index] ? values[index].trim() : "";
+        });
+
+        return obj;
+      });
+    }
+
+    function angka(value) {
+      return parseFloat(String(value).replace(",", "."));
+    }
+
+    function tampilkanDataHujan() {
+      const stasiun = document.getElementById("pilihStasiun").value;
+      const tbody = document.getElementById("tabelHujan");
+      const judulGrafik = document.getElementById("judulGrafik");
+      const ringkasanData = document.getElementById("ringkasanData");
+
+      const dataValid = dataHujanBMKG
+        .map(row => ({
+          tahun: row.tahun,
+          hujan: angka(row[stasiun])
+        }))
+        .filter(row => row.tahun && !isNaN(row.hujan));
+
+      tbody.innerHTML = "";
+
+      dataValid.forEach(row => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${row.tahun}</td>
+            <td>${row.hujan.toFixed(1)}</td>
+          </tr>
+        `;
+      });
+
+      const tahun = dataValid.map(row => row.tahun);
+      const hujan = dataValid.map(row => row.hujan);
+
+      if (hujan.length === 0) {
+        ringkasanData.innerHTML = "Data tidak tersedia untuk stasiun ini.";
+        return;
+      }
+
+      const maksimum = Math.max(...hujan);
+      const minimum = Math.min(...hujan);
+      const rataRata = hujan.reduce((sum, value) => sum + value, 0) / hujan.length;
+
+      const dataMaksimum = dataValid.find(row => row.hujan === maksimum);
+      const dataMinimum = dataValid.find(row => row.hujan === minimum);
+
+      judulGrafik.textContent = `Hujan Maksimum Tahunan ${namaStasiun[stasiun]} (mm)`;
+
+      ringkasanData.innerHTML = `
+        <b>Ringkasan Data</b><br>
+        Jumlah data: ${dataValid.length} tahun<br>
+        Hujan maksimum: ${maksimum.toFixed(1)} mm pada tahun ${dataMaksimum.tahun}<br>
+        Hujan minimum: ${minimum.toFixed(1)} mm pada tahun ${dataMinimum.tahun}<br>
+        Rata-rata: ${rataRata.toFixed(2)} mm
+      `;
+
+      if (chartHujan) {
+        chartHujan.destroy();
+      }
+
+      const ctx = document.getElementById("grafikHujan").getContext("2d");
+
+      chartHujan = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: tahun,
+          datasets: [
+            {
+              label: "Hujan Maksimum Tahunan (mm)",
+              data: hujan,
+              backgroundColor: "#3b82f6",
+              borderColor: "#1d4ed8",
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.raw.toFixed(1) + " mm";
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Hujan Maksimum Tahunan (mm)"
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: "Tahun"
+              }
+            }
+          }
+        }
+      });
+    }
+
+    fetch("data_hujan_bmkg_3stasiun.csv")
+      .then(response => response.text())
+      .then(csvText => {
+        dataHujanBMKG = parseCsvOtomatis(csvText);
+        tampilkanDataHujan();
+      })
+      .catch(error => {
+        document.getElementById("tabelHujan").innerHTML = `
+          <tr>
+            <td colspan="2">Data hujan gagal dibaca.</td>
+          </tr>
+        `;
+        console.error(error);
+      });
+
+    document.getElementById("pilihStasiun").addEventListener("change", tampilkanDataHujan);
+  </script>
+</body>
+</html>
