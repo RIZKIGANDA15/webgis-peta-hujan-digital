@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>WebGIS Data Hujan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      background: #0f766e;
+      color: white;
+      padding: 14px 20px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 14px;
+    }
+
+    #appContainer {
+      display: flex;
+      width: 100%;
+      height: calc(100vh - 76px);
+    }
+
+    #layerPanel {
+      width: 22%;
+      min-width: 280px;
+      max-width: 420px;
+      height: 100%;
+      background: white;
+      z-index: 1000;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
+      font-size: 14px;
+      overflow: hidden;
+      transition: width 0.3s ease, min-width 0.3s ease;
+    }
+
+    #layerHeader {
+      background: #333;
+      color: white;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    #togglePanel {
+      background: transparent;
+      color: white;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    #layerContent {
+      padding: 14px;
+      overflow-y: auto;
+      height: calc(100% - 48px);
+      box-sizing: border-box;
+    }
+
+    #map {
+      flex: 1;
+      height: 100%;
+    }
+
+    #layerPanel.minimized {
+      width: 42px;
+      min-width: 42px;
+    }
+
+    #layerPanel.minimized #layerHeader {
+      height: 100%;
+      padding: 8px 4px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #layerPanel.minimized #layerHeader span {
+      transform: rotate(180deg);
+    }
+
+    #layerPanel.minimized #togglePanel {
+      transform: rotate(90deg);
+    }
+
+    #layerPanel.minimized #layerContent {
+      display: none;
+    }
+
+    .layer-item {
+      display: block;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .layer-group {
+      margin-top: 12px;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+    }
+
+    .group-title {
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 8px;
+      color: #333;
+      user-select: none;
+    }
+
+    .group-content {
+      padding-left: 16px;
+    }
+
+    .layer-subitem {
+      display: block;
+      margin-bottom: 10px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .popup-title {
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .popup-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+
+    .popup-table td {
+      padding: 3px 5px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+
+    .popup-table td:first-child {
+      font-weight: bold;
+      color: #333;
+      white-space: nowrap;
+    }
+
+    .calculator-box {
+      font-size: 13px;
+      background: #f8fafc;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+    }
+
+    .calculator-box label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .calculator-box select,
+    .calculator-box button {
+      width: 100%;
+      padding: 7px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #bbb;
+    }
+
+    .calculator-box button {
+      background: #0f766e;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .calculator-box button:hover {
+      background: #0b5f59;
+    }
+
+    .hasil-box {
+      margin-top: 12px;
+      padding: 10px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 12px;
+    }
+
+    .hasil-box table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .hasil-box th,
+    .hasil-box td {
+      border-bottom: 1px solid #ddd;
+      padding: 5px;
+      text-align: right;
+    }
+
+    .hasil-box th:first-child,
+    .hasil-box td:first-child {
+      text-align: left;
+    }
+
+    .statistik-kecil {
+      font-size: 11px;
+      color: #555;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>WebGIS Data Hujan</h1>
+    <p>Peta digital untuk visualisasi data hujan</p>
+  </header>
+
+  <div id="appContainer">
+    <div id="layerPanel">
+      <div id="layerHeader">
+        <span>Layer & Kalkulator</span>
+        <button id="togglePanel">−</button>
+      </div>
+
+      <div id="layerContent">
+        <div class="layer-group" style="border-top: none; margin-top: 0; padding-top: 0;">
+          <div class="group-title" onclick="toggleGroup('groupLayerPeta', 'iconLayerPeta')">
+            <span id="iconLayerPeta">▾</span> Layer Peta
+          </div>
+
+          <div class="group-content" id="groupLayerPeta" style="padding-left: 0;">
+            <label class="layer-item">
+              <input type="checkbox" id="cekStasiunHujan" checked>
+              Stasiun Hujan
+            </label>
+
+            <label class="layer-item">
+              <input type="checkbox" id="cekSaluranPrimer">
+              Saluran Primer
+            </label>
+
+            <label class="layer-item">
+              <input type="checkbox" id="cekSaluranSekunder">
+              Saluran Sekunder
+            </label>
+
+            <div class="layer-group">
+              <div class="group-title" onclick="toggleGroup('groupPHB', 'iconPHB')">
+                <span id="iconPHB">▾</span> Saluran PHB
+              </div>
+              <div class="group-content" id="groupPHB"></div>
+            </div>
+
+            <div class="layer-group">
+              <div class="group-title" onclick="toggleGroup('groupMikro', 'iconMikro')">
+                <span id="iconMikro">▾</span> Saluran Mikro
+              </div>
+              <div class="group-content" id="groupMikro"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer-group">
+          <div class="group-title" onclick="toggleGroup('groupKalkulatorHujan', 'iconKalkulatorHujan')">
+            <span id="iconKalkulatorHujan">▾</span> Kalkulator Hujan Rencana
+          </div>
+
+          <div class="group-content" id="groupKalkulatorHujan" style="padding-left: 0;">
+            <div class="calculator-box">
+              <label>
+                Pilih Stasiun
+                <select id="pilihStasiun">
+                  <option value="stasiun_meteorologi_halim_perdana_kusuma">Stasiun Meteorologi Halim Perdana Kusuma</option>
+                  <option value="stasiun_meteorologi_kemayoran">Stasiun Meteorologi Kemayoran</option>
+                  <option value="stasiun_meteorologi_bogor">Stasiun Meteorologi Bogor</option>
+                </select>
+              </label>
+
+              <label>
+                Pilih Metode
+                <select id="pilihMetode">
+                  <option value="normal">Normal</option>
+                  <option value="lognormal">Log Normal</option>
+                  <option value="gumbel">Gumbel</option>
+                  <option value="logpearson3">Log Pearson Tipe III</option>
+                </select>
+              </label>
+
+              <label>
+                Taraf Signifikansi Chi-Square
+                <select id="pilihAlphaChiSquare">
+                  <option value="0.05">5%</option>
+                  <option value="0.01">1%</option>
+                  <option value="0.001">0.1%</option>
+                </select>
+              </label>
+
+              <button id="btnHitungHujan">Hitung Hujan Rencana</button>
+
+              <div id="hasilHujanRencana"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+
+  <script>
+    var map = L.map("map").setView([-6.225, 106.900], 11);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    map.createPane("paneMikro");
+    map.createPane("panePHB");
+    map.createPane("paneSekunder");
+    map.createPane("panePrimer");
+    map.createPane("paneStasiun");
+
+    map.getPane("paneMikro").style.zIndex = 410;
+    map.getPane("panePHB").style.zIndex = 420;
+    map.getPane("paneSekunder").style.zIndex = 430;
+    map.getPane("panePrimer").style.zIndex = 440;
+    map.getPane("paneStasiun").style.zIndex = 450;
+
+    function parseCsvOtomatis(csvText) {
+      const rows = csvText.trim().split(/\r?\n/);
+      const firstLine = rows[0];
+      const delimiter = firstLine.includes(";") ? ";" : ",";
+      const headers = firstLine.split(delimiter).map(h => h.trim());
+
+      return rows.slice(1).map(row => {
+        const values = row.split(delimiter);
+        const obj = {};
+
+        headers.forEach((header, index) => {
+          obj[header] = values[index] ? values[index].trim() : "";
+        });
+
+        return obj;
+      });
+    }
+
+    function angka(value) {
+      return parseFloat(String(value).replace(",", "."));
+    }
+
+    function rataRata(data) {
+      return data.reduce((sum, x) => sum + x, 0) / data.length;
+    }
+
+    function standarDeviasi(data) {
+      const mean = rataRata(data);
+      const jumlahKuadrat = data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0);
+      return Math.sqrt(jumlahKuadrat / (data.length - 1));
+    }
+
+    function skewness(data) {
+      const n = data.length;
+      const mean = rataRata(data);
+      const sd = standarDeviasi(data);
+
+      const jumlahPangkatTiga = data.reduce((sum, x) => {
+        return sum + Math.pow((x - mean) / sd, 3);
+      }, 0);
+
+      return (n / ((n - 1) * (n - 2))) * jumlahPangkatTiga;
+    }
+
+    function inverseNormal(p) {
+      const a1 = -39.6968302866538;
+      const a2 = 220.946098424521;
+      const a3 = -275.928510446969;
+      const a4 = 138.357751867269;
+      const a5 = -30.6647980661472;
+      const a6 = 2.50662827745924;
+
+      const b1 = -54.4760987982241;
+      const b2 = 161.585836858041;
+      const b3 = -155.698979859887;
+      const b4 = 66.8013118877197;
+      const b5 = -13.2806815528857;
+
+      const c1 = -0.00778489400243029;
+      const c2 = -0.322396458041136;
+      const c3 = -2.40075827716184;
+      const c4 = -2.54973253934373;
+      const c5 = 4.37466414146497;
+      const c6 = 2.93816398269878;
+
+      const d1 = 0.00778469570904146;
+      const d2 = 0.32246712907004;
+      const d3 = 2.445134137143;
+      const d4 = 3.75440866190742;
+
+      const pLow = 0.02425;
+      const pHigh = 1 - pLow;
+
+      let q;
+      let r;
+
+      if (p < pLow) {
+        q = Math.sqrt(-2 * Math.log(p));
+        return (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+          ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+      }
+
+      if (p <= pHigh) {
+        q = p - 0.5;
+        r = q * q;
+        return (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q /
+          (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+      }
+
+      q = Math.sqrt(-2 * Math.log(1 - p));
+      return -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+        ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+    }
+
+    function erf(x) {
+      const sign = x >= 0 ? 1 : -1;
+      x = Math.abs(x);
+
+      const a1 = 0.254829592;
+      const a2 = -0.284496736;
+      const a3 = 1.421413741;
+      const a4 = -1.453152027;
+      const a5 = 1.061405429;
+      const p = 0.3275911;
+
+      const t = 1 / (1 + p * x);
+      const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+      return sign * y;
+    }
+
+    function normalCDF(z) {
+      return 0.5 * (1 + erf(z / Math.sqrt(2)));
+    }
+
+    function logGamma(z) {
+      const coefficients = [
+        76.18009172947146,
+        -86.50532032941677,
+        24.01409824083091,
+        -1.231739572450155,
+        0.001208650973866179,
+        -0.000005395239384953
+      ];
+
+      let x = z;
+      let y = z;
+      let tmp = x + 5.5;
+
+      tmp -= (x + 0.5) * Math.log(tmp);
+
+      let ser = 1.000000000190015;
+
+      for (let j = 0; j < coefficients.length; j++) {
+        y += 1;
+        ser += coefficients[j] / y;
+      }
+
+      return Math.log(2.5066282746310005 * ser / x) - tmp;
+    }
+
+    function gammaLowerRegularized(a, x) {
+      if (x < 0 || a <= 0) {
+        return NaN;
+      }
+
+      if (x === 0) {
+        return 0;
+      }
+
+      if (x < a + 1) {
+        let ap = a;
+        let sum = 1 / a;
+        let del = sum;
+
+        for (let n = 1; n <= 100; n++) {
+          ap += 1;
+          del *= x / ap;
+          sum += del;
+
+          if (Math.abs(del) < Math.abs(sum) * 1e-12) {
+            return sum * Math.exp(-x + a * Math.log(x) - logGamma(a));
+          }
+        }
+      } else {
+        let b = x + 1 - a;
+        let c = 1 / 1e-30;
+        let d = 1 / b;
+        let h = d;
+
+        for (let i = 1; i <= 100; i++) {
+          const an = -i * (i - a);
+          b += 2;
+          d = an * d + b;
+
+          if (Math.abs(d) < 1e-30) {
+            d = 1e-30;
+          }
+
+          c = b + an / c;
+
+          if (Math.abs(c) < 1e-30) {
+            c = 1e-30;
+          }
+
+          d = 1 / d;
+
+          const del = d * c;
+          h *= del;
+
+          if (Math.abs(del - 1) < 1e-12) {
+            return 1 - Math.exp(-x + a * Math.log(x) - logGamma(a)) * h;
+          }
+        }
+      }
+
+      return NaN;
+    }
+
+    function pearson3CDF(x, mean, sd, cs) {
+      if (Math.abs(cs) < 0.000001) {
+        return normalCDF((x - mean) / sd);
+      }
+
+      const alpha = 4 / (cs * cs);
+      const beta = sd * cs / 2;
+      const x0 = mean - (2 * sd / cs);
+
+      if (beta > 0) {
+        const y = (x - x0) / beta;
+
+        if (y <= 0) {
+          return 0;
+        }
+
+        return gammaLowerRegularized(alpha, y);
+      } else {
+        const y = (x0 - x) / Math.abs(beta);
+
+        if (y <= 0) {
+          return 1;
+        }
+
+        return 1 - gammaLowerRegularized(alpha, y);
+      }
+    }
+
+    function chiSquareCritical(df, alpha) {
+      const tabel = {
+        "0.05": {
+          1: 3.841,
+          2: 5.991,
+          3: 7.815,
+          4: 9.488,
+          5: 11.070,
+          6: 12.592,
+          7: 14.067,
+          8: 15.507,
+          9: 16.919,
+          10: 18.307
+        },
+        "0.01": {
+          1: 6.635,
+          2: 9.210,
+          3: 11.345,
+          4: 13.277,
+          5: 15.086,
+          6: 16.812,
+          7: 18.475,
+          8: 20.090,
+          9: 21.666,
+          10: 23.209
+        },
+        "0.001": {
+          1: 10.828,
+          2: 13.816,
+          3: 16.266,
+          4: 18.467,
+          5: 20.515,
+          6: 22.458,
+          7: 24.322,
+          8: 26.124,
+          9: 27.877,
+          10: 29.588
+        }
+      };
+
+      if (!tabel[alpha]) {
+        return null;
+      }
+
+      return tabel[alpha][df] || null;
+    }
+
+    function labelAlpha(alpha) {
+      if (alpha === "0.05") return "5%";
+      if (alpha === "0.01") return "1%";
+      if (alpha === "0.001") return "0.1%";
+      return alpha;
+    }
+
+    var layerStasiunHujan = L.layerGroup().addTo(map);
+
+    fetch("data_stasiun_hujan.csv")
+      .then(response => response.text())
+      .then(csvText => {
+        const dataCsv = parseCsvOtomatis(csvText);
+
+        dataCsv.forEach(data => {
+          const latitude = angka(data.latitude);
+          const longitude = angka(data.longitude);
+
+          if (!isNaN(latitude) && !isNaN(longitude)) {
+            const marker = L.marker([latitude, longitude], {
+              pane: "paneStasiun"
+            });
+
+            marker.bindPopup(`
+              <b>${data.nama_stasiun}</b><br>
+              Wilayah: ${data.wilayah}
+            `);
+
+            marker.addTo(layerStasiunHujan);
+          }
+        });
+      });
+
+    const daftarSaluranMikro = [
+      { nama: "Saluran Mikro Cakung", file: "saluran_mikro_cakung.geojson" },
+      { nama: "Saluran Mikro Cipayung", file: "saluran_mikro_cipayung.geojson" },
+      { nama: "Saluran Mikro Ciracas", file: "saluran_mikro_ciracas.geojson" },
+      { nama: "Saluran Mikro Duren Sawit", file: "saluran_mikro_duren_sawit.geojson" },
+      { nama: "Saluran Mikro Jatinegara", file: "saluran_mikro_jatinegara.geojson" },
+      { nama: "Saluran Mikro Kramat Jati", file: "saluran_mikro_kramat_jati.geojson" },
+      { nama: "Saluran Mikro Makasar", file: "saluran_mikro_makasar.geojson" },
+      { nama: "Saluran Mikro Matraman", file: "saluran_mikro_matraman.geojson" },
+      { nama: "Saluran Mikro Pasar Rebo", file: "saluran_mikro_pasar_rebo.geojson" },
+      { nama: "Saluran Mikro Pulo Gadung", file: "saluran_mikro_pulo_gadung.geojson" }
+    ];
+
+    const daftarSaluranPHB = [
+      { nama: "Saluran PHB Cakung", file: "saluran_phb_cakung.geojson" },
+      { nama: "Saluran PHB Cipayung", file: "saluran_phb_cipayung.geojson" },
+      { nama: "Saluran PHB Ciracas", file: "saluran_phb_ciracas.geojson" },
+      { nama: "Saluran PHB Duren Sawit", file: "saluran_phb_duren_sawit.geojson" },
+      { nama: "Saluran PHB Jatinegara", file: "saluran_phb_jatinegara.geojson" },
+      { nama: "Saluran PHB Kramat Jati", file: "saluran_phb_kramat_jati.geojson" },
+      { nama: "Saluran PHB Makasar", file: "saluran_phb_makasar.geojson" },
+      { nama: "Saluran PHB Matraman", file: "saluran_phb_matraman.geojson" },
+      { nama: "Saluran PHB Pasar Rebo", file: "saluran_phb_pasar_rebo.geojson" },
+      { nama: "Saluran PHB Pulo Gadung", file: "saluran_phb_pulo_gadung.geojson" }
+    ];
+
+    const layerSaluranPrimer = L.layerGroup();
+    const layerSaluranSekunder = L.layerGroup();
+
+    const layerOptions = {
+      mikro: {
+        color: "#ff00ff",
+        weight: 1,
+        opacity: 0.9,
+        fillOpacity: 0,
+        pane: "paneMikro",
+        jenisPopup: "saluranKecil"
+      },
+      phb: {
+        color: "#00a6d6",
+        weight: 1.5,
+        opacity: 0.95,
+        fillOpacity: 0,
+        pane: "panePHB",
+        jenisPopup: "saluranKecil"
+      },
+      sekunder: {
+        color: "#0066cc",
+        weight: 1.5,
+        opacity: 0.9,
+        fillColor: "#0066cc",
+        fillOpacity: 0.25,
+        pane: "paneSekunder",
+        jenisPopup: "saluranUtama"
+      },
+      primer: {
+        color: "#003b8e",
+        weight: 1.8,
+        opacity: 0.95,
+        fillColor: "#003b8e",
+        fillOpacity: 0.3,
+        pane: "panePrimer",
+        jenisPopup: "saluranUtama"
+      }
+    };
+
+    function buatIdDariNama(nama) {
+      return "cek" + nama.replace(/\s+/g, "").replace(/[^a-zA-Z0-9]/g, "");
+    }
+
+    function ambilNilai(properties, daftarField) {
+      for (let i = 0; i < daftarField.length; i++) {
+        const field = daftarField[i];
+
+        if (
+          properties[field] !== null &&
+          properties[field] !== "" &&
+          properties[field] !== undefined
+        ) {
+          return properties[field];
+        }
+      }
+
+      return "";
+    }
+
+    function buatPopupSaluranKecil(namaLayer, properties) {
+      const judul = ambilNilai(properties, ["TOPONIMI", "toponimi"]) || namaLayer;
+      const panjang = ambilNilai(properties, ["PANJANG", "panjang"]);
+      const lebar = ambilNilai(properties, ["LEBAR", "lebar"]);
+      const kedalaman = ambilNilai(properties, ["KEDALAMAN", "kedalaman"]);
+
+      let isiPopup = `<div class="popup-title">${judul}</div>`;
+      isiPopup += `<table class="popup-table">`;
+
+      if (panjang !== "") isiPopup += `<tr><td>Panjang</td><td>${panjang}</td></tr>`;
+      if (lebar !== "") isiPopup += `<tr><td>Lebar</td><td>${lebar}</td></tr>`;
+      if (kedalaman !== "") isiPopup += `<tr><td>Kedalaman</td><td>${kedalaman}</td></tr>`;
+
+      isiPopup += `</table>`;
+      return isiPopup;
+    }
+
+    function buatPopupSaluranUtama(namaLayer, properties) {
+      const judul = ambilNilai(properties, ["toponimi", "TOPONIMI"]) || namaLayer;
+      const lebarMin = ambilNilai(properties, ["lebar_min", "LEBAR_MIN"]);
+      const lebarMax = ambilNilai(properties, ["lebar_max", "LEBAR_MAX"]);
+      const kedMin = ambilNilai(properties, ["ked_min", "KED_MIN"]);
+      const kedMax = ambilNilai(properties, ["ked_max", "KED_MAX"]);
+      const panjangSungai = ambilNilai(properties, ["panjang_su", "PANJANG_SU", "panjang_sungai", "PANJANG_SUNGAI"]);
+
+      let isiPopup = `<div class="popup-title">${judul}</div>`;
+      isiPopup += `<table class="popup-table">`;
+
+      if (lebarMin !== "") isiPopup += `<tr><td>Lebar Minimum</td><td>${lebarMin}</td></tr>`;
+      if (lebarMax !== "") isiPopup += `<tr><td>Lebar Maksimum</td><td>${lebarMax}</td></tr>`;
+      if (kedMin !== "") isiPopup += `<tr><td>Kedalaman Minimum</td><td>${kedMin}</td></tr>`;
+      if (kedMax !== "") isiPopup += `<tr><td>Kedalaman Maksimum</td><td>${kedMax}</td></tr>`;
+      if (panjangSungai !== "") isiPopup += `<tr><td>Panjang Sungai</td><td>${panjangSungai}</td></tr>`;
+
+      isiPopup += `</table>`;
+      return isiPopup;
+    }
+
+    function buatPopup(namaLayer, properties, jenisPopup) {
+      if (jenisPopup === "saluranKecil") return buatPopupSaluranKecil(namaLayer, properties);
+      if (jenisPopup === "saluranUtama") return buatPopupSaluranUtama(namaLayer, properties);
+      return `<div class="popup-title">${namaLayer}</div>`;
+    }
+
+    function tambahPanah(layer, layerGroup, warna, tebal) {
+      const decorator = L.polylineDecorator(layer, {
+        patterns: [
+          {
+            offset: 25,
+            repeat: 80,
+            symbol: L.Symbol.arrowHead({
+              pixelSize: 8,
+              polygon: false,
+              pathOptions: {
+                stroke: true,
+                color: warna,
+                weight: tebal,
+                opacity: 0.95
+              }
+            })
+          }
+        ]
+      });
+
+      decorator.addTo(layerGroup);
+    }
+
+    function loadGeoJsonLayer(namaFile, namaLayer, layerGroup, options, pakaiPanah) {
+      fetch(namaFile + "?v=3")
+        .then(response => response.json())
+        .then(data => {
+          const geojsonLayer = L.geoJSON(data, {
+            pane: options.pane,
+            style: {
+              color: options.color,
+              weight: options.weight,
+              opacity: options.opacity,
+              fillColor: options.fillColor || options.color,
+              fillOpacity: options.fillOpacity || 0
+            },
+            onEachFeature: function (feature, layer) {
+              const isiPopup = buatPopup(namaLayer, feature.properties, options.jenisPopup);
+              layer.bindPopup(isiPopup, { maxWidth: 350 });
+
+              if (pakaiPanah) {
+                tambahPanah(layer, layerGroup, options.color, options.weight);
+              }
+            }
+          });
+
+          geojsonLayer.addTo(layerGroup);
+        });
+    }
+
+    function buatSubLayer(containerId, daftarLayer, options, pakaiPanah) {
+      const container = document.getElementById(containerId);
+
+      daftarLayer.forEach(item => {
+        const checkboxId = buatIdDariNama(item.nama);
+        const layerGroup = L.layerGroup();
+
+        const label = document.createElement("label");
+        label.className = "layer-subitem";
+        label.innerHTML = `
+          <input type="checkbox" id="${checkboxId}">
+          ${item.nama}
+        `;
+
+        container.appendChild(label);
+        loadGeoJsonLayer(item.file, item.nama, layerGroup, options, pakaiPanah);
+
+        document.getElementById(checkboxId).addEventListener("change", function () {
+          if (this.checked) {
+            map.addLayer(layerGroup);
+          } else {
+            map.removeLayer(layerGroup);
+          }
+        });
+      });
+    }
+
+    buatSubLayer("groupMikro", daftarSaluranMikro, layerOptions.mikro, true);
+    buatSubLayer("groupPHB", daftarSaluranPHB, layerOptions.phb, true);
+
+    loadGeoJsonLayer("saluran_drainase_primer_jaktim.geojson", "Saluran Primer", layerSaluranPrimer, layerOptions.primer, false);
+    loadGeoJsonLayer("saluran_drainase_sekunder_jaktim.geojson", "Saluran Sekunder", layerSaluranSekunder, layerOptions.sekunder, false);
+
+    document.getElementById("cekStasiunHujan").addEventListener("change", function () {
+      if (this.checked) map.addLayer(layerStasiunHujan);
+      else map.removeLayer(layerStasiunHujan);
+    });
+
+    document.getElementById("cekSaluranPrimer").addEventListener("change", function () {
+      if (this.checked) map.addLayer(layerSaluranPrimer);
+      else map.removeLayer(layerSaluranPrimer);
+    });
+
+    document.getElementById("cekSaluranSekunder").addEventListener("change", function () {
+      if (this.checked) map.addLayer(layerSaluranSekunder);
+      else map.removeLayer(layerSaluranSekunder);
+    });
+
+    let dataHujanBMKG = [];
+    let tabelGumbel = [];
+    let tabelPearson3 = [];
+
+    fetch("data_hujan_bmkg_3stasiun.csv?v=3")
+      .then(response => response.text())
+      .then(csvText => {
+        dataHujanBMKG = parseCsvOtomatis(csvText);
+      });
+
+    fetch("tabel_gumbel.csv")
+      .then(response => response.text())
+      .then(csvText => {
+        tabelGumbel = parseCsvOtomatis(csvText);
+      });
+
+    fetch("tabel_pearson_3.csv")
+      .then(response => response.text())
+      .then(csvText => {
+        tabelPearson3 = parseCsvOtomatis(csvText);
+        console.log("tabelPearson3 terbaca:", tabelPearson3.slice(0, 5));
+      });
+
+    function ambilGumbelDariTabel(n) {
+      const data = tabelGumbel
+        .map(row => ({
+          n: angka(row.n),
+          Yn: angka(row.Yn),
+          Sn: angka(row.Sn)
+        }))
+        .filter(row => !isNaN(row.n) && !isNaN(row.Yn) && !isNaN(row.Sn))
+        .sort((a, b) => a.n - b.n);
+
+      const exact = data.find(row => row.n === n);
+      if (exact) return exact;
+
+      for (let i = 0; i < data.length - 1; i++) {
+        const bawah = data[i];
+        const atas = data[i + 1];
+
+        if (n > bawah.n && n < atas.n) {
+          const rasio = (n - bawah.n) / (atas.n - bawah.n);
+
+          return {
+            n: n,
+            Yn: bawah.Yn + rasio * (atas.Yn - bawah.Yn),
+            Sn: bawah.Sn + rasio * (atas.Sn - bawah.Sn)
+          };
+        }
+      }
+
+      return null;
+    }
+
+    function ambilKPearsonDariTabel(cs, T) {
+      const kolom = "T" + T;
+
+      const data = tabelPearson3
+        .map(row => ({
+          Cs: angka(row.Cs),
+          K: angka(row[kolom])
+        }))
+        .filter(row => !isNaN(row.Cs) && !isNaN(row.K))
+        .sort((a, b) => a.Cs - b.Cs);
+
+      const exact = data.find(row => Math.abs(row.Cs - cs) < 0.0000001);
+      if (exact) return exact.K;
+
+      for (let i = 0; i < data.length - 1; i++) {
+        const bawah = data[i];
+        const atas = data[i + 1];
+
+        if (cs >= bawah.Cs && cs <= atas.Cs) {
+          const rasio = (cs - bawah.Cs) / (atas.Cs - bawah.Cs);
+          return bawah.K + rasio * (atas.K - bawah.K);
+        }
+      }
+
+      return null;
+    }
+
+    function ambilGPearsonDariTabel(cs, kolom) {
+      const data = tabelPearson3
+        .map(row => ({
+          Cs: angka(row.Cs),
+          G: angka(row[kolom])
+        }))
+        .filter(row => !isNaN(row.Cs) && !isNaN(row.G))
+        .sort((a, b) => a.Cs - b.Cs);
+
+      const exact = data.find(row => Math.abs(row.Cs - cs) < 0.0000001);
+      if (exact) return exact.G;
+
+      for (let i = 0; i < data.length - 1; i++) {
+        const bawah = data[i];
+        const atas = data[i + 1];
+
+        if (cs >= bawah.Cs && cs <= atas.Cs) {
+          const rasio = (cs - bawah.Cs) / (atas.Cs - bawah.Cs);
+          return bawah.G + rasio * (atas.G - bawah.G);
+        }
+      }
+
+      return null;
+    }
+
+    function hitungSmirnovKolmogorov(dataValid, metode, statistik, dataGumbel) {
+      const n = dataValid.length;
+      const dataUrut = [...dataValid].sort((a, b) => a - b);
+      let dMaks = 0;
+
+      dataUrut.forEach((x, index) => {
+        const peluangEmpiris = (index + 1) / (n + 1);
+        let peluangTeoritis = 0;
+
+        if (metode === "normal") {
+          peluangTeoritis = normalCDF((x - statistik.mean) / statistik.sd);
+        }
+
+        if (metode === "lognormal") {
+          const logX = Math.log10(x);
+          peluangTeoritis = normalCDF((logX - statistik.meanLog) / statistik.sdLog);
+        }
+
+        if (metode === "gumbel") {
+          const alphaGumbel = statistik.sd / dataGumbel.Sn;
+          const u = statistik.mean - alphaGumbel * dataGumbel.Yn;
+          peluangTeoritis = Math.exp(-Math.exp(-(x - u) / alphaGumbel));
+        }
+
+        if (metode === "logpearson3") {
+          const logX = Math.log10(x);
+          peluangTeoritis = pearson3CDF(logX, statistik.meanLog, statistik.sdLog, statistik.csLog);
+        }
+
+        const selisih = Math.abs(peluangEmpiris - peluangTeoritis);
+        if (selisih > dMaks) dMaks = selisih;
+      });
+
+      const dTabel = 1.36 / Math.sqrt(n);
+
+      return {
+        dMaks: dMaks,
+        dTabel: dTabel,
+        kesimpulan: dMaks < dTabel ? "Diterima" : "Ditolak"
+      };
+    }
+
+    function hitungChiSquare(dataValid, metode, statistik, dataGumbel, alphaChiSquare) {
+      const n = dataValid.length;
+      const jumlahKelas = 5;
+      const expected = n / jumlahKelas;
+      let batas = [];
+      let faktorBatas = [];
+
+      if (metode === "normal") {
+        const peluangBatas = [0.2, 0.4, 0.6, 0.8];
+
+        batas = peluangBatas.map(p => {
+          const k = inverseNormal(p);
+          faktorBatas.push({
+            kolom: "P" + Math.round(p * 100),
+            faktor: k
+          });
+          return statistik.mean + k * statistik.sd;
+        });
+      }
+
+      if (metode === "lognormal") {
+        const peluangBatas = [0.2, 0.4, 0.6, 0.8];
+
+        batas = peluangBatas.map(p => {
+          const k = inverseNormal(p);
+          faktorBatas.push({
+            kolom: "P" + Math.round(p * 100),
+            faktor: k
+          });
+          const logBatas = statistik.meanLog + k * statistik.sdLog;
+          return Math.pow(10, logBatas);
+        });
+      }
+
+      if (metode === "gumbel") {
+        const peluangBatas = [0.2, 0.4, 0.6, 0.8];
+
+        batas = peluangBatas.map(p => {
+          const yt = -Math.log(-Math.log(p));
+          const k = (yt - dataGumbel.Yn) / dataGumbel.Sn;
+
+          faktorBatas.push({
+            kolom: "P" + Math.round(p * 100),
+            faktor: k
+          });
+
+          return statistik.mean + k * statistik.sd;
+        });
+      }
+
+      if (metode === "logpearson3") {
+        // P80 = luasan kiri 20%
+        // P60 = luasan kiri 40%
+        // P40 = luasan kiri 60%
+        // P20 = luasan kiri 80%
+        const kolomBatas = ["P80", "P60", "P40", "P20"];
+
+        batas = kolomBatas.map(kolom => {
+          const g = ambilGPearsonDariTabel(statistik.csLog, kolom);
+
+          console.log("Log Pearson batas:", {
+            kolom: kolom,
+            csLog: statistik.csLog,
+            G: g,
+            meanLog: statistik.meanLog,
+            sdLog: statistik.sdLog
+          });
+
+          if (g === null) {
+            return null;
+          }
+
+          faktorBatas.push({
+            kolom: kolom,
+            faktor: g
+          });
+
+          const logBatas = statistik.meanLog + g * statistik.sdLog;
+          const hasilBatas = Math.pow(10, logBatas);
+
+          console.log("Batas Log Pearson", kolom, "=", hasilBatas);
+
+          return hasilBatas;
+        });
+
+        if (batas.some(x => x === null || isNaN(x))) {
+          return {
+            error: "Nilai G untuk batas kelas Log Pearson III tidak ditemukan di tabel_pearson_3.csv."
+          };
+        }
+      }
+
+      const gabunganBatas = batas.map((nilai, index) => ({
+        batas: nilai,
+        faktor: faktorBatas[index] ? faktorBatas[index].faktor : null,
+        kolom: faktorBatas[index] ? faktorBatas[index].kolom : ""
+      }));
+
+      gabunganBatas.sort((a, b) => a.batas - b.batas);
+
+      batas = gabunganBatas.map(item => item.batas);
+      faktorBatas = gabunganBatas.map(item => ({
+        kolom: item.kolom,
+        faktor: item.faktor
+      }));
+
+      const observed = new Array(jumlahKelas).fill(0);
+
+      dataValid.forEach(x => {
+        let kelas = jumlahKelas - 1;
+
+        for (let i = 0; i < batas.length; i++) {
+          if (x <= batas[i]) {
+            kelas = i;
+            break;
+          }
+        }
+
+        observed[kelas] += 1;
+      });
+
+      let x2Hitung = 0;
+      const detail = [];
+
+      for (let i = 0; i < jumlahKelas; i++) {
+        const oi = observed[i];
+        const ei = expected;
+        const x2 = Math.pow(oi - ei, 2) / ei;
+
+        x2Hitung += x2;
+
+        let interval = "";
+        let faktorInfo = "";
+
+        if (i === 0) {
+          interval = "≤ " + batas[0].toFixed(2);
+          faktorInfo = faktorBatas[0] ? faktorBatas[0].kolom + " / " + faktorBatas[0].faktor.toFixed(5) : "";
+        } else if (i === jumlahKelas - 1) {
+          interval = "> " + batas[batas.length - 1].toFixed(2);
+          faktorInfo = "-";
+        } else {
+          interval = batas[i - 1].toFixed(2) + " - " + batas[i].toFixed(2);
+          faktorInfo = faktorBatas[i] ? faktorBatas[i].kolom + " / " + faktorBatas[i].faktor.toFixed(5) : "";
+        }
+
+        detail.push({
+          kelas: i + 1,
+          interval: interval,
+          faktorInfo: faktorInfo,
+          Oi: oi,
+          Ei: ei,
+          X2: x2
+        });
+      }
+
+      let parameter = 2;
+
+      if (metode === "logpearson3") {
+        parameter = 3;
+      }
+
+      let derajatBebas = jumlahKelas - 1 - parameter;
+
+      if (derajatBebas < 1) {
+        derajatBebas = 1;
+      }
+
+      const x2Tabel = chiSquareCritical(derajatBebas, alphaChiSquare);
+
+      return {
+        jumlahKelas: jumlahKelas,
+        expected: expected,
+        derajatBebas: derajatBebas,
+        x2Hitung: x2Hitung,
+        x2Tabel: x2Tabel,
+        alpha: alphaChiSquare,
+        alphaLabel: labelAlpha(alphaChiSquare),
+        kesimpulan: x2Tabel !== null && x2Hitung < x2Tabel ? "Diterima" : "Ditolak",
+        detail: detail,
+        batas: batas
+      };
+    }
+
+    function hitungHujanRencana(data, metode, alphaChiSquare) {
+      const kalaUlang = [2, 5, 10];
+      const hasil = [];
+
+      const dataValid = data
+        .map(x => angka(x))
+        .filter(x => !isNaN(x) && x > 0);
+
+      if (dataValid.length < 3) {
+        return { error: "Data valid terlalu sedikit." };
+      }
+
+      const n = dataValid.length;
+
+      const mean = rataRata(dataValid);
+      const sd = standarDeviasi(dataValid);
+
+      const logData = dataValid.map(x => Math.log10(x));
+      const meanLog = rataRata(logData);
+      const sdLog = standarDeviasi(logData);
+      const csLog = skewness(logData);
+
+      const dataGumbel = ambilGumbelDariTabel(n);
+
+      if (metode === "gumbel" && !dataGumbel) {
+        return {
+          error: "Nilai Yn dan Sn untuk jumlah data ini tidak ditemukan di tabel_gumbel.csv."
+        };
+      }
+
+      kalaUlang.forEach(T => {
+        const peluang = 1 - (1 / T);
+        const z = inverseNormal(peluang);
+
+        let xt = 0;
+        let k = 0;
+
+        if (metode === "normal") {
+          k = z;
+          xt = mean + k * sd;
+        }
+
+        if (metode === "lognormal") {
+          k = z;
+          xt = Math.pow(10, meanLog + k * sdLog);
+        }
+
+        if (metode === "gumbel") {
+          const yt = -Math.log(-Math.log((T - 1) / T));
+          const yn = dataGumbel.Yn;
+          const sn = dataGumbel.Sn;
+
+          k = (yt - yn) / sn;
+          xt = mean + k * sd;
+        }
+
+        if (metode === "logpearson3") {
+          k = ambilKPearsonDariTabel(csLog, T);
+
+          if (k === null) {
+            xt = null;
+          } else {
+            xt = Math.pow(10, meanLog + k * sdLog);
+          }
+        }
+
+        hasil.push({
+          T: T,
+          K: k,
+          hujan: xt
+        });
+      });
+
+      if (metode === "logpearson3" && hasil.some(item => item.hujan === null)) {
+        return {
+          error: "Nilai K Log Pearson III tidak ditemukan di tabel_pearson_3.csv. Cek rentang Cs tabel."
+        };
+      }
+
+      const statistik = {
+        mean: mean,
+        sd: sd,
+        meanLog: meanLog,
+        sdLog: sdLog,
+        csLog: csLog
+      };
+
+      const hasilSK = hitungSmirnovKolmogorov(dataValid, metode, statistik, dataGumbel);
+      const hasilChiSquare = hitungChiSquare(dataValid, metode, statistik, dataGumbel, alphaChiSquare);
+
+      if (hasilChiSquare.error) {
+        return { error: hasilChiSquare.error };
+      }
+
+      return {
+        jumlahData: dataValid.length,
+        rataRata: mean,
+        standarDeviasi: sd,
+        rataRataLog: meanLog,
+        standarDeviasiLog: sdLog,
+        skewnessLog: csLog,
+        gumbelYn: dataGumbel ? dataGumbel.Yn : null,
+        gumbelSn: dataGumbel ? dataGumbel.Sn : null,
+        hasil: hasil,
+        smirnovKolmogorov: hasilSK,
+        chiSquare: hasilChiSquare
+      };
+    }
+
+    document.getElementById("btnHitungHujan").addEventListener("click", function () {
+      const stasiun = document.getElementById("pilihStasiun").value;
+      const metode = document.getElementById("pilihMetode").value;
+      const alphaChiSquare = document.getElementById("pilihAlphaChiSquare").value;
+      const hasilDiv = document.getElementById("hasilHujanRencana");
+
+      if (dataHujanBMKG.length === 0) {
+        hasilDiv.innerHTML = `
+          <div class="hasil-box">
+            Data hujan belum terbaca. Coba refresh halaman.
+          </div>
+        `;
+        return;
+      }
+
+      if (metode === "gumbel" && tabelGumbel.length === 0) {
+        hasilDiv.innerHTML = `
+          <div class="hasil-box">
+            tabel_gumbel.csv belum terbaca. Coba refresh halaman.
+          </div>
+        `;
+        return;
+      }
+
+      if (metode === "logpearson3" && tabelPearson3.length === 0) {
+        hasilDiv.innerHTML = `
+          <div class="hasil-box">
+            tabel_pearson_3.csv belum terbaca. Coba refresh halaman.
+          </div>
+        `;
+        return;
+      }
+
+      const dataStasiun = dataHujanBMKG.map(row => row[stasiun]);
+      const hasil = hitungHujanRencana(dataStasiun, metode, alphaChiSquare);
+
+      if (hasil.error) {
+        hasilDiv.innerHTML = `
+          <div class="hasil-box">
+            ${hasil.error}
+          </div>
+        `;
+        return;
+      }
+
+      const namaMetode = {
+        normal: "Normal",
+        lognormal: "Log Normal",
+        gumbel: "Gumbel",
+        logpearson3: "Log Pearson Tipe III"
+      }[metode];
+
+      let html = `
+        <div class="hasil-box">
+          <b>Metode ${namaMetode}</b><br>
+          Jumlah data valid: ${hasil.jumlahData}
+
+          <table>
+            <tr>
+              <th>Kala Ulang</th>
+              <th>K</th>
+              <th>Hujan</th>
+            </tr>
+      `;
+
+      hasil.hasil.forEach(item => {
+        html += `
+          <tr>
+            <td>${item.T} tahun</td>
+            <td>${item.K.toFixed(5)}</td>
+            <td>${item.hujan.toFixed(2)} mm</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </table>
+
+          <br>
+          <b>Uji Smirnov-Kolmogorov</b>
+
+          <table>
+            <tr>
+              <td>D maksimum</td>
+              <td>${hasil.smirnovKolmogorov.dMaks.toFixed(5)}</td>
+            </tr>
+            <tr>
+              <td>D tabel 5%</td>
+              <td>${hasil.smirnovKolmogorov.dTabel.toFixed(5)}</td>
+            </tr>
+            <tr>
+              <td>Kesimpulan</td>
+              <td><b>${hasil.smirnovKolmogorov.kesimpulan}</b></td>
+            </tr>
+          </table>
+
+          <br>
+          <b>Uji Chi-Square</b>
+
+          <table>
+            <tr>
+              <td>Taraf Signifikansi</td>
+              <td>${hasil.chiSquare.alphaLabel}</td>
+            </tr>
+            <tr>
+              <td>Jumlah Kelas</td>
+              <td>${hasil.chiSquare.jumlahKelas}</td>
+            </tr>
+            <tr>
+              <td>Expected Frequency</td>
+              <td>${hasil.chiSquare.expected.toFixed(4)}</td>
+            </tr>
+            <tr>
+              <td>Derajat Bebas</td>
+              <td>${hasil.chiSquare.derajatBebas}</td>
+            </tr>
+            <tr>
+              <td>X² Hitung</td>
+              <td>${hasil.chiSquare.x2Hitung.toFixed(5)}</td>
+            </tr>
+            <tr>
+              <td>X² Tabel ${hasil.chiSquare.alphaLabel}</td>
+              <td>${hasil.chiSquare.x2Tabel.toFixed(5)}</td>
+            </tr>
+            <tr>
+              <td>Kesimpulan</td>
+              <td><b>${hasil.chiSquare.kesimpulan}</b></td>
+            </tr>
+          </table>
+
+          <table>
+            <tr>
+              <th>Kelas</th>
+              <th>Interval</th>
+              <th>Faktor</th>
+              <th>Oi</th>
+              <th>Ei</th>
+              <th>X²</th>
+            </tr>
+      `;
+
+      hasil.chiSquare.detail.forEach(item => {
+        html += `
+          <tr>
+            <td>${item.kelas}</td>
+            <td>${item.interval}</td>
+            <td>${item.faktorInfo}</td>
+            <td>${item.Oi}</td>
+            <td>${item.Ei.toFixed(2)}</td>
+            <td>${item.X2.toFixed(4)}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </table>
+
+          <div class="statistik-kecil">
+            Rata-rata X: ${hasil.rataRata.toFixed(4)}<br>
+            Standar deviasi X: ${hasil.standarDeviasi.toFixed(4)}<br>
+            Rata-rata log X: ${hasil.rataRataLog.toFixed(4)}<br>
+            Standar deviasi log X: ${hasil.standarDeviasiLog.toFixed(4)}<br>
+            Cs log X: ${hasil.skewnessLog.toFixed(4)}<br>
+      `;
+
+      if (metode === "gumbel") {
+        html += `
+            Yn: ${hasil.gumbelYn.toFixed(4)}<br>
+            Sn: ${hasil.gumbelSn.toFixed(4)}<br>
+        `;
+      }
+
+      html += `
+            <br>
+            Catatan:<br>
+            - Log memakai log10.<br>
+            - Standar deviasi memakai n-1.<br>
+            - Uji Smirnov-Kolmogorov memakai D tabel = 1.36 / √n untuk α = 5%.<br>
+            - Peluang empiris Smirnov memakai m / (n + 1).<br>
+            - Chi-Square memakai 5 kelas.<br>
+            - Gumbel Chi-Square memakai batas kelas X̄ + K × S.<br>
+            - Log Pearson III Chi-Square memakai batas kelas logX̄ + G × Slog.<br>
+            - Untuk Log Pearson III, urutan batas kelas memakai P80, P60, P40, P20 agar sesuai luasan kiri 20%, 40%, 60%, 80%.<br>
+            - File CSV dipanggil dengan cache-buster ?v=3.
+          </div>
+        </div>
+      `;
+
+      hasilDiv.innerHTML = html;
+    });
+
+    function toggleGroup(groupId, iconId) {
+      var group = document.getElementById(groupId);
+      var icon = document.getElementById(iconId);
+
+      if (group.style.display === "none") {
+        group.style.display = "block";
+        icon.textContent = "▾";
+      } else {
+        group.style.display = "none";
+        icon.textContent = "▸";
+      }
+    }
+
+    document.getElementById("togglePanel").addEventListener("click", function () {
+      var panel = document.getElementById("layerPanel");
+      panel.classList.toggle("minimized");
+
+      if (panel.classList.contains("minimized")) {
+        this.textContent = "›";
+      } else {
+        this.textContent = "−";
+      }
+
+      setTimeout(function () {
+        map.invalidateSize();
+      }, 300);
+    });
+  </script>
+</body>
+</html>
