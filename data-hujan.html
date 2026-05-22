@@ -81,6 +81,14 @@
       background: #0b5f59;
     }
 
+    .btn-secondary {
+      background: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #1f2937;
+    }
+
     .content-grid {
       display: grid;
       grid-template-columns: 340px 1fr;
@@ -156,6 +164,13 @@
       color: #6b7280;
       margin-top: 10px;
       line-height: 1.5;
+    }
+
+    .report-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
     }
 
     .rekap-wrapper {
@@ -281,7 +296,7 @@
 <body>
   <header>
     <h1>Data Hujan Tahunan</h1>
-    <p>Tabel, grafik, dan uji statistik data hujan maksimum tahunan stasiun BMKG</p>
+    <p>Tabel, grafik, uji statistik, dan laporan kualitas data hujan maksimum tahunan</p>
   </header>
 
   <main class="container">
@@ -299,22 +314,40 @@
     </div>
 
     <div class="content-grid">
-      <div class="card">
-        <h2>Tabel Data Hujan</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Tahun</th>
-              <th>Hujan Maks Tahunan (mm)</th>
-            </tr>
-          </thead>
-          <tbody id="tabelHujan"></tbody>
-        </table>
+      <div>
+        <div class="card">
+          <h2>Tabel Data Hujan</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tahun</th>
+                <th>Hujan Maks Tahunan (mm)</th>
+              </tr>
+            </thead>
+            <tbody id="tabelHujan"></tbody>
+          </table>
 
-        <div class="summary" id="ringkasanData"></div>
+          <div class="summary" id="ringkasanData"></div>
 
-        <div class="note">
-          Data diambil dari file <b>data_hujan_bmkg_3stasiun.csv</b>.
+          <div class="note">
+            Data diambil dari file <b>data_hujan_bmkg_3stasiun.csv</b>.
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Laporan Analisis Kualitas Data Hujan</h2>
+          <div class="summary">
+            Setelah uji statistik dihitung, laporan dapat dicetak sebagai PDF atau diunduh sebagai dokumen Word.
+          </div>
+
+          <div class="report-actions">
+            <button class="btn" id="btnCetakPdf">Cetak / Simpan PDF</button>
+            <button class="btn btn-secondary" id="btnUnduhWord">Unduh Word</button>
+          </div>
+
+          <div class="note">
+            Laporan otomatis mengikuti stasiun yang sedang dipilih.
+          </div>
         </div>
       </div>
 
@@ -355,6 +388,7 @@
   <script>
     let dataHujanBMKG = [];
     let chartHujan = null;
+    let hasilUjiTerakhir = null;
 
     const namaStasiun = {
       stasiun_meteorologi_halim_perdana_kusuma: "Stasiun Meteorologi Halim Perdana Kusuma",
@@ -1072,6 +1106,16 @@
       const hasilPersistensi = ujiPersistensi(data);
       const hasilOutlier = ujiOutlier(data);
 
+      hasilUjiTerakhir = {
+        data,
+        stasiun,
+        hasilRAPS,
+        hasilTrend,
+        hasilStasioner,
+        hasilPersistensi,
+        hasilOutlier
+      };
+
       tampilkanRekapUji(
         hasilRAPS,
         hasilTrend,
@@ -1229,6 +1273,527 @@
       `;
     }
 
+    function stripHtml(html) {
+      const div = document.createElement("div");
+      div.innerHTML = html;
+      return div.textContent || div.innerText || "";
+    }
+
+    function laporanStyle() {
+      return `
+        <style>
+          @page {
+            size: A4;
+            margin: 2cm;
+          }
+
+          body {
+            font-family: "Times New Roman", serif;
+            font-size: 12pt;
+            color: #000;
+            line-height: 1.35;
+          }
+
+          h1 {
+            text-align: center;
+            font-size: 16pt;
+            margin-bottom: 18px;
+            text-transform: uppercase;
+          }
+
+          h2 {
+            font-size: 14pt;
+            margin-top: 18px;
+            margin-bottom: 8px;
+          }
+
+          h3 {
+            font-size: 12pt;
+            margin-top: 14px;
+            margin-bottom: 6px;
+          }
+
+          p {
+            text-align: justify;
+            margin: 6px 0;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0 4px;
+            font-size: 10pt;
+          }
+
+          th, td {
+            border: 1px solid #000;
+            padding: 5px;
+            vertical-align: middle;
+          }
+
+          th {
+            text-align: center;
+            font-weight: bold;
+          }
+
+          td {
+            text-align: right;
+          }
+
+          td:first-child {
+            text-align: center;
+          }
+
+          .text-left {
+            text-align: left !important;
+          }
+
+          .judul-tabel {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 10px;
+          }
+
+          .sumber {
+            text-align: center;
+            font-size: 10pt;
+            margin-bottom: 8px;
+          }
+
+          .page-break {
+            page-break-before: always;
+          }
+
+          .kesimpulan {
+            margin-top: 8px;
+          }
+
+          .no-border td {
+            border: none;
+            padding: 3px 5px;
+          }
+        </style>
+      `;
+    }
+
+    function buatBarisDataLaporan(data) {
+      return data.map((row, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${row.tahun}</td>
+          <td>${formatAngka(row.hujan, 2)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function buatTabelRekapLaporan(hasil) {
+      const h = hasil;
+
+      return `
+        <table>
+          <thead>
+            <tr>
+              <th>Metode</th>
+              <th>Parameter</th>
+              <th>Nilai Hitung</th>
+              <th>Nilai Kritis / Pembanding</th>
+              <th>Kesimpulan</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left">Uji RAPS</td>
+              <td class="text-left">Q / √n</td>
+              <td>${formatAngka(h.hasilRAPS.qHitung, 4)}</td>
+              <td>${formatAngka(h.hasilRAPS.qKritis, 4)}</td>
+              <td>${h.hasilRAPS.kesimpulanQ}</td>
+              <td>${h.hasilRAPS.keterangan}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Uji RAPS</td>
+              <td class="text-left">R / √n</td>
+              <td>${formatAngka(h.hasilRAPS.rHitung, 4)}</td>
+              <td>${formatAngka(h.hasilRAPS.rKritis, 4)}</td>
+              <td>${h.hasilRAPS.kesimpulanR}</td>
+              <td>${h.hasilRAPS.keterangan}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Uji Ketiadaan Trend</td>
+              <td class="text-left">t hitung</td>
+              <td>${formatAngka(h.hasilTrend.tHitung, 4)}</td>
+              <td>${formatAngka(h.hasilTrend.tKritis, 4)}</td>
+              <td>${h.hasilTrend.kesimpulan}</td>
+              <td>${h.hasilTrend.keterangan}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Uji Stasioner</td>
+              <td class="text-left">F hitung</td>
+              <td>${formatAngka(h.hasilStasioner.fHitung, 4)}</td>
+              <td>${formatAngka(h.hasilStasioner.fKritis, 4)}</td>
+              <td>${h.hasilStasioner.kesimpulanF}</td>
+              <td>${h.hasilStasioner.keteranganF}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Uji Stasioner</td>
+              <td class="text-left">t hitung</td>
+              <td>${formatAngka(h.hasilStasioner.tHitung, 4)}</td>
+              <td>${formatAngka(h.hasilStasioner.tKritis, 4)}</td>
+              <td>${h.hasilStasioner.kesimpulanT}</td>
+              <td>${h.hasilStasioner.keteranganT}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Uji Persistensi</td>
+              <td class="text-left">t hitung</td>
+              <td>${formatAngka(h.hasilPersistensi.tHitung, 4)}</td>
+              <td>${formatAngka(h.hasilPersistensi.tKritis, 4)}</td>
+              <td>${h.hasilPersistensi.kesimpulan}</td>
+              <td>${h.hasilPersistensi.keterangan}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Uji Inlier-Outlier</td>
+              <td class="text-left">X maksimum</td>
+              <td>${formatAngka(h.hasilOutlier.xMax, 4)}</td>
+              <td>${formatAngka(h.hasilOutlier.batasAtas, 4)}</td>
+              <td>${h.hasilOutlier.kesimpulanAtas}</td>
+              <td>${h.hasilOutlier.keterangan}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Uji Inlier-Outlier</td>
+              <td class="text-left">X minimum</td>
+              <td>${formatAngka(h.hasilOutlier.xMin, 4)}</td>
+              <td>${formatAngka(h.hasilOutlier.batasBawah, 4)}</td>
+              <td>${h.hasilOutlier.kesimpulanBawah}</td>
+              <td>${h.hasilOutlier.keterangan}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    function buatKesimpulanUmum(hasil) {
+      const semuaLulus =
+        hasil.hasilRAPS.keterangan === "Konsisten" &&
+        hasil.hasilTrend.keterangan === "Tidak ada trend" &&
+        hasil.hasilStasioner.keteranganF === "Homogen" &&
+        hasil.hasilStasioner.keteranganT === "Homogen" &&
+        hasil.hasilPersistensi.keterangan === "Data bersifat random" &&
+        hasil.hasilOutlier.keterangan === "Tidak terdapat outlier";
+
+      if (semuaLulus) {
+        return "Berdasarkan hasil pengujian statistik yang meliputi uji RAPS, uji ketiadaan trend, uji stasioner, uji persistensi, serta uji inlier-outlier, data hujan maksimum tahunan dinyatakan memenuhi persyaratan kualitas data untuk digunakan dalam analisis hidrologi lanjutan.";
+      }
+
+      return "Berdasarkan hasil pengujian statistik, terdapat satu atau lebih parameter pengujian yang perlu ditinjau lebih lanjut sebelum data digunakan dalam analisis hidrologi lanjutan.";
+    }
+
+    function buatHtmlLaporan() {
+      if (!hasilUjiTerakhir) {
+        tampilkanUjiStatistik();
+      }
+
+      const h = hasilUjiTerakhir;
+
+      if (!h) {
+        alert("Hitung uji statistik terlebih dahulu.");
+        return null;
+      }
+
+      const data = h.data;
+      const nilai = data.map(row => row.hujan);
+      const stasiun = namaStasiun[h.stasiun];
+
+      const maksimum = Math.max(...nilai);
+      const minimum = Math.min(...nilai);
+      const dataMaksimum = data.find(row => row.hujan === maksimum);
+      const dataMinimum = data.find(row => row.hujan === minimum);
+
+      const tanggal = new Date().toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+      });
+
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Laporan Analisis Kualitas Data Hujan</title>
+          ${laporanStyle()}
+        </head>
+        <body>
+          <h1>Laporan Analisis Kualitas Data Hujan</h1>
+
+          <table class="no-border">
+            <tr>
+              <td class="text-left" style="width: 160px;">Nama Stasiun</td>
+              <td class="text-left">: ${stasiun}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Jumlah Data</td>
+              <td class="text-left">: ${data.length} tahun</td>
+            </tr>
+            <tr>
+              <td class="text-left">Tanggal Cetak</td>
+              <td class="text-left">: ${tanggal}</td>
+            </tr>
+          </table>
+
+          <h2>1. Pendahuluan</h2>
+          <p>
+            Analisis kualitas data hujan dilakukan untuk memastikan bahwa data hujan maksimum tahunan
+            yang digunakan memiliki sifat statistik yang memadai sebelum dipakai dalam analisis hidrologi.
+            Pengujian dilakukan terhadap data hujan maksimum tahunan pada ${stasiun}.
+          </p>
+          <p>
+            Pemeriksaan data dilakukan melalui beberapa uji statistik, yaitu uji RAPS, uji ketiadaan trend,
+            uji stasioner, uji persistensi, serta uji inlier-outlier. Hasil pengujian ini digunakan sebagai dasar
+            untuk menilai kelayakan data sebelum dilakukan analisis lanjutan.
+          </p>
+
+          <h2>2. Data Hujan Maksimum Tahunan</h2>
+          <p>
+            Data hujan maksimum tahunan yang digunakan dalam analisis disajikan pada tabel berikut.
+          </p>
+
+          <div class="judul-tabel">Tabel 1 Data Hujan Maksimum Tahunan ${stasiun}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tahun</th>
+                <th>Hujan Maksimum Tahunan (mm)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${buatBarisDataLaporan(data)}
+            </tbody>
+          </table>
+          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
+
+          <p>
+            Berdasarkan data tersebut, diperoleh jumlah data sebanyak ${data.length} tahun.
+            Nilai hujan maksimum sebesar ${formatAngka(maksimum, 2)} mm terjadi pada tahun ${dataMaksimum.tahun},
+            sedangkan nilai hujan minimum sebesar ${formatAngka(minimum, 2)} mm terjadi pada tahun ${dataMinimum.tahun}.
+            Rata-rata data hujan maksimum tahunan adalah ${formatAngka(rataRata(nilai), 2)} mm dengan standar deviasi
+            sebesar ${formatAngka(standarDeviasi(nilai), 2)} mm.
+          </p>
+
+          <h2>3. Analisis Kualitas Data Hujan</h2>
+
+          <h3>3.1 Uji RAPS</h3>
+          <p>
+            Uji RAPS digunakan untuk mengetahui konsistensi data hujan. Pengujian dilakukan dengan
+            menghitung nilai kumulatif penyimpangan data terhadap rata-rata, kemudian dibandingkan dengan
+            nilai kritis pada tingkat kepercayaan 99%.
+          </p>
+          <div class="judul-tabel">Tabel 2 Rekapitulasi Hasil Uji RAPS</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Nilai Hitung</th>
+                <th>Nilai Kritis 99%</th>
+                <th>Kesimpulan</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left">Q / √n</td>
+                <td>${formatAngka(h.hasilRAPS.qHitung, 4)}</td>
+                <td>${formatAngka(h.hasilRAPS.qKritis, 4)}</td>
+                <td>${h.hasilRAPS.kesimpulanQ}</td>
+                <td>${h.hasilRAPS.keterangan}</td>
+              </tr>
+              <tr>
+                <td class="text-left">R / √n</td>
+                <td>${formatAngka(h.hasilRAPS.rHitung, 4)}</td>
+                <td>${formatAngka(h.hasilRAPS.rKritis, 4)}</td>
+                <td>${h.hasilRAPS.kesimpulanR}</td>
+                <td>${h.hasilRAPS.keterangan}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
+
+          <h3>3.2 Uji Ketiadaan Trend</h3>
+          <p>
+            Uji ketiadaan trend dilakukan untuk mengetahui ada atau tidaknya kecenderungan peningkatan
+            maupun penurunan data hujan terhadap waktu. Metode yang digunakan adalah Spearman Rank.
+          </p>
+          <div class="judul-tabel">Tabel 3 Rekapitulasi Hasil Uji Ketiadaan Trend</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Nilai</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="text-left">Koefisien KP</td><td>${formatAngka(h.hasilTrend.kp, 5)}</td></tr>
+              <tr><td class="text-left">Σdt²</td><td>${formatAngka(h.hasilTrend.jumlahDt2, 2)}</td></tr>
+              <tr><td class="text-left">t hitung</td><td>${formatAngka(h.hasilTrend.tHitung, 4)}</td></tr>
+              <tr><td class="text-left">t tabel 5%</td><td>${formatAngka(h.hasilTrend.tKritis, 4)}</td></tr>
+              <tr><td class="text-left">Kesimpulan</td><td>${h.hasilTrend.kesimpulan}</td></tr>
+              <tr><td class="text-left">Keterangan</td><td>${h.hasilTrend.keterangan}</td></tr>
+            </tbody>
+          </table>
+          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
+
+          <h3>3.3 Uji Stasioner</h3>
+          <p>
+            Uji stasioner dilakukan untuk mengetahui kestabilan varians dan rerata data hujan.
+            Data dibagi menjadi dua kelompok, kemudian dilakukan uji kestabilan varians dan rerata.
+          </p>
+          <div class="judul-tabel">Tabel 4 Rekapitulasi Hasil Uji Stasioner</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Pengujian</th>
+                <th>Nilai Hitung</th>
+                <th>Nilai Tabel</th>
+                <th>Kesimpulan</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left">Kestabilan Varians</td>
+                <td>${formatAngka(h.hasilStasioner.fHitung, 4)}</td>
+                <td>${formatAngka(h.hasilStasioner.fKritis, 4)}</td>
+                <td>${h.hasilStasioner.kesimpulanF}</td>
+                <td>${h.hasilStasioner.keteranganF}</td>
+              </tr>
+              <tr>
+                <td class="text-left">Kestabilan Rerata</td>
+                <td>${formatAngka(h.hasilStasioner.tHitung, 4)}</td>
+                <td>${formatAngka(h.hasilStasioner.tKritis, 4)}</td>
+                <td>${h.hasilStasioner.kesimpulanT}</td>
+                <td>${h.hasilStasioner.keteranganT}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
+
+          <h3>3.4 Uji Persistensi</h3>
+          <p>
+            Uji persistensi dilakukan untuk mengetahui hubungan serial antar data hujan tahunan.
+            Pengujian dilakukan menggunakan autokorelasi lag-1.
+          </p>
+          <div class="judul-tabel">Tabel 5 Rekapitulasi Hasil Uji Persistensi</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Nilai</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="text-left">Koefisien autokorelasi lag-1</td><td>${formatAngka(h.hasilPersistensi.r, 4)}</td></tr>
+              <tr><td class="text-left">t hitung</td><td>${formatAngka(h.hasilPersistensi.tHitung, 4)}</td></tr>
+              <tr><td class="text-left">t tabel 1%</td><td>${formatAngka(h.hasilPersistensi.tKritis, 4)}</td></tr>
+              <tr><td class="text-left">Kesimpulan</td><td>${h.hasilPersistensi.kesimpulan}</td></tr>
+              <tr><td class="text-left">Keterangan</td><td>${h.hasilPersistensi.keterangan}</td></tr>
+            </tbody>
+          </table>
+          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
+
+          <h3>3.5 Uji Inlier-Outlier</h3>
+          <p>
+            Uji inlier-outlier dilakukan untuk mengetahui apakah terdapat data hujan yang menyimpang
+            terlalu jauh dari pola data. Pengujian dilakukan dengan transformasi logaritmik dan faktor Kn.
+          </p>
+          <div class="judul-tabel">Tabel 6 Rekapitulasi Hasil Uji Inlier-Outlier</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Nilai Data</th>
+                <th>Batas</th>
+                <th>Kesimpulan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-left">X maksimum</td>
+                <td>${formatAngka(h.hasilOutlier.xMax, 4)}</td>
+                <td>${formatAngka(h.hasilOutlier.batasAtas, 4)}</td>
+                <td>${h.hasilOutlier.kesimpulanAtas}</td>
+              </tr>
+              <tr>
+                <td class="text-left">X minimum</td>
+                <td>${formatAngka(h.hasilOutlier.xMin, 4)}</td>
+                <td>${formatAngka(h.hasilOutlier.batasBawah, 4)}</td>
+                <td>${h.hasilOutlier.kesimpulanBawah}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
+
+          <h2>4. Rekapitulasi Hasil Pengujian</h2>
+          <p>
+            Rekapitulasi hasil pengujian kualitas data hujan maksimum tahunan disajikan pada tabel berikut.
+          </p>
+          <div class="judul-tabel">Tabel 7 Rekapitulasi Hasil Pengujian Data Hujan</div>
+          ${buatTabelRekapLaporan(h)}
+          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
+
+          <h2>5. Kesimpulan</h2>
+          <p class="kesimpulan">
+            ${buatKesimpulanUmum(h)}
+          </p>
+        </body>
+        </html>
+      `;
+    }
+
+    function cetakPdf() {
+      const html = buatHtmlLaporan();
+
+      if (!html) {
+        return;
+      }
+
+      const win = window.open("", "_blank");
+
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+
+      win.onload = function () {
+        win.focus();
+        win.print();
+      };
+    }
+
+    function unduhWord() {
+      const html = buatHtmlLaporan();
+
+      if (!html) {
+        return;
+      }
+
+      const stasiun = document.getElementById("pilihStasiun").value;
+      const namaFile = "laporan_kualitas_data_hujan_" + stasiun + ".doc";
+
+      const blob = new Blob(["\ufeff", html], {
+        type: "application/msword"
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = namaFile;
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
     fetch("data_hujan_bmkg_3stasiun.csv")
       .then(response => response.text())
       .then(csvText => {
@@ -1246,6 +1811,7 @@
 
     document.getElementById("pilihStasiun").addEventListener("change", function () {
       tampilkanDataHujan();
+      hasilUjiTerakhir = null;
 
       document.getElementById("hasilUjiStatistik").innerHTML = `
         <div class="summary">
@@ -1261,6 +1827,8 @@
     });
 
     document.getElementById("btnHitungUji").addEventListener("click", tampilkanUjiStatistik);
+    document.getElementById("btnCetakPdf").addEventListener("click", cetakPdf);
+    document.getElementById("btnUnduhWord").addEventListener("click", unduhWord);
   </script>
 </body>
 </html>
