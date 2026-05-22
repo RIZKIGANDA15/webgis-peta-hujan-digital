@@ -429,11 +429,9 @@
       return rows.slice(1).map(row => {
         const values = row.split(delimiter);
         const obj = {};
-
         headers.forEach((header, index) => {
           obj[header] = values[index] ? values[index].trim() : "";
         });
-
         return obj;
       });
     }
@@ -460,11 +458,7 @@
     function median(data) {
       const urut = [...data].sort((a, b) => a - b);
       const n = urut.length;
-
-      if (n % 2 === 1) {
-        return urut[Math.floor(n / 2)];
-      }
-
+      if (n % 2 === 1) return urut[Math.floor(n / 2)];
       return (urut[n / 2 - 1] + urut[n / 2]) / 2;
     }
 
@@ -476,11 +470,9 @@
       const n = data.length;
       const mean = rataRata(data);
       const sd = standarDeviasi(data);
-
       const jumlahPangkatTiga = data.reduce((sum, x) => {
         return sum + Math.pow((x - mean) / sd, 3);
       }, 0);
-
       return (n / ((n - 1) * (n - 2))) * jumlahPangkatTiga;
     }
 
@@ -500,7 +492,6 @@
       const tbody = document.getElementById("tabelHujan");
       const judulGrafik = document.getElementById("judulGrafik");
       const ringkasanData = document.getElementById("ringkasanData");
-
       const dataValid = ambilDataStasiun();
 
       tbody.innerHTML = "";
@@ -541,9 +532,7 @@
         Standar deviasi: ${sd.toFixed(2)} mm
       `;
 
-      if (chartHujan) {
-        chartHujan.destroy();
-      }
+      if (chartHujan) chartHujan.destroy();
 
       const ctx = document.getElementById("grafikHujan").getContext("2d");
 
@@ -577,16 +566,10 @@
           scales: {
             y: {
               beginAtZero: true,
-              title: {
-                display: true,
-                text: "Hujan Maksimum Tahunan (mm)"
-              }
+              title: { display: true, text: "Hujan Maksimum Tahunan (mm)" }
             },
             x: {
-              title: {
-                display: true,
-                text: "Tahun"
-              }
+              title: { display: true, text: "Tahun" }
             }
           }
         }
@@ -637,19 +620,12 @@
     }
 
     function ambilKn(n) {
-      if (tabelKn[n]) {
-        return tabelKn[n];
-      }
+      if (tabelKn[n]) return tabelKn[n];
 
       const daftarN = Object.keys(tabelKn).map(Number).sort((a, b) => a - b);
 
-      if (n < daftarN[0]) {
-        return tabelKn[daftarN[0]];
-      }
-
-      if (n > daftarN[daftarN.length - 1]) {
-        return tabelKn[daftarN[daftarN.length - 1]];
-      }
+      if (n < daftarN[0]) return tabelKn[daftarN[0]];
+      if (n > daftarN[daftarN.length - 1]) return tabelKn[daftarN[daftarN.length - 1]];
 
       for (let i = 0; i < daftarN.length - 1; i++) {
         const n1 = daftarN[i];
@@ -665,9 +641,7 @@
     }
 
     function ambilKritisRAPS(n) {
-      if (n <= 10) {
-        return tabelKritisRAPS[0];
-      }
+      if (n <= 10) return tabelKritisRAPS[0];
 
       for (let i = 0; i < tabelKritisRAPS.length - 1; i++) {
         const bawah = tabelKritisRAPS[i];
@@ -695,7 +669,6 @@
       const nilai = data.map(row => row.hujan);
       const n = nilai.length;
       const mean = rataRata(nilai);
-
       const y = nilai.map(x => x - mean);
       const yMean = rataRata(y);
 
@@ -710,7 +683,6 @@
 
       y.forEach((value, index) => {
         kumulatif += value;
-
         const skBintang = kumulatif;
         const skDuaBintang = skBintang / dy;
 
@@ -777,14 +749,12 @@
       });
 
       const jumlahDt2 = dt2.reduce((sum, value) => sum + value, 0);
-
       const kp = 1 - ((6 * jumlahDt2) / (n * (n * n - 1)));
       const tHitung = Math.abs(kp) * Math.sqrt((n - 2) / (1 - kp * kp));
 
       const df = n - 2;
       const alpha = 0.05;
       const tKritis = jStat.studentt.inv(1 - alpha / 2, df);
-
       const lulus = tHitung < tKritis;
 
       return {
@@ -929,10 +899,7 @@
     }
 
     function formatAngka(value, digit = 2) {
-      if (value === null || value === undefined || isNaN(value)) {
-        return "-";
-      }
-
+      if (value === null || value === undefined || isNaN(value)) return "-";
       return Number(value).toFixed(digit);
     }
 
@@ -1273,12 +1240,6 @@
       `;
     }
 
-    function stripHtml(html) {
-      const div = document.createElement("div");
-      div.innerHTML = html;
-      return div.textContent || div.innerText || "";
-    }
-
     function laporanStyle() {
       return `
         <style>
@@ -1313,6 +1274,13 @@
             margin-bottom: 6px;
           }
 
+          h4 {
+            font-size: 12pt;
+            margin-top: 10px;
+            margin-bottom: 4px;
+            font-style: italic;
+          }
+
           p {
             text-align: justify;
             margin: 6px 0;
@@ -1321,7 +1289,7 @@
           table {
             width: 100%;
             border-collapse: collapse;
-            margin: 8px 0 4px;
+            margin: 8px 0 10px;
             font-size: 10pt;
           }
 
@@ -1354,23 +1322,27 @@
             margin-top: 10px;
           }
 
-          .sumber {
-            text-align: center;
-            font-size: 10pt;
-            margin-bottom: 8px;
+          .rumus {
+            margin: 6px 0 10px 34px;
+            line-height: 1.45;
           }
 
-          .page-break {
-            page-break-before: always;
+          .rumus div {
+            margin: 2px 0;
           }
 
-          .kesimpulan {
-            margin-top: 8px;
+          .no-border {
+            width: 100%;
+            margin: 8px 0 12px;
           }
 
           .no-border td {
             border: none;
             padding: 3px 5px;
+          }
+
+          .kesimpulan {
+            margin-top: 8px;
           }
         </style>
       `;
@@ -1384,6 +1356,205 @@
           <td>${formatAngka(row.hujan, 2)}</td>
         </tr>
       `).join("");
+    }
+
+    function buatContohRAPS(hasilRAPS) {
+      const contoh = hasilRAPS.detail[0];
+
+      return `
+        <h4>Contoh Perhitungan</h4>
+        <p>
+          Contoh perhitungan RAPS ditunjukkan pada data tahun ${contoh.tahun}. Data hujan dikurangi
+          dengan nilai rata-rata untuk memperoleh nilai simpangan, kemudian dihitung kumulatifnya.
+        </p>
+
+        <div class="rumus">
+          <div><b>Perhitungan Y</b></div>
+          <div>Y = X - X̄</div>
+          <div>Y = ${formatAngka(contoh.x, 2)} - ${formatAngka(hasilRAPS.mean, 2)}</div>
+          <div>Y = ${formatAngka(contoh.y, 2)}</div>
+          <br>
+          <div><b>Perhitungan SK*</b></div>
+          <div>SK* = ΣY</div>
+          <div>SK* = ${formatAngka(contoh.skBintang, 2)}</div>
+          <br>
+          <div><b>Perhitungan SK**</b></div>
+          <div>SK** = SK* / Dy</div>
+          <div>SK** = ${formatAngka(contoh.skBintang, 2)} / ${formatAngka(hasilRAPS.dy, 4)}</div>
+          <div>SK** = ${formatAngka(contoh.skDuaBintang, 4)}</div>
+          <br>
+          <div><b>Perhitungan Q dan R</b></div>
+          <div>Q = max |SK**| = ${formatAngka(hasilRAPS.qMurni, 4)}</div>
+          <div>R = max SK** - min SK** = ${formatAngka(hasilRAPS.rMurni, 4)}</div>
+          <div>Q hitung = Q / √n = ${formatAngka(hasilRAPS.qMurni, 4)} / √${hasilRAPS.n} = ${formatAngka(hasilRAPS.qHitung, 4)}</div>
+          <div>R hitung = R / √n = ${formatAngka(hasilRAPS.rMurni, 4)} / √${hasilRAPS.n} = ${formatAngka(hasilRAPS.rHitung, 4)}</div>
+        </div>
+
+        <p>
+          Nilai Q hitung sebesar ${formatAngka(hasilRAPS.qHitung, 4)} dibandingkan dengan Q kritis 99%
+          sebesar ${formatAngka(hasilRAPS.qKritis, 4)}, sedangkan nilai R hitung sebesar
+          ${formatAngka(hasilRAPS.rHitung, 4)} dibandingkan dengan R kritis 99% sebesar
+          ${formatAngka(hasilRAPS.rKritis, 4)}. Berdasarkan hasil tersebut, data dinyatakan
+          ${hasilRAPS.keterangan.toLowerCase()}.
+        </p>
+      `;
+    }
+
+    function buatContohTrend(data, hasilTrend) {
+      const n = data.length;
+      const tahunUrut = data.map((row, index) => index + 1);
+      const hujan = data.map(row => row.hujan);
+
+      const rankTahun = rankData(tahunUrut, false);
+      const rankHujan = rankData(hujan, true);
+
+      const indeksContoh = Math.min(8, data.length - 1);
+      const tahunContoh = data[indeksContoh].tahun;
+      const rt = rankHujan[indeksContoh];
+      const tt = rankTahun[indeksContoh];
+      const dt = rt - tt;
+      const dt2 = dt * dt;
+
+      return `
+        <h4>Contoh Perhitungan</h4>
+        <p>
+          Contoh perhitungan dilakukan pada data tahun ${tahunContoh}. Nilai peringkat hujan
+          dinotasikan sebagai Rt, sedangkan peringkat tahun dinotasikan sebagai Tt.
+        </p>
+
+        <div class="rumus">
+          <div><b>Perhitungan dt</b></div>
+          <div>dt = Rt - Tt</div>
+          <div>dt = ${formatAngka(rt, 0)} - ${formatAngka(tt, 0)}</div>
+          <div>dt = ${formatAngka(dt, 0)}</div>
+          <br>
+          <div><b>Perhitungan dt²</b></div>
+          <div>dt² = (${formatAngka(dt, 0)})²</div>
+          <div>dt² = ${formatAngka(dt2, 0)}</div>
+          <br>
+          <div><b>Perhitungan KP</b></div>
+          <div>KP = 1 - [6 × Σdt² / (n³ - n)]</div>
+          <div>KP = 1 - [6 × ${formatAngka(hasilTrend.jumlahDt2, 2)} / (${n}³ - ${n})]</div>
+          <div>KP = ${formatAngka(hasilTrend.kp, 5)}</div>
+          <br>
+          <div><b>Perhitungan t</b></div>
+          <div>t = |KP| × √[(n - 2) / (1 - KP²)]</div>
+          <div>t = |${formatAngka(hasilTrend.kp, 5)}| × √[(${n} - 2) / (1 - (${formatAngka(hasilTrend.kp, 5)})²)]</div>
+          <div>t = ${formatAngka(hasilTrend.tHitung, 4)}</div>
+          <br>
+          <div><b>Perhitungan dk</b></div>
+          <div>dk = n - 2</div>
+          <div>dk = ${n} - 2</div>
+          <div>dk = ${hasilTrend.df}</div>
+        </div>
+
+        <p>
+          Nilai t hitung sebesar ${formatAngka(hasilTrend.tHitung, 4)} dibandingkan dengan t tabel sebesar
+          ${formatAngka(hasilTrend.tKritis, 4)}. Dengan demikian, ${hasilTrend.kesimpulan}
+          dan data dinyatakan ${hasilTrend.keterangan.toLowerCase()}.
+        </p>
+      `;
+    }
+
+    function buatContohStasioner(hasilStasioner) {
+      return `
+        <h4>Contoh Perhitungan</h4>
+        <p>
+          Uji stasioner dilakukan dengan membagi data menjadi dua kelompok. Kelompok pertama terdiri dari
+          ${hasilStasioner.n1} data dan kelompok kedua terdiri dari ${hasilStasioner.n2} data.
+          Pengujian dilakukan terhadap kestabilan varians dan rerata.
+        </p>
+
+        <div class="rumus">
+          <div><b>Uji Kestabilan Varians</b></div>
+          <div>F = S₁² / S₂²</div>
+          <div>F = (${formatAngka(hasilStasioner.sd1, 4)})² / (${formatAngka(hasilStasioner.sd2, 4)})²</div>
+          <div>F = ${formatAngka(hasilStasioner.fHitung, 4)}</div>
+          <div>dk₁ = N₁ - 1 = ${hasilStasioner.n1} - 1 = ${hasilStasioner.df1}</div>
+          <div>dk₂ = N₂ - 1 = ${hasilStasioner.n2} - 1 = ${hasilStasioner.df2}</div>
+          <br>
+          <div><b>Uji Kestabilan Rata-rata</b></div>
+          <div>t = |μ₁ - μ₂| / [σ × √(1/N₁ + 1/N₂)]</div>
+          <div>t = |${formatAngka(hasilStasioner.mean1, 4)} - ${formatAngka(hasilStasioner.mean2, 4)}| / [${formatAngka(hasilStasioner.sigma, 4)} × √(1/${hasilStasioner.n1} + 1/${hasilStasioner.n2})]</div>
+          <div>t = ${formatAngka(hasilStasioner.tHitung, 4)}</div>
+        </div>
+
+        <p>
+          Nilai F hitung sebesar ${formatAngka(hasilStasioner.fHitung, 4)} dibandingkan dengan F tabel
+          sebesar ${formatAngka(hasilStasioner.fKritis, 4)}, sehingga ${hasilStasioner.kesimpulanF}
+          dan data dinyatakan ${hasilStasioner.keteranganF.toLowerCase()} berdasarkan variansnya.
+          Nilai t hitung sebesar ${formatAngka(hasilStasioner.tHitung, 4)} dibandingkan dengan t tabel
+          sebesar ${formatAngka(hasilStasioner.tKritis, 4)}, sehingga ${hasilStasioner.kesimpulanT}
+          dan data dinyatakan ${hasilStasioner.keteranganT.toLowerCase()} berdasarkan rata-ratanya.
+        </p>
+      `;
+    }
+
+    function buatContohPersistensi(hasilPersistensi) {
+      return `
+        <h4>Contoh Perhitungan</h4>
+        <p>
+          Uji persistensi dilakukan menggunakan autokorelasi lag-1, yaitu korelasi antara data hujan tahun ke-t
+          dengan data hujan tahun ke-(t+1). Nilai koefisien korelasi kemudian diuji menggunakan statistik t.
+        </p>
+
+        <div class="rumus">
+          <div><b>Perhitungan Koefisien Autokorelasi</b></div>
+          <div>r = korelasi antara Xₜ dan Xₜ₊₁</div>
+          <div>r = ${formatAngka(hasilPersistensi.r, 4)}</div>
+          <br>
+          <div><b>Perhitungan t</b></div>
+          <div>t = |r| × √[(n - 2) / (1 - r²)]</div>
+          <div>t = |${formatAngka(hasilPersistensi.r, 4)}| × √[${hasilPersistensi.df} / (1 - (${formatAngka(hasilPersistensi.r, 4)})²)]</div>
+          <div>t = ${formatAngka(hasilPersistensi.tHitung, 4)}</div>
+          <br>
+          <div><b>Perhitungan dk</b></div>
+          <div>dk = n - 2 = ${hasilPersistensi.df}</div>
+        </div>
+
+        <p>
+          Nilai t hitung sebesar ${formatAngka(hasilPersistensi.tHitung, 4)} dibandingkan dengan t tabel
+          1% sebesar ${formatAngka(hasilPersistensi.tKritis, 4)}. Berdasarkan hasil tersebut,
+          ${hasilPersistensi.kesimpulan} dan ${hasilPersistensi.keterangan.toLowerCase()}.
+        </p>
+      `;
+    }
+
+    function buatContohOutlier(hasilOutlier) {
+      return `
+        <h4>Contoh Perhitungan</h4>
+        <p>
+          Uji inlier-outlier dilakukan menggunakan transformasi logaritmik. Batas atas dan batas bawah
+          dihitung berdasarkan rata-rata logaritma data, standar deviasi logaritma data, dan faktor Kn.
+        </p>
+
+        <div class="rumus">
+          <div><b>Parameter Data Logaritmik</b></div>
+          <div>n = ${hasilOutlier.n}</div>
+          <div>Kn = ${formatAngka(hasilOutlier.kn, 4)}</div>
+          <div>Rata-rata log X = ${formatAngka(hasilOutlier.meanLog, 4)}</div>
+          <div>S log X = ${formatAngka(hasilOutlier.sdLog, 4)}</div>
+          <br>
+          <div><b>Perhitungan Batas Atas</b></div>
+          <div>YH = rata-rata log X + Kn × S log X</div>
+          <div>YH = ${formatAngka(hasilOutlier.meanLog, 4)} + ${formatAngka(hasilOutlier.kn, 4)} × ${formatAngka(hasilOutlier.sdLog, 4)}</div>
+          <div>YH = ${formatAngka(hasilOutlier.batasAtasLog, 4)}</div>
+          <div>XH = 10^YH = ${formatAngka(hasilOutlier.batasAtas, 4)} mm</div>
+          <br>
+          <div><b>Perhitungan Batas Bawah</b></div>
+          <div>YL = rata-rata log X - Kn × S log X</div>
+          <div>YL = ${formatAngka(hasilOutlier.meanLog, 4)} - ${formatAngka(hasilOutlier.kn, 4)} × ${formatAngka(hasilOutlier.sdLog, 4)}</div>
+          <div>YL = ${formatAngka(hasilOutlier.batasBawahLog, 4)}</div>
+          <div>XL = 10^YL = ${formatAngka(hasilOutlier.batasBawah, 4)} mm</div>
+        </div>
+
+        <p>
+          Nilai X maksimum sebesar ${formatAngka(hasilOutlier.xMax, 4)} mm dibandingkan dengan batas atas sebesar
+          ${formatAngka(hasilOutlier.batasAtas, 4)} mm. Nilai X minimum sebesar ${formatAngka(hasilOutlier.xMin, 4)} mm
+          dibandingkan dengan batas bawah sebesar ${formatAngka(hasilOutlier.batasBawah, 4)} mm.
+          Berdasarkan hasil tersebut, ${hasilOutlier.keterangan.toLowerCase()}.
+        </p>
+      `;
     }
 
     function buatTabelRekapLaporan(hasil) {
@@ -1549,7 +1720,7 @@
           <p>
             Pemeriksaan data dilakukan melalui beberapa uji statistik, yaitu uji RAPS, uji ketiadaan trend,
             uji stasioner, uji persistensi, serta uji inlier-outlier. Hasil pengujian ini digunakan sebagai dasar
-            untuk menilai kelayakan data sebelum dilakukan analisis lanjutan.
+            untuk menilai kelayakan data sebelum dilakukan analisis hidrologi lanjutan.
           </p>
 
           <h2>2. Data Hujan Maksimum Tahunan</h2>
@@ -1570,7 +1741,6 @@
               ${buatBarisDataLaporan(data)}
             </tbody>
           </table>
-          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
 
           <p>
             Berdasarkan data tersebut, diperoleh jumlah data sebanyak ${data.length} tahun.
@@ -1584,10 +1754,11 @@
 
           <h3>3.1 Uji RAPS</h3>
           <p>
-            Uji RAPS digunakan untuk mengetahui konsistensi data hujan. Pengujian dilakukan dengan
-            menghitung nilai kumulatif penyimpangan data terhadap rata-rata, kemudian dibandingkan dengan
-            nilai kritis pada tingkat kepercayaan 99%.
+            Uji RAPS digunakan untuk mengetahui konsistensi data hujan. Pengujian dilakukan dengan menghitung
+            jumlah kumulatif penyimpangan data terhadap rata-rata. Nilai kumulatif tersebut kemudian diskalakan
+            dengan nilai Dy dan dibandingkan terhadap nilai kritis Q/√n dan R/√n.
           </p>
+          ${buatContohRAPS(h.hasilRAPS)}
           <div class="judul-tabel">Tabel 2 Rekapitulasi Hasil Uji RAPS</div>
           <table>
             <thead>
@@ -1616,13 +1787,14 @@
               </tr>
             </tbody>
           </table>
-          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
 
           <h3>3.2 Uji Ketiadaan Trend</h3>
           <p>
-            Uji ketiadaan trend dilakukan untuk mengetahui ada atau tidaknya kecenderungan peningkatan
-            maupun penurunan data hujan terhadap waktu. Metode yang digunakan adalah Spearman Rank.
+            Uji ketiadaan trend dilakukan untuk mengetahui ada atau tidaknya kecenderungan peningkatan maupun
+            penurunan data hujan terhadap waktu. Metode yang digunakan adalah Spearman Rank. Apabila nilai
+            t hitung lebih kecil dari t tabel, maka data dinyatakan tidak menunjukkan adanya trend.
           </p>
+          ${buatContohTrend(data, h.hasilTrend)}
           <div class="judul-tabel">Tabel 3 Rekapitulasi Hasil Uji Ketiadaan Trend</div>
           <table>
             <thead>
@@ -1640,13 +1812,14 @@
               <tr><td class="text-left">Keterangan</td><td>${h.hasilTrend.keterangan}</td></tr>
             </tbody>
           </table>
-          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
 
           <h3>3.3 Uji Stasioner</h3>
           <p>
-            Uji stasioner dilakukan untuk mengetahui kestabilan varians dan rerata data hujan.
-            Data dibagi menjadi dua kelompok, kemudian dilakukan uji kestabilan varians dan rerata.
+            Uji stasioner digunakan untuk mengetahui kestabilan data hujan berdasarkan varians dan nilai rata-rata.
+            Data deret berkala dibagi menjadi dua kelompok, kemudian dilakukan uji F untuk kestabilan varians dan
+            uji t untuk kestabilan rata-rata.
           </p>
+          ${buatContohStasioner(h.hasilStasioner)}
           <div class="judul-tabel">Tabel 4 Rekapitulasi Hasil Uji Stasioner</div>
           <table>
             <thead>
@@ -1675,13 +1848,13 @@
               </tr>
             </tbody>
           </table>
-          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
 
           <h3>3.4 Uji Persistensi</h3>
           <p>
-            Uji persistensi dilakukan untuk mengetahui hubungan serial antar data hujan tahunan.
-            Pengujian dilakukan menggunakan autokorelasi lag-1.
+            Uji persistensi digunakan untuk mengetahui apakah data hujan tahun tertentu memiliki hubungan serial
+            dengan data hujan tahun berikutnya. Pengujian dilakukan menggunakan autokorelasi lag-1.
           </p>
+          ${buatContohPersistensi(h.hasilPersistensi)}
           <div class="judul-tabel">Tabel 5 Rekapitulasi Hasil Uji Persistensi</div>
           <table>
             <thead>
@@ -1698,13 +1871,13 @@
               <tr><td class="text-left">Keterangan</td><td>${h.hasilPersistensi.keterangan}</td></tr>
             </tbody>
           </table>
-          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
 
           <h3>3.5 Uji Inlier-Outlier</h3>
           <p>
-            Uji inlier-outlier dilakukan untuk mengetahui apakah terdapat data hujan yang menyimpang
-            terlalu jauh dari pola data. Pengujian dilakukan dengan transformasi logaritmik dan faktor Kn.
+            Uji inlier-outlier dilakukan untuk mengetahui apakah terdapat data hujan yang menyimpang terlalu jauh
+            dari pola data. Pengujian dilakukan dengan transformasi logaritmik dan faktor Kn.
           </p>
+          ${buatContohOutlier(h.hasilOutlier)}
           <div class="judul-tabel">Tabel 6 Rekapitulasi Hasil Uji Inlier-Outlier</div>
           <table>
             <thead>
@@ -1730,7 +1903,6 @@
               </tr>
             </tbody>
           </table>
-          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
 
           <h2>4. Rekapitulasi Hasil Pengujian</h2>
           <p>
@@ -1738,7 +1910,6 @@
           </p>
           <div class="judul-tabel">Tabel 7 Rekapitulasi Hasil Pengujian Data Hujan</div>
           ${buatTabelRekapLaporan(h)}
-          <div class="sumber">Sumber: Hasil Analisis, 2025</div>
 
           <h2>5. Kesimpulan</h2>
           <p class="kesimpulan">
@@ -1751,10 +1922,7 @@
 
     function cetakPdf() {
       const html = buatHtmlLaporan();
-
-      if (!html) {
-        return;
-      }
+      if (!html) return;
 
       const win = window.open("", "_blank");
 
@@ -1770,10 +1938,7 @@
 
     function unduhWord() {
       const html = buatHtmlLaporan();
-
-      if (!html) {
-        return;
-      }
+      if (!html) return;
 
       const stasiun = document.getElementById("pilihStasiun").value;
       const namaFile = "laporan_kualitas_data_hujan_" + stasiun + ".doc";
