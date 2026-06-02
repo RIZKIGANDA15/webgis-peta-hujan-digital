@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Peta Sebaran Hujan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      color: #1f2937;
+    }
+
+    header {
+      background: #0f766e;
+      color: white;
+      padding: 14px 20px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 14px;
+    }
+
+    #appContainer {
+      display: flex;
+      width: 100%;
+      height: calc(100vh - 76px);
+    }
+
+    #panel {
+      width: 330px;
+      min-width: 330px;
+      height: 100%;
+      background: white;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
+      z-index: 1000;
+      overflow-y: auto;
+      transition: width 0.3s ease, min-width 0.3s ease;
+    }
+
+    #panelHeader {
+      background: #333;
+      color: white;
+      padding: 12px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #togglePanel {
+      background: transparent;
+      border: 1px solid white;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    #panelContent {
+      padding: 14px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    #panel.minimized {
+      width: 44px;
+      min-width: 44px;
+    }
+
+    #panel.minimized #panelHeader {
+      height: 100%;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 4px;
+    }
+
+    #panel.minimized #panelHeader span {
+      transform: rotate(180deg);
+    }
+
+    #panel.minimized #panelContent {
+      display: none;
+    }
+
+    #panel.minimized #togglePanel {
+      transform: rotate(90deg);
+    }
+
+    #map {
+      flex: 1;
+      height: 100%;
+    }
+
+    .control-group {
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .control-group h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: #0f766e;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 11px;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    select,
+    input[type="range"],
+    input[type="file"] {
+      width: 100%;
+      margin-top: 5px;
+      padding: 7px;
+      box-sizing: border-box;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 6px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+      padding: 9px 10px;
+      margin-top: 8px;
+      border-radius: 6px;
+      background: #0f766e;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn:hover {
+      background: #0b5f59;
+    }
+
+    .btn-secondary {
+      background: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #1f2937;
+    }
+
+    .btn-danger {
+      background: #b91c1c;
+    }
+
+    .btn-danger:hover {
+      background: #991b1b;
+    }
+
+    .note {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    .info-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .legend {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+    }
+
+    .legend-color {
+      width: 18px;
+      height: 12px;
+      border: 1px solid #999;
+      display: inline-block;
+    }
+
+    .leaflet-control-layers {
+      font-size: 13px;
+      border-radius: 8px;
+    }
+
+    .popup-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+
+    .popup-table td {
+      border-bottom: 1px solid #eee;
+      padding: 3px 5px;
+      vertical-align: top;
+    }
+
+    .popup-table td:first-child {
+      font-weight: bold;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Peta Sebaran Hujan</h1>
+    <p>Overlay peta sebaran hujan BMKG di atas basemap satelit</p>
+  </header>
+
+  <div id="appContainer">
+    <div id="panel">
+      <div id="panelHeader">
+        <span>Pengaturan Overlay</span>
+        <button id="togglePanel">−</button>
+      </div>
+
+      <div id="panelContent">
+
+        <div class="control-group">
+          <h3>Peta Sebaran Hujan</h3>
+
+          <label>
+            Pilih Peta
+            <select id="pilihOverlayHujan"></select>
+          </label>
+
+          <label>
+            <input type="checkbox" id="cekOverlayHujan" checked>
+            Tampilkan overlay hujan
+          </label>
+
+          <label>
+            Transparansi Overlay
+            <input type="range" id="opacityOverlayHujan" min="0" max="100" value="60">
+          </label>
+
+          <button class="btn" id="btnZoomOverlay">Zoom ke Overlay</button>
+
+          <div class="note">
+            Overlay ditempel otomatis menggunakan koordinat yang sudah dikunci.
+            Jika gambar BMKG memiliki format/crop yang sama, gambar berikutnya tidak perlu digeser manual.
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Upload Overlay Sementara</h3>
+
+          <label>
+            Upload JPG/PNG
+            <input type="file" id="uploadOverlay" accept=".jpg,.jpeg,.png,.webp">
+          </label>
+
+          <button class="btn btn-danger" id="btnHapusUpload">Hapus Overlay Upload</button>
+
+          <div class="note">
+            Upload ini hanya tampil sementara di browser. Kalau halaman di-refresh, overlay upload akan hilang.
+            Posisi tetap memakai koordinat default yang sama.
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Layer Referensi</h3>
+
+          <label>
+            <input type="checkbox" id="cekStasiunHujan" checked>
+            Tampilkan stasiun hujan
+          </label>
+
+          <div class="note">
+            Titik stasiun hujan dibaca dari file <b>data_stasiun_hujan.csv</b>.
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Legenda Intensitas</h3>
+
+          <div class="legend">
+            <div class="legend-item">
+              <span class="legend-color" style="background:#4ade80;"></span>
+              Ringan
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background:#fde047;"></span>
+              Sedang
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background:#fb923c;"></span>
+              Lebat
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background:#ef4444;"></span>
+              Sangat Lebat
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background:#a855f7;"></span>
+              Ekstrem
+            </div>
+          </div>
+
+          <div class="note">
+            Legenda dapat disesuaikan lagi mengikuti legenda resmi pada peta BMKG.
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Informasi Overlay</h3>
+          <div class="info-box" id="infoOverlay">
+            Memuat informasi overlay...
+          </div>
+        </div>
+
+        <a href="index.html" class="btn btn-secondary">Kembali ke Home</a>
+        <a href="webgis.html" class="btn btn-secondary">Buka WebGIS Drainase</a>
+      </div>
+    </div>
+
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    /*
+      KALIBRASI OVERLAY
+
+      Bounds ini menentukan posisi gambar overlay di atas peta.
+
+      Format:
+      [
+        [latitude_bawah, longitude_kiri],
+        [latitude_atas, longitude_kanan]
+      ]
+
+      Nilai ini masih perkiraan untuk area Jabodetabek.
+      Nanti cukup dikalibrasi sekali sampai gambar BMKG nempel pas.
+      Kalau gambar berikutnya punya format/crop sama, bounds ini bisa dipakai terus.
+    */
+    const boundsOverlayDefault = [
+      [-6.78, 106.35],
+      [-5.85, 107.35]
+    ];
+
+    /*
+      DAFTAR OVERLAY HUJAN
+
+      Upload file gambar ke repo, lalu tambahkan ke daftar ini.
+
+      Contoh:
+      file: "overlay_hujan_2026_01_17.jpg"
+
+      Pastikan nama file di sini sama persis dengan nama file di GitHub.
+    */
+    const daftarOverlayHujan = [
+      {
+        id: "hujan_2026_01_17",
+        nama: "Peta Sebaran Hujan 17 Januari 2026",
+        file: "overlay_hujan_2026_01_17.jpg",
+        tanggal: "17 Januari 2026",
+        periode: "07.00 WIB s.d. 07.00 WIB",
+        sumber: "BMKG",
+        bounds: boundsOverlayDefault
+      }
+
+      /*
+      Tambahkan overlay lain seperti ini:
+
+      ,
+      {
+        id: "hujan_2026_01_18",
+        nama: "Peta Sebaran Hujan 18 Januari 2026",
+        file: "overlay_hujan_2026_01_18.jpg",
+        tanggal: "18 Januari 2026",
+        periode: "07.00 WIB s.d. 07.00 WIB",
+        sumber: "BMKG",
+        bounds: boundsOverlayDefault
+      }
+      */
+    ];
+
+    const map = L.map("map", {
+      center: [-6.225, 106.900],
+      zoom: 10
+    });
+
+    const googleMaps = L.tileLayer("https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Maps"
+    });
+
+    const googleSatellite = L.tileLayer("https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Satellite"
+    });
+
+    const googleHybrid = L.tileLayer("https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
+      maxZoom: 20,
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      attribution: "&copy; Google Hybrid"
+    }).addTo(map);
+
+    const osmMap = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    });
+
+    const esriSatellite = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        maxZoom: 20,
+        attribution: "Tiles &copy; Esri"
+      }
+    );
+
+    const baseMaps = {
+      "Google Maps": googleMaps,
+      "Google Satellite": googleSatellite,
+      "Google Hybrid": googleHybrid,
+      "OpenStreetMap": osmMap,
+      "Esri Satellite": esriSatellite
+    };
+
+    L.control.layers(baseMaps, null, {
+      position: "topright",
+      collapsed: false
+    }).addTo(map);
+
+    map.createPane("paneOverlayHujan");
+    map.createPane("paneStasiun");
+
+    map.getPane("paneOverlayHujan").style.zIndex = 420;
+    map.getPane("paneStasiun").style.zIndex = 500;
+
+    let overlayHujanAktif = null;
+    let overlayUploadAktif = null;
+    let layerStasiunHujan = L.layerGroup().addTo(map);
+
+    function angka(value) {
+      return parseFloat(String(value).replace(",", "."));
+    }
+
+    function parseCsvOtomatis(csvText) {
+      const rows = csvText.trim().split(/\r?\n/);
+      const firstLine = rows[0];
+      const delimiter = firstLine.includes(";") ? ";" : ",";
+      const headers = firstLine.split(delimiter).map(h => h.trim());
+
+      return rows.slice(1).map(row => {
+        const values = row.split(delimiter);
+        const obj = {};
+
+        headers.forEach((header, index) => {
+          obj[header] = values[index] ? values[index].trim() : "";
+        });
+
+        return obj;
+      });
+    }
+
+    function isiDropdownOverlay() {
+      const select = document.getElementById("pilihOverlayHujan");
+      select.innerHTML = "";
+
+      daftarOverlayHujan.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.nama;
+        select.appendChild(option);
+      });
+    }
+
+    function ambilOverlayTerpilih() {
+      const id = document.getElementById("pilihOverlayHujan").value;
+      return daftarOverlayHujan.find(item => item.id === id);
+    }
+
+    function tampilkanInfoOverlay(item, tambahan = "") {
+      const info = document.getElementById("infoOverlay");
+
+      info.innerHTML = `
+        <b>${item.nama}</b><br>
+        Tanggal: ${item.tanggal}<br>
+        Periode: ${item.periode}<br>
+        Sumber: ${item.sumber}<br>
+        File: ${item.file}<br>
+        <br>
+        Bounds:<br>
+        SW: ${item.bounds[0][0]}, ${item.bounds[0][1]}<br>
+        NE: ${item.bounds[1][0]}, ${item.bounds[1][1]}
+        ${tambahan}
+      `;
+    }
+
+    function muatOverlayHujan() {
+      const item = ambilOverlayTerpilih();
+
+      if (!item) {
+        return;
+      }
+
+      if (overlayHujanAktif) {
+        map.removeLayer(overlayHujanAktif);
+      }
+
+      const opacity = Number(document.getElementById("opacityOverlayHujan").value) / 100;
+
+      overlayHujanAktif = L.imageOverlay(item.file, item.bounds, {
+        opacity: opacity,
+        interactive: false,
+        pane: "paneOverlayHujan"
+      });
+
+      if (document.getElementById("cekOverlayHujan").checked) {
+        overlayHujanAktif.addTo(map);
+      }
+
+      tampilkanInfoOverlay(item);
+      map.fitBounds(item.bounds);
+    }
+
+    function setOpacityOverlay() {
+      const opacity = Number(document.getElementById("opacityOverlayHujan").value) / 100;
+
+      if (overlayHujanAktif) {
+        overlayHujanAktif.setOpacity(opacity);
+      }
+
+      if (overlayUploadAktif) {
+        overlayUploadAktif.setOpacity(opacity);
+      }
+    }
+
+    function zoomKeOverlay() {
+      const item = ambilOverlayTerpilih();
+
+      if (item) {
+        map.fitBounds(item.bounds);
+      }
+    }
+
+    function toggleOverlay() {
+      if (!overlayHujanAktif) {
+        return;
+      }
+
+      if (document.getElementById("cekOverlayHujan").checked) {
+        overlayHujanAktif.addTo(map);
+      } else {
+        map.removeLayer(overlayHujanAktif);
+      }
+    }
+
+    function uploadOverlaySementara(event) {
+      const file = event.target.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        if (overlayUploadAktif) {
+          map.removeLayer(overlayUploadAktif);
+        }
+
+        if (overlayHujanAktif) {
+          map.removeLayer(overlayHujanAktif);
+        }
+
+        document.getElementById("cekOverlayHujan").checked = false;
+
+        const opacity = Number(document.getElementById("opacityOverlayHujan").value) / 100;
+        const imageUrl = e.target.result;
+
+        overlayUploadAktif = L.imageOverlay(imageUrl, boundsOverlayDefault, {
+          opacity: opacity,
+          interactive: false,
+          pane: "paneOverlayHujan"
+        }).addTo(map);
+
+        map.fitBounds(boundsOverlayDefault);
+
+        const itemUpload = {
+          nama: "Overlay Upload Sementara",
+          tanggal: "-",
+          periode: "-",
+          sumber: "Upload lokal",
+          file: file.name,
+          bounds: boundsOverlayDefault
+        };
+
+        tampilkanInfoOverlay(
+          itemUpload,
+          "<br><br><b>Status:</b> overlay ini sementara dan hilang jika halaman di-refresh."
+        );
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    function hapusOverlayUpload() {
+      if (overlayUploadAktif) {
+        map.removeLayer(overlayUploadAktif);
+        overlayUploadAktif = null;
+      }
+
+      document.getElementById("uploadOverlay").value = "";
+      document.getElementById("cekOverlayHujan").checked = true;
+      muatOverlayHujan();
+    }
+
+    function loadStasiunHujan() {
+      fetch("data_stasiun_hujan.csv")
+        .then(response => response.text())
+        .then(csvText => {
+          const dataCsv = parseCsvOtomatis(csvText);
+
+          dataCsv.forEach(data => {
+            const latitude = angka(data.latitude);
+            const longitude = angka(data.longitude);
+
+            if (!isNaN(latitude) && !isNaN(longitude)) {
+              const marker = L.marker([latitude, longitude], {
+                pane: "paneStasiun"
+              });
+
+              marker.bindPopup(`
+                <b>${data.nama_stasiun}</b><br>
+                Wilayah: ${data.wilayah || "-"}
+              `);
+
+              marker.addTo(layerStasiunHujan);
+            }
+          });
+        })
+        .catch(error => {
+          console.error("Gagal membaca data_stasiun_hujan.csv", error);
+        });
+    }
+
+    function toggleStasiunHujan() {
+      if (document.getElementById("cekStasiunHujan").checked) {
+        map.addLayer(layerStasiunHujan);
+      } else {
+        map.removeLayer(layerStasiunHujan);
+      }
+    }
+
+    document.getElementById("togglePanel").addEventListener("click", function () {
+      const panel = document.getElementById("panel");
+      panel.classList.toggle("minimized");
+
+      if (panel.classList.contains("minimized")) {
+        this.textContent = "›";
+      } else {
+        this.textContent = "−";
+      }
+
+      setTimeout(function () {
+        map.invalidateSize();
+      }, 300);
+    });
+
+    isiDropdownOverlay();
+    muatOverlayHujan();
+    loadStasiunHujan();
+
+    document.getElementById("pilihOverlayHujan").addEventListener("change", muatOverlayHujan);
+    document.getElementById("cekOverlayHujan").addEventListener("change", toggleOverlay);
+    document.getElementById("opacityOverlayHujan").addEventListener("input", setOpacityOverlay);
+    document.getElementById("btnZoomOverlay").addEventListener("click", zoomKeOverlay);
+    document.getElementById("cekStasiunHujan").addEventListener("change", toggleStasiunHujan);
+    document.getElementById("uploadOverlay").addEventListener("change", uploadOverlaySementara);
+    document.getElementById("btnHapusUpload").addEventListener("click", hapusOverlayUpload);
+  </script>
+</body>
+</html>
