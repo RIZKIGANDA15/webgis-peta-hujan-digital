@@ -654,6 +654,10 @@
       return "#d946ef";
     }
 
+    function warnaIsohyet(nilai) {
+      return warnaDariNilai(nilai);
+    }
+
     function parseCsvOtomatis(csvText) {
       const rows = csvText.trim().split(/\r?\n/);
       const firstLine = rows[0];
@@ -943,14 +947,6 @@
       return pembilang / penyebut;
     }
 
-    function warnaIsohyet(nilai, min, max) {
-      const rentang = max - min || 1;
-      const ratio = Math.max(0, Math.min(1, (nilai - min) / rentang));
-
-      const hue = 220 - ratio * 220;
-      return `hsl(${hue}, 85%, 55%)`;
-    }
-
     function tampilkanLabelStasiun() {
       layerLabelStasiun.clearLayers();
 
@@ -1054,7 +1050,7 @@
           L.rectangle([[lat1, lng1], [lat2, lng2]], {
             pane: "paneIsohyet",
             stroke: false,
-            fillColor: warnaIsohyet(nilai, nilaiMin, nilaiMax),
+            fillColor: warnaIsohyet(nilai),
             fillOpacity: 0.42,
             interactive: false
           }).addTo(layerIsohyet);
