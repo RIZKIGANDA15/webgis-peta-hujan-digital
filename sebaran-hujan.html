@@ -68,6 +68,7 @@
       cursor: pointer;
       font-size: 16px;
       line-height: 1;
+      flex-shrink: 0;
     }
 
     #panelContent {
@@ -77,8 +78,13 @@
     }
 
     #panel.minimized {
-      width: 44px;
-      min-width: 44px;
+      width: 46px;
+      min-width: 46px;
+      overflow: hidden;
+    }
+
+    #panel.minimized #panelContent {
+      display: none !important;
     }
 
     #panel.minimized #panelHeader {
@@ -86,20 +92,23 @@
       writing-mode: vertical-rl;
       text-orientation: mixed;
       justify-content: center;
-      gap: 10px;
-      padding: 8px 4px;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 4px;
     }
 
     #panel.minimized #panelHeader span {
       transform: rotate(180deg);
-    }
-
-    #panel.minimized #panelContent {
-      display: none;
+      white-space: nowrap;
     }
 
     #panel.minimized #togglePanel {
       transform: rotate(90deg);
+      min-width: 28px;
+    }
+
+    #panel.minimized *:not(#panelHeader):not(#panelHeader span):not(#togglePanel) {
+      display: none !important;
     }
 
     #map {
@@ -126,6 +135,7 @@
       font-size: 13px;
     }
 
+    select,
     input[type="range"],
     input[type="file"] {
       width: 100%;
@@ -136,6 +146,7 @@
       border-radius: 5px;
       font-family: Arial, sans-serif;
       font-size: 13px;
+      background: white;
     }
 
     input[type="checkbox"] {
@@ -259,11 +270,6 @@
       display: inline-block;
     }
 
-    .leaflet-control-layers {
-      font-size: 13px;
-      border-radius: 8px;
-    }
-
     .marker-result {
       width: 18px;
       height: 18px;
@@ -290,12 +296,23 @@
       <div id="panelContent">
 
         <div class="control-group">
-          <h3>Peta Sebaran Hujan</h3>
+          <h3>Cek Kategori Hujan dari Peta</h3>
 
-          <label>
-            <input type="checkbox" id="cekOverlayHujan" checked>
-            Tampilkan overlay hujan
-          </label>
+          <button class="btn btn-warning" id="btnModeCekArea">Aktifkan Mode Cek Area</button>
+
+          <div class="note">
+            Setelah mode aktif, klik area pada peta. Sistem akan membaca warna overlay dan memperkirakan kategori hujan pada lokasi tersebut.
+          </div>
+
+          <div id="hasilCekArea" class="result-box" style="margin-top:10px;">
+            Belum ada area yang dicek.
+          </div>
+
+          <button class="btn btn-secondary" id="btnResetHasilCek">Reset Hasil Cek</button>
+        </div>
+
+        <div class="control-group">
+          <h3>Peta Sebaran Hujan</h3>
 
           <label>
             Transparansi Overlay
@@ -331,19 +348,18 @@
         </div>
 
         <div class="control-group">
-          <h3>Cek Kategori Hujan dari Peta</h3>
+          <h3>Basemap</h3>
 
-          <button class="btn btn-warning" id="btnModeCekArea">Aktifkan Mode Cek Area</button>
-
-          <div class="note">
-            Setelah mode aktif, klik area pada peta. Sistem akan membaca warna overlay dan memperkirakan kategori hujan pada lokasi tersebut.
-          </div>
-
-          <div id="hasilCekArea" class="result-box" style="margin-top:10px;">
-            Belum ada area yang dicek.
-          </div>
-
-          <button class="btn btn-secondary" id="btnResetHasilCek">Reset Hasil Cek</button>
+          <label>
+            Pilih Basemap
+            <select id="pilihBasemap">
+              <option value="googleHybrid">Google Hybrid</option>
+              <option value="googleMaps">Google Maps</option>
+              <option value="googleSatellite">Google Satellite / Earth</option>
+              <option value="osmMap">OpenStreetMap</option>
+              <option value="esriSatellite">Esri Satellite</option>
+            </select>
+          </label>
         </div>
 
         <div class="control-group">
@@ -515,18 +531,7 @@
       }
     );
 
-    const baseMaps = {
-      "Google Maps": googleMaps,
-      "Google Satellite / Earth": googleSatellite,
-      "Google Hybrid": googleHybrid,
-      "OpenStreetMap": osmMap,
-      "Esri Satellite": esriSatellite
-    };
-
-    L.control.layers(baseMaps, null, {
-      position: "topright",
-      collapsed: false
-    }).addTo(map);
+    let basemapAktif = googleHybrid;
 
     map.createPane("paneOverlayHujan");
     map.createPane("paneHasilCek");
@@ -647,10 +652,7 @@
       const opacity = Number(document.getElementById("opacityOverlayHujan").value) / 100;
 
       overlayHujanAktif = buatRotatedOverlay(overlayUtama.file, overlayUtama.titik, opacity);
-
-      if (document.getElementById("cekOverlayHujan").checked) {
-        overlayHujanAktif.addTo(map);
-      }
+      overlayHujanAktif.addTo(map);
 
       overlayAktifInfo = overlayUtama;
       muatGambarKeCanvas(overlayUtama.file);
@@ -681,18 +683,6 @@
       }
     }
 
-    function toggleOverlay() {
-      if (!overlayHujanAktif) {
-        return;
-      }
-
-      if (document.getElementById("cekOverlayHujan").checked) {
-        overlayHujanAktif.addTo(map);
-      } else {
-        map.removeLayer(overlayHujanAktif);
-      }
-    }
-
     function uploadOverlaySementara(event) {
       const file = event.target.files[0];
 
@@ -710,8 +700,6 @@
         if (overlayHujanAktif) {
           map.removeLayer(overlayHujanAktif);
         }
-
-        document.getElementById("cekOverlayHujan").checked = false;
 
         const opacity = Number(document.getElementById("opacityOverlayHujan").value) / 100;
         const imageUrl = e.target.result;
@@ -741,8 +729,41 @@
       }
 
       document.getElementById("uploadOverlay").value = "";
-      document.getElementById("cekOverlayHujan").checked = true;
       muatOverlayUtama();
+    }
+
+    function gantiBasemap() {
+      const pilihan = document.getElementById("pilihBasemap").value;
+
+      if (basemapAktif) {
+        map.removeLayer(basemapAktif);
+      }
+
+      if (pilihan === "googleMaps") {
+        basemapAktif = googleMaps;
+      } else if (pilihan === "googleSatellite") {
+        basemapAktif = googleSatellite;
+      } else if (pilihan === "osmMap") {
+        basemapAktif = osmMap;
+      } else if (pilihan === "esriSatellite") {
+        basemapAktif = esriSatellite;
+      } else {
+        basemapAktif = googleHybrid;
+      }
+
+      basemapAktif.addTo(map);
+
+      if (overlayHujanAktif) {
+        overlayHujanAktif.bringToFront();
+      }
+
+      if (overlayUploadAktif) {
+        overlayUploadAktif.bringToFront();
+      }
+
+      if (markerHasilCek) {
+        markerHasilCek.bringToFront();
+      }
     }
 
     function loadStasiunHujan() {
@@ -1056,7 +1077,7 @@
     muatOverlayUtama();
     loadStasiunHujan();
 
-    document.getElementById("cekOverlayHujan").addEventListener("change", toggleOverlay);
+    document.getElementById("pilihBasemap").addEventListener("change", gantiBasemap);
     document.getElementById("opacityOverlayHujan").addEventListener("input", setOpacityOverlay);
     document.getElementById("btnZoomOverlay").addEventListener("click", zoomKeOverlay);
     document.getElementById("cekStasiunHujan").addEventListener("change", toggleStasiunHujan);
