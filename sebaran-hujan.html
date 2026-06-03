@@ -137,8 +137,7 @@
 
     select,
     input[type="range"],
-    input[type="file"],
-    input[type="number"] {
+    input[type="file"] {
       width: 100%;
       margin-top: 5px;
       padding: 7px;
@@ -288,6 +287,7 @@
       font-weight: bold;
       color: #0f766e;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+      text-align: center;
     }
 
     .small-table {
@@ -343,7 +343,7 @@
           </label>
 
           <div class="note">
-            Mode Overlay membaca warna dari JPG BMKG. Mode Isohyet menghitung estimasi hujan rencana dari data stasiun.
+            Mode Overlay membaca warna dari JPG BMKG. Mode Isohyet memakai nilai hujan rencana final dari CSV.
           </div>
         </div>
 
@@ -405,12 +405,9 @@
           <label>
             Kala Ulang
             <select id="pilihKalaUlang">
-              <option value="2">2 tahun</option>
-              <option value="5">5 tahun</option>
-              <option value="10">10 tahun</option>
-              <option value="25" selected>25 tahun</option>
-              <option value="50">50 tahun</option>
-              <option value="100">100 tahun</option>
+              <option value="T2">2 tahun</option>
+              <option value="T5" selected>5 tahun</option>
+              <option value="T10">10 tahun</option>
             </select>
           </label>
 
@@ -436,7 +433,7 @@
           <button class="btn btn-danger" id="btnHapusIsohyet">Hapus Isohyet</button>
 
           <div class="note">
-            Hujan rencana dihitung per stasiun menggunakan pendekatan Log Pearson III, lalu diinterpolasi dengan IDW.
+            Nilai hujan rencana diambil dari file <b>hujan_rencana_3stasiun.csv</b>, lalu diinterpolasi dengan IDW.
           </div>
 
           <div id="rekapIsohyet" class="note"></div>
@@ -471,7 +468,7 @@
           </label>
 
           <div class="note">
-            Data stasiun dibaca dari <b>data_stasiun_hujan.csv</b> dan data hujan tahunan dari <b>data_hujan_bmkg_3stasiun.csv</b>.
+            Titik dan nilai stasiun mengikuti data pada file <b>hujan_rencana_3stasiun.csv</b>.
           </div>
         </div>
 
@@ -518,7 +515,6 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/IvanSanchez/Leaflet.ImageOverlay.Rotated/Leaflet.ImageOverlay.Rotated.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
 
   <script>
     const titikOverlayDefault = {
@@ -537,27 +533,6 @@
       sumber: "BMKG",
       titik: titikOverlayDefault
     };
-
-    const konfigurasiStasiun = [
-      {
-        key: "stasiun_meteorologi_halim_perdana_kusuma",
-        nama: "Halim Perdanakusuma",
-        lat: -6.266610,
-        lng: 106.890980
-      },
-      {
-        key: "stasiun_meteorologi_kemayoran",
-        nama: "Kemayoran",
-        lat: -6.155590,
-        lng: 106.842970
-      },
-      {
-        key: "stasiun_meteorologi_bogor",
-        nama: "Bogor",
-        lat: -6.501950,
-        lng: 106.756990
-      }
-    ];
 
     const kategoriWarna = [
       { nama: "Tidak Hujan", warnaTampil: "#d1d5db", sampel: [[210,210,210],[150,170,180],[75,165,205],[65,150,190]] },
@@ -616,9 +591,9 @@
     map.getPane("paneOverlayHujan").style.zIndex = 420;
     map.getPane("paneIsohyet").style.zIndex = 430;
     map.getPane("paneIsohyetLine").style.zIndex = 450;
-    map.getPane("paneHasilCek").style.zIndex = 540;
     map.getPane("paneStasiun").style.zIndex = 530;
     map.getPane("paneLabelStasiun").style.zIndex = 535;
+    map.getPane("paneHasilCek").style.zIndex = 540;
 
     let overlayHujanAktif = null;
     let overlayUploadAktif = null;
@@ -635,7 +610,7 @@
     let overlayImage = null;
     let overlayCanvasSiap = false;
 
-    let dataHujanBMKG = [];
+    let dataHujanRencana = [];
     let nilaiRencanaStasiun = [];
     let gridIsohyet = null;
 
@@ -646,30 +621,6 @@
     function formatAngka(value, digit = 2) {
       if (value === null || value === undefined || isNaN(value)) return "-";
       return Number(value).toFixed(digit);
-    }
-
-    function rataRata(data) {
-      return data.reduce((sum, value) => sum + value, 0) / data.length;
-    }
-
-    function standarDeviasi(data) {
-      const mean = rataRata(data);
-      const jumlah = data.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0);
-      return Math.sqrt(jumlah / (data.length - 1));
-    }
-
-    function skewnessSample(data) {
-      const n = data.length;
-      const mean = rataRata(data);
-      const sd = standarDeviasi(data);
-
-      if (n < 3 || sd === 0) return 0;
-
-      const jumlah = data.reduce((sum, value) => {
-        return sum + Math.pow((value - mean) / sd, 3);
-      }, 0);
-
-      return (n / ((n - 1) * (n - 2))) * jumlah;
     }
 
     function estimasiCurahHujan(kategori) {
@@ -878,11 +829,30 @@
       if (markerHasilCek) markerHasilCek.bringToFront();
     }
 
+    function loadDataHujanRencana() {
+      fetch("hujan_rencana_3stasiun.csv")
+        .then(response => response.text())
+        .then(csvText => {
+          dataHujanRencana = parseCsvOtomatis(csvText);
+          loadStasiunHujan();
+        })
+        .catch(error => {
+          console.error("Gagal membaca hujan_rencana_3stasiun.csv", error);
+          alert("File hujan_rencana_3stasiun.csv belum terbaca. Pastikan nama file sudah benar.");
+        });
+    }
+
     function loadStasiunHujan() {
       layerStasiunHujan.clearLayers();
 
-      konfigurasiStasiun.forEach(stasiun => {
-        const marker = L.circleMarker([stasiun.lat, stasiun.lng], {
+      dataHujanRencana.forEach(row => {
+        const lat = angka(row.latitude);
+        const lng = angka(row.longitude);
+        const nama = row.stasiun;
+
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        const marker = L.circleMarker([lat, lng], {
           pane: "paneStasiun",
           radius: 7,
           color: "#ffffff",
@@ -892,9 +862,9 @@
         });
 
         marker.bindPopup(`
-          <b>${stasiun.nama}</b><br>
-          Latitude: ${stasiun.lat}<br>
-          Longitude: ${stasiun.lng}
+          <b>${nama}</b><br>
+          Latitude: ${lat}<br>
+          Longitude: ${lng}
         `);
 
         marker.addTo(layerStasiunHujan);
@@ -917,173 +887,21 @@
       }
     }
 
-    function latLngKePixelGambar(latlng, titik, imageWidth, imageHeight) {
-      const tl = { lat: titik.kiriAtas[0], lng: titik.kiriAtas[1] };
-      const tr = { lat: titik.kananAtas[0], lng: titik.kananAtas[1] };
-      const bl = { lat: titik.kiriBawah[0], lng: titik.kiriBawah[1] };
-
-      const aLat = tr.lat - tl.lat;
-      const aLng = tr.lng - tl.lng;
-      const bLat = bl.lat - tl.lat;
-      const bLng = bl.lng - tl.lng;
-      const cLat = latlng.lat - tl.lat;
-      const cLng = latlng.lng - tl.lng;
-
-      const det = aLat * bLng - aLng * bLat;
-
-      if (Math.abs(det) < 0.000000001) return null;
-
-      const u = (cLat * bLng - cLng * bLat) / det;
-      const v = (aLat * cLng - aLng * cLat) / det;
-
-      return {
-        u,
-        v,
-        x: Math.round(u * imageWidth),
-        y: Math.round(v * imageHeight)
-      };
-    }
-
-    function jarakWarna(rgb1, rgb2) {
-      const dr = rgb1[0] - rgb2[0];
-      const dg = rgb1[1] - rgb2[1];
-      const db = rgb1[2] - rgb2[2];
-      return Math.sqrt(dr * dr + dg * dg + db * db);
-    }
-
-    function kategoriTerdekat(rgb) {
-      let hasil = null;
-      let jarakMin = Infinity;
-
-      kategoriWarna.forEach(kategori => {
-        kategori.sampel.forEach(sample => {
-          const jarak = jarakWarna(rgb, sample);
-
-          if (jarak < jarakMin) {
-            jarakMin = jarak;
-            hasil = kategori;
-          }
-        });
-      });
-
-      return hasil;
-    }
-
-    function brightness(r, g, b) {
-      return (r + g + b) / 3;
-    }
-
-    function saturasiSederhana(r, g, b) {
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      return max - min;
-    }
-
-    function analisisKategoriDariPixel(x, y) {
-      if (!overlayCanvasSiap || !overlayImage) return null;
-
-      const canvas = document.getElementById("canvasOverlay");
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-      const radius = 10;
-      const hitungKategori = {};
-      const warnaValid = [];
-
-      const xMin = Math.max(0, x - radius);
-      const xMax = Math.min(canvas.width - 1, x + radius);
-      const yMin = Math.max(0, y - radius);
-      const yMax = Math.min(canvas.height - 1, y + radius);
-
-      for (let py = yMin; py <= yMax; py++) {
-        for (let px = xMin; px <= xMax; px++) {
-          const data = ctx.getImageData(px, py, 1, 1).data;
-
-          const r = data[0];
-          const g = data[1];
-          const b = data[2];
-          const a = data[3];
-
-          if (a < 20) continue;
-
-          const br = brightness(r, g, b);
-          const sat = saturasiSederhana(r, g, b);
-
-          if (br < 35) continue;
-          if (br > 245 && sat < 25) continue;
-
-          const kategori = kategoriTerdekat([r, g, b]);
-
-          if (!kategori) continue;
-
-          hitungKategori[kategori.nama] = (hitungKategori[kategori.nama] || 0) + 1;
-          warnaValid.push([r, g, b]);
-        }
-      }
-
-      if (warnaValid.length === 0) return null;
-
-      let kategoriDominan = null;
-      let jumlahDominan = 0;
-
-      Object.keys(hitungKategori).forEach(nama => {
-        if (hitungKategori[nama] > jumlahDominan) {
-          jumlahDominan = hitungKategori[nama];
-          kategoriDominan = nama;
-        }
-      });
-
-      const kategoriObj = kategoriWarna.find(item => item.nama === kategoriDominan);
-
-      return {
-        kategori: kategoriDominan,
-        warnaTampil: kategoriObj ? kategoriObj.warnaTampil : "#000000"
-      };
-    }
-
-    function hitungLogPearsonIII(nilai, kalaUlang) {
-      const logData = nilai.map(x => Math.log10(x));
-      const meanLog = rataRata(logData);
-      const sdLog = standarDeviasi(logData);
-      const cs = skewnessSample(logData);
-
-      const peluang = 1 - (1 / kalaUlang);
-      const z = jStat.normal.inv(peluang, 0, 1);
-
-      const k =
-        z +
-        ((z * z - 1) * cs / 6) +
-        ((Math.pow(z, 3) - 6 * z) * cs * cs / 24) -
-        ((2 * Math.pow(z, 3) - 5 * z) * Math.pow(cs, 3) / 36);
-
-      const logXt = meanLog + k * sdLog;
-      const xt = Math.pow(10, logXt);
-
-      return {
-        xt,
-        meanLog,
-        sdLog,
-        cs,
-        k
-      };
-    }
-
     function hitungHujanRencanaSemuaStasiun() {
-      const kalaUlang = Number(document.getElementById("pilihKalaUlang").value);
+      const kolomKalaUlang = document.getElementById("pilihKalaUlang").value;
       const hasil = [];
 
-      konfigurasiStasiun.forEach(stasiun => {
-        const nilai = dataHujanBMKG
-          .map(row => angka(row[stasiun.key]))
-          .filter(value => !isNaN(value) && value > 0);
+      dataHujanRencana.forEach(row => {
+        const nilai = angka(row[kolomKalaUlang]);
+        const lat = angka(row.latitude);
+        const lng = angka(row.longitude);
 
-        if (nilai.length >= 10) {
-          const lp3 = hitungLogPearsonIII(nilai, kalaUlang);
-
+        if (!isNaN(nilai) && nilai > 0 && !isNaN(lat) && !isNaN(lng)) {
           hasil.push({
-            ...stasiun,
-            nilai: lp3.xt,
-            n: nilai.length,
-            lp3
+            nama: row.stasiun,
+            lat: lat,
+            lng: lng,
+            nilai: nilai
           });
         }
       });
@@ -1141,8 +959,8 @@
       nilaiRencanaStasiun.forEach(stasiun => {
         const icon = L.divIcon({
           className: "",
-          html: `<div class="station-label">${stasiun.nama}<br>${formatAngka(stasiun.nilai, 1)} mm</div>`,
-          iconSize: [90, 34],
+          html: `<div class="station-label">${stasiun.nama}<br>${formatAngka(stasiun.nilai, 2)} mm</div>`,
+          iconSize: [100, 38],
           iconAnchor: [-8, 34]
         });
 
@@ -1157,15 +975,15 @@
     }
 
     function tampilkanIsohyet() {
-      if (dataHujanBMKG.length === 0) {
-        alert("Data hujan belum selesai dimuat.");
+      if (dataHujanRencana.length === 0) {
+        alert("Data hujan rencana belum selesai dimuat.");
         return;
       }
 
       layerIsohyet.clearLayers();
       layerIsohyetLine.clearLayers();
 
-      const kalaUlang = Number(document.getElementById("pilihKalaUlang").value);
+      const kalaUlang = document.getElementById("pilihKalaUlang").value;
       const power = Number(document.getElementById("pilihPowerIDW").value);
       const interval = Number(document.getElementById("pilihIntervalIsohyet").value);
 
@@ -1252,9 +1070,8 @@
 
       tampilkanLabelStasiun();
 
-      const rekap = document.getElementById("rekapIsohyet");
-      rekap.innerHTML = `
-        <b>Hasil Hujan Rencana T = ${kalaUlang} tahun</b>
+      document.getElementById("rekapIsohyet").innerHTML = `
+        <b>Hasil Hujan Rencana ${kalaUlang.replace("T", "")} Tahun</b>
         <table class="small-table">
           <thead>
             <tr>
@@ -1391,22 +1208,127 @@
       resetHasilCek();
     }
 
-    function aktifkanModeCekArea() {
-      modeCekArea = !modeCekArea;
+    function latLngKePixelGambar(latlng, titik, imageWidth, imageHeight) {
+      const tl = { lat: titik.kiriAtas[0], lng: titik.kiriAtas[1] };
+      const tr = { lat: titik.kananAtas[0], lng: titik.kananAtas[1] };
+      const bl = { lat: titik.kiriBawah[0], lng: titik.kiriBawah[1] };
 
-      const btn = document.getElementById("btnModeCekArea");
+      const aLat = tr.lat - tl.lat;
+      const aLng = tr.lng - tl.lng;
+      const bLat = bl.lat - tl.lat;
+      const bLng = bl.lng - tl.lng;
+      const cLat = latlng.lat - tl.lat;
+      const cLng = latlng.lng - tl.lng;
 
-      if (modeCekArea) {
-        btn.textContent = "Mode Cek Area Aktif";
-        btn.classList.remove("btn-warning");
-        btn.classList.add("btn-success");
-        map.getContainer().style.cursor = "crosshair";
-      } else {
-        btn.textContent = "Aktifkan Mode Cek Area";
-        btn.classList.remove("btn-success");
-        btn.classList.add("btn-warning");
-        map.getContainer().style.cursor = "";
+      const det = aLat * bLng - aLng * bLat;
+
+      if (Math.abs(det) < 0.000000001) return null;
+
+      const u = (cLat * bLng - cLng * bLat) / det;
+      const v = (aLat * cLng - aLng * cLat) / det;
+
+      return {
+        u,
+        v,
+        x: Math.round(u * imageWidth),
+        y: Math.round(v * imageHeight)
+      };
+    }
+
+    function jarakWarna(rgb1, rgb2) {
+      const dr = rgb1[0] - rgb2[0];
+      const dg = rgb1[1] - rgb2[1];
+      const db = rgb1[2] - rgb2[2];
+      return Math.sqrt(dr * dr + dg * dg + db * db);
+    }
+
+    function kategoriTerdekat(rgb) {
+      let hasil = null;
+      let jarakMin = Infinity;
+
+      kategoriWarna.forEach(kategori => {
+        kategori.sampel.forEach(sample => {
+          const jarak = jarakWarna(rgb, sample);
+
+          if (jarak < jarakMin) {
+            jarakMin = jarak;
+            hasil = kategori;
+          }
+        });
+      });
+
+      return hasil;
+    }
+
+    function brightness(r, g, b) {
+      return (r + g + b) / 3;
+    }
+
+    function saturasiSederhana(r, g, b) {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      return max - min;
+    }
+
+    function analisisKategoriDariPixel(x, y) {
+      if (!overlayCanvasSiap || !overlayImage) return null;
+
+      const canvas = document.getElementById("canvasOverlay");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+      const radius = 10;
+      const hitungKategori = {};
+      const warnaValid = [];
+
+      const xMin = Math.max(0, x - radius);
+      const xMax = Math.min(canvas.width - 1, x + radius);
+      const yMin = Math.max(0, y - radius);
+      const yMax = Math.min(canvas.height - 1, y + radius);
+
+      for (let py = yMin; py <= yMax; py++) {
+        for (let px = xMin; px <= xMax; px++) {
+          const data = ctx.getImageData(px, py, 1, 1).data;
+
+          const r = data[0];
+          const g = data[1];
+          const b = data[2];
+          const a = data[3];
+
+          if (a < 20) continue;
+
+          const br = brightness(r, g, b);
+          const sat = saturasiSederhana(r, g, b);
+
+          if (br < 35) continue;
+          if (br > 245 && sat < 25) continue;
+
+          const kategori = kategoriTerdekat([r, g, b]);
+
+          if (!kategori) continue;
+
+          hitungKategori[kategori.nama] = (hitungKategori[kategori.nama] || 0) + 1;
+          warnaValid.push([r, g, b]);
+        }
       }
+
+      if (warnaValid.length === 0) return null;
+
+      let kategoriDominan = null;
+      let jumlahDominan = 0;
+
+      Object.keys(hitungKategori).forEach(nama => {
+        if (hitungKategori[nama] > jumlahDominan) {
+          jumlahDominan = hitungKategori[nama];
+          kategoriDominan = nama;
+        }
+      });
+
+      const kategoriObj = kategoriWarna.find(item => item.nama === kategoriDominan);
+
+      return {
+        kategori: kategoriDominan,
+        warnaTampil: kategoriObj ? kategoriObj.warnaTampil : "#000000"
+      };
     }
 
     function cekOverlayBMKG(latlng) {
@@ -1448,6 +1370,24 @@
       };
     }
 
+    function aktifkanModeCekArea() {
+      modeCekArea = !modeCekArea;
+
+      const btn = document.getElementById("btnModeCekArea");
+
+      if (modeCekArea) {
+        btn.textContent = "Mode Cek Area Aktif";
+        btn.classList.remove("btn-warning");
+        btn.classList.add("btn-success");
+        map.getContainer().style.cursor = "crosshair";
+      } else {
+        btn.textContent = "Aktifkan Mode Cek Area";
+        btn.classList.remove("btn-success");
+        btn.classList.add("btn-warning");
+        map.getContainer().style.cursor = "";
+      }
+    }
+
     function cekAreaDariKlik(e) {
       if (!modeCekArea) return;
 
@@ -1483,7 +1423,7 @@
           hasilHtml = `
             <b>Hasil Cek Area</b><br>
             Sumber: Isohyet IDW<br>
-            Kala ulang: <b>${document.getElementById("pilihKalaUlang").value} tahun</b><br>
+            Kala ulang: <b>${document.getElementById("pilihKalaUlang").value.replace("T", "")} tahun</b><br>
             Estimasi hujan rencana: <b>${hasilIDW.nilai}</b><br>
             Kategori hujan: <b>${hasilIDW.kategori}</b>
             <span class="color-preview" style="background:${hasilIDW.warna};"></span><br>
@@ -1510,7 +1450,7 @@
           <b>Isohyet IDW</b><br>
           ${
             hasilIDW
-              ? `Kala ulang: ${document.getElementById("pilihKalaUlang").value} tahun<br>Estimasi hujan rencana: ${hasilIDW.nilai}<br>Kategori hujan: ${hasilIDW.kategori}<br>`
+              ? `Kala ulang: ${document.getElementById("pilihKalaUlang").value.replace("T", "")} tahun<br>Estimasi hujan rencana: ${hasilIDW.nilai}<br>Kategori hujan: ${hasilIDW.kategori}<br>`
               : `Isohyet belum dihitung.<br>`
           }
           <br>
@@ -1536,7 +1476,6 @@
       }).addTo(map);
 
       markerHasilCek.bindPopup(hasilHtml).openPopup();
-
       document.getElementById("hasilCekArea").innerHTML = hasilHtml;
 
       modeCekArea = false;
@@ -1561,17 +1500,6 @@
       map.getContainer().style.cursor = "";
     }
 
-    function loadDataHujan() {
-      fetch("data_hujan_bmkg_3stasiun.csv")
-        .then(response => response.text())
-        .then(csvText => {
-          dataHujanBMKG = parseCsvOtomatis(csvText);
-        })
-        .catch(error => {
-          console.error("Gagal membaca data_hujan_bmkg_3stasiun.csv", error);
-        });
-    }
-
     document.getElementById("togglePanel").addEventListener("click", function () {
       const panel = document.getElementById("panel");
       panel.classList.toggle("minimized");
@@ -1590,8 +1518,7 @@
     map.on("click", cekAreaDariKlik);
 
     muatOverlayUtama();
-    loadStasiunHujan();
-    loadDataHujan();
+    loadDataHujanRencana();
 
     document.getElementById("modeTampilan").addEventListener("change", terapkanModeTampilan);
     document.getElementById("pilihBasemap").addEventListener("change", gantiBasemap);
@@ -1605,12 +1532,15 @@
     document.getElementById("btnResetHasilCek").addEventListener("click", resetHasilCek);
     document.getElementById("btnTampilkanIsohyet").addEventListener("click", tampilkanIsohyet);
     document.getElementById("btnHapusIsohyet").addEventListener("click", hapusIsohyet);
+
     document.getElementById("pilihKalaUlang").addEventListener("change", function () {
       if (nilaiRencanaStasiun.length > 0) tampilkanIsohyet();
     });
+
     document.getElementById("pilihIntervalIsohyet").addEventListener("change", function () {
       if (nilaiRencanaStasiun.length > 0) tampilkanIsohyet();
     });
+
     document.getElementById("pilihPowerIDW").addEventListener("change", function () {
       if (nilaiRencanaStasiun.length > 0) tampilkanIsohyet();
     });
