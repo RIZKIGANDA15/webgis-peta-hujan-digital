@@ -126,7 +126,6 @@
       font-size: 13px;
     }
 
-    select,
     input[type="range"],
     input[type="file"] {
       width: 100%;
@@ -215,15 +214,6 @@
       margin-top: 8px;
     }
 
-    .info-box {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 10px;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
     .result-box {
       background: #ecfdf5;
       border: 1px solid #99f6e4;
@@ -281,49 +271,6 @@
       border: 3px solid white;
       box-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
     }
-
-    .print-title {
-      display: none;
-    }
-
-    @media print {
-      body {
-        background: white;
-      }
-
-      header,
-      #panel,
-      .leaflet-control-container {
-        display: none !important;
-      }
-
-      #appContainer {
-        display: block;
-        height: auto;
-      }
-
-      #map {
-        width: 100%;
-        height: 82vh;
-      }
-
-      .print-title {
-        display: block;
-        padding: 12px 0;
-        text-align: center;
-        font-family: "Times New Roman", serif;
-      }
-
-      .print-title h1 {
-        margin: 0;
-        font-size: 18pt;
-      }
-
-      .print-title p {
-        margin: 4px 0 0;
-        font-size: 11pt;
-      }
-    }
   </style>
 </head>
 
@@ -332,11 +279,6 @@
     <h1>Peta Sebaran Hujan</h1>
     <p>Overlay peta sebaran hujan BMKG di atas basemap satelit</p>
   </header>
-
-  <div class="print-title">
-    <h1>Peta Sebaran Hujan</h1>
-    <p id="judulCetakOverlay">Overlay hujan BMKG</p>
-  </div>
 
   <div id="appContainer">
     <div id="panel">
@@ -349,11 +291,6 @@
 
         <div class="control-group">
           <h3>Peta Sebaran Hujan</h3>
-
-          <label>
-            Pilih Peta
-            <select id="pilihOverlayHujan"></select>
-          </label>
 
           <label>
             <input type="checkbox" id="cekOverlayHujan" checked>
@@ -374,8 +311,7 @@
           <button class="btn" id="btnZoomOverlay">Zoom ke Overlay</button>
 
           <div class="note">
-            Daftar pilihan peta berasal dari daftar file di kode HTML. Untuk menambah arsip permanen,
-            upload JPG ke GitHub lalu tambahkan item di <b>daftarOverlayHujan</b>.
+            Overlay menggunakan koordinat pojok gambar dari Google Earth, sehingga tidak perlu digeser manual selama format gambar sama.
           </div>
         </div>
 
@@ -390,7 +326,7 @@
           <button class="btn btn-danger" id="btnHapusUpload">Hapus Overlay Upload</button>
 
           <div class="note">
-            Upload ini bisa dipakai untuk mencoba gambar baru tanpa edit kode. Tapi sifatnya sementara dan hilang saat halaman di-refresh.
+            Upload ini bisa dipakai untuk mencoba gambar baru tanpa edit kode. Namun sifatnya sementara dan hilang saat halaman di-refresh.
           </div>
         </div>
 
@@ -400,8 +336,7 @@
           <button class="btn btn-warning" id="btnModeCekArea">Aktifkan Mode Cek Area</button>
 
           <div class="note">
-            Setelah mode aktif, klik area pada peta. Sistem akan membaca warna JPG overlay di titik tersebut
-            dan memperkirakan kategori hujannya.
+            Setelah mode aktif, klik area pada peta. Sistem akan membaca warna overlay dan memperkirakan kategori hujan pada lokasi tersebut.
           </div>
 
           <div id="hasilCekArea" class="result-box" style="margin-top:10px;">
@@ -455,15 +390,6 @@
           </div>
         </div>
 
-        <div class="control-group">
-          <h3>Informasi Overlay</h3>
-          <div class="info-box" id="infoOverlay">
-            Memuat informasi overlay...
-          </div>
-
-          <button class="btn" id="btnCetakPeta">Cetak / Simpan PDF</button>
-        </div>
-
         <a href="index.html" class="btn btn-secondary">Kembali ke Home</a>
         <a href="webgis.html" class="btn btn-secondary">Buka WebGIS Drainase</a>
       </div>
@@ -485,32 +411,15 @@
       kananBawah: [-6.854593, 107.659360]
     };
 
-    const daftarOverlayHujan = [
-      {
-        id: "hujan_2026_01_17",
-        nama: "Peta Sebaran Hujan 17 Januari 2026",
-        file: "17 Januari 2026.jpg",
-        tanggal: "17 Januari 2026",
-        periode: "17 Januari 2026 pukul 07.00 WIB s.d. 18 Januari 2026 pukul 07.00 WIB",
-        sumber: "BMKG",
-        titik: titikOverlayDefault
-      }
-
-      /*
-      Untuk tambah peta permanen, upload JPG baru ke GitHub lalu tambahkan seperti ini:
-
-      ,
-      {
-        id: "hujan_2026_01_18",
-        nama: "Peta Sebaran Hujan 18 Januari 2026",
-        file: "18 Januari 2026.jpg",
-        tanggal: "18 Januari 2026",
-        periode: "18 Januari 2026 pukul 07.00 WIB s.d. 19 Januari 2026 pukul 07.00 WIB",
-        sumber: "BMKG",
-        titik: titikOverlayDefault
-      }
-      */
-    ];
+    const overlayUtama = {
+      id: "hujan_2026_01_17",
+      nama: "Peta Sebaran Hujan 17 Januari 2026",
+      file: "17 Januari 2026.jpg",
+      tanggal: "17 Januari 2026",
+      periode: "17 Januari 2026 pukul 07.00 WIB s.d. 18 Januari 2026 pukul 07.00 WIB",
+      sumber: "BMKG",
+      titik: titikOverlayDefault
+    };
 
     const kategoriWarna = [
       {
@@ -629,16 +538,30 @@
 
     let overlayHujanAktif = null;
     let overlayUploadAktif = null;
+    let overlayAktifInfo = null;
+
     let layerStasiunHujan = L.layerGroup().addTo(map);
     let markerHasilCek = null;
     let modeCekArea = false;
 
     let overlayImage = null;
     let overlayCanvasSiap = false;
-    let overlayAktifInfo = null;
 
     function angka(value) {
       return parseFloat(String(value).replace(",", "."));
+    }
+
+    function estimasiCurahHujan(kategori) {
+      const data = {
+        "Tidak Hujan": "0 mm/hari",
+        "Ringan": "0.5 - 20 mm/hari",
+        "Sedang": "20 - 50 mm/hari",
+        "Lebat": "50 - 100 mm/hari",
+        "Sangat Lebat": "100 - 150 mm/hari",
+        "Ekstrem": "> 150 mm/hari"
+      };
+
+      return data[kategori] || "-";
     }
 
     function parseCsvOtomatis(csvText) {
@@ -666,44 +589,6 @@
         titik.kiriBawah,
         titik.kananBawah
       ];
-    }
-
-    function isiDropdownOverlay() {
-      const select = document.getElementById("pilihOverlayHujan");
-      select.innerHTML = "";
-
-      daftarOverlayHujan.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item.id;
-        option.textContent = item.nama;
-        select.appendChild(option);
-      });
-    }
-
-    function ambilOverlayTerpilih() {
-      const id = document.getElementById("pilihOverlayHujan").value;
-      return daftarOverlayHujan.find(item => item.id === id);
-    }
-
-    function tampilkanInfoOverlay(item, tambahan = "") {
-      const info = document.getElementById("infoOverlay");
-
-      info.innerHTML = `
-        <b>${item.nama}</b><br>
-        Tanggal: ${item.tanggal}<br>
-        Periode: ${item.periode}<br>
-        Sumber: ${item.sumber}<br>
-        File: ${item.file}<br>
-        <br>
-        Titik kontrol:<br>
-        Kiri atas: ${item.titik.kiriAtas[0]}, ${item.titik.kiriAtas[1]}<br>
-        Kanan atas: ${item.titik.kananAtas[0]}, ${item.titik.kananAtas[1]}<br>
-        Kiri bawah: ${item.titik.kiriBawah[0]}, ${item.titik.kiriBawah[1]}<br>
-        Kanan bawah: ${item.titik.kananBawah[0]}, ${item.titik.kananBawah[1]}
-        ${tambahan}
-      `;
-
-      document.getElementById("judulCetakOverlay").textContent = `${item.nama} | ${item.periode}`;
     }
 
     function buatRotatedOverlay(file, titik, opacity) {
@@ -748,13 +633,7 @@
       img.src = src;
     }
 
-    function muatOverlayHujan() {
-      const item = ambilOverlayTerpilih();
-
-      if (!item) {
-        return;
-      }
-
+    function muatOverlayUtama() {
       if (overlayHujanAktif) {
         map.removeLayer(overlayHujanAktif);
       }
@@ -767,16 +646,15 @@
 
       const opacity = Number(document.getElementById("opacityOverlayHujan").value) / 100;
 
-      overlayHujanAktif = buatRotatedOverlay(item.file, item.titik, opacity);
+      overlayHujanAktif = buatRotatedOverlay(overlayUtama.file, overlayUtama.titik, opacity);
 
       if (document.getElementById("cekOverlayHujan").checked) {
         overlayHujanAktif.addTo(map);
       }
 
-      overlayAktifInfo = item;
-      muatGambarKeCanvas(item.file);
-      tampilkanInfoOverlay(item);
-      map.fitBounds(boundsDariTitik(item.titik));
+      overlayAktifInfo = overlayUtama;
+      muatGambarKeCanvas(overlayUtama.file);
+      map.fitBounds(boundsDariTitik(overlayUtama.titik));
       resetHasilCek();
     }
 
@@ -798,10 +676,8 @@
     }
 
     function zoomKeOverlay() {
-      const item = overlayAktifInfo || ambilOverlayTerpilih();
-
-      if (item) {
-        map.fitBounds(boundsDariTitik(item.titik));
+      if (overlayAktifInfo) {
+        map.fitBounds(boundsDariTitik(overlayAktifInfo.titik));
       }
     }
 
@@ -843,26 +719,15 @@
         overlayUploadAktif = buatRotatedOverlay(imageUrl, titikOverlayDefault, opacity);
         overlayUploadAktif.addTo(map);
 
-        const itemUpload = {
+        overlayAktifInfo = {
           id: "upload_sementara",
           nama: "Overlay Upload Sementara",
-          tanggal: "-",
-          periode: "-",
-          sumber: "Upload lokal",
           file: file.name,
           titik: titikOverlayDefault
         };
 
-        overlayAktifInfo = itemUpload;
         muatGambarKeCanvas(imageUrl);
-
         map.fitBounds(boundsDariTitik(titikOverlayDefault));
-
-        tampilkanInfoOverlay(
-          itemUpload,
-          "<br><br><b>Status:</b> overlay ini sementara dan hilang jika halaman di-refresh."
-        );
-
         resetHasilCek();
       };
 
@@ -877,7 +742,7 @@
 
       document.getElementById("uploadOverlay").value = "";
       document.getElementById("cekOverlayHujan").checked = true;
-      muatOverlayHujan();
+      muatOverlayUtama();
     }
 
     function loadStasiunHujan() {
@@ -1017,26 +882,17 @@
           const b = data[2];
           const a = data[3];
 
-          if (a < 20) {
-            continue;
-          }
+          if (a < 20) continue;
 
           const br = brightness(r, g, b);
           const sat = saturasiSederhana(r, g, b);
 
-          if (br < 35) {
-            continue;
-          }
-
-          if (br > 245 && sat < 25) {
-            continue;
-          }
+          if (br < 35) continue;
+          if (br > 245 && sat < 25) continue;
 
           const kategori = kategoriTerdekat([r, g, b]);
 
-          if (!kategori) {
-            continue;
-          }
+          if (!kategori) continue;
 
           hitungKategori[kategori.nama] = (hitungKategori[kategori.nama] || 0) + 1;
           warnaValid.push([r, g, b]);
@@ -1057,22 +913,11 @@
         }
       });
 
-      const rata = warnaValid.reduce((acc, rgb) => {
-        acc[0] += rgb[0];
-        acc[1] += rgb[1];
-        acc[2] += rgb[2];
-        return acc;
-      }, [0, 0, 0]).map(v => Math.round(v / warnaValid.length));
-
       const kategoriObj = kategoriWarna.find(item => item.nama === kategoriDominan);
-      const confidence = jumlahDominan / warnaValid.length;
 
       return {
         kategori: kategoriDominan,
-        warnaTampil: kategoriObj ? kategoriObj.warnaTampil : "#000000",
-        warnaRata: rata,
-        confidence: confidence,
-        totalPixel: warnaValid.length
+        warnaTampil: kategoriObj ? kategoriObj.warnaTampil : "#000000"
       };
     }
 
@@ -1150,25 +995,22 @@
       }).addTo(map);
 
       markerHasilCek.bindPopup(`
-        <b>Hasil Cek Kategori Hujan</b><br>
-        Kategori: ${hasil.kategori}<br>
+        <b>Hasil Cek Area</b><br>
+        Kategori hujan: ${hasil.kategori}<br>
+        Estimasi curah hujan: ${estimasiCurahHujan(hasil.kategori)}<br>
         Latitude: ${e.latlng.lat.toFixed(6)}<br>
         Longitude: ${e.latlng.lng.toFixed(6)}
       `).openPopup();
 
-      const warna = hasil.warnaRata;
-
       document.getElementById("hasilCekArea").innerHTML = `
         <b>Hasil Cek Area</b><br>
-        Kategori estimasi: <b>${hasil.kategori}</b>
+        Kategori hujan: <b>${hasil.kategori}</b>
         <span class="color-preview" style="background:${hasil.warnaTampil};"></span><br>
+        Estimasi curah hujan: <b>${estimasiCurahHujan(hasil.kategori)}</b><br>
         Latitude: ${e.latlng.lat.toFixed(6)}<br>
         Longitude: ${e.latlng.lng.toFixed(6)}<br>
-        Pixel gambar: x=${pixel.x}, y=${pixel.y}<br>
-        Warna rata-rata sampel: RGB(${warna[0]}, ${warna[1]}, ${warna[2]})<br>
-        Keyakinan warna dominan: ${(hasil.confidence * 100).toFixed(1)}%<br>
         <span class="note">
-          Hasil ini merupakan estimasi dari warna JPG overlay, bukan pembacaan raster curah hujan numerik.
+          Estimasi berdasarkan warna pada peta sebaran hujan BMKG.
         </span>
       `;
 
@@ -1194,13 +1036,6 @@
       map.getContainer().style.cursor = "";
     }
 
-    function cetakPeta() {
-      setTimeout(function () {
-        map.invalidateSize();
-        window.print();
-      }, 300);
-    }
-
     document.getElementById("togglePanel").addEventListener("click", function () {
       const panel = document.getElementById("panel");
       panel.classList.toggle("minimized");
@@ -1218,11 +1053,9 @@
 
     map.on("click", cekAreaDariKlik);
 
-    isiDropdownOverlay();
-    muatOverlayHujan();
+    muatOverlayUtama();
     loadStasiunHujan();
 
-    document.getElementById("pilihOverlayHujan").addEventListener("change", muatOverlayHujan);
     document.getElementById("cekOverlayHujan").addEventListener("change", toggleOverlay);
     document.getElementById("opacityOverlayHujan").addEventListener("input", setOpacityOverlay);
     document.getElementById("btnZoomOverlay").addEventListener("click", zoomKeOverlay);
@@ -1231,7 +1064,6 @@
     document.getElementById("btnHapusUpload").addEventListener("click", hapusOverlayUpload);
     document.getElementById("btnModeCekArea").addEventListener("click", aktifkanModeCekArea);
     document.getElementById("btnResetHasilCek").addEventListener("click", resetHasilCek);
-    document.getElementById("btnCetakPeta").addEventListener("click", cetakPeta);
   </script>
 </body>
 </html>
