@@ -38,8 +38,8 @@
     }
 
     #panel {
-      width: 330px;
-      min-width: 330px;
+      width: 350px;
+      min-width: 350px;
       height: 100%;
       background: white;
       box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
@@ -121,18 +121,30 @@
 
     label {
       display: block;
-      margin-bottom: 11px;
+      margin-bottom: 10px;
       font-weight: bold;
       font-size: 13px;
     }
 
     select,
     input[type="range"],
-    input[type="file"] {
+    input[type="file"],
+    input[type="text"],
+    input[type="number"],
+    textarea {
       width: 100%;
       margin-top: 5px;
       padding: 7px;
       box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    textarea {
+      min-height: 55px;
+      resize: vertical;
     }
 
     input[type="checkbox"] {
@@ -174,6 +186,26 @@
 
     .btn-danger:hover {
       background: #991b1b;
+    }
+
+    .btn-warning {
+      background: #d97706;
+    }
+
+    .btn-warning:hover {
+      background: #b45309;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .btn-row button {
+      padding: 7px 4px;
+      font-size: 12px;
     }
 
     .note {
@@ -219,6 +251,116 @@
       font-size: 13px;
       border-radius: 8px;
     }
+
+    .marker-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+    }
+
+    .dot-genangan {
+      background: #ef4444;
+    }
+
+    .dot-pekerjaan {
+      background: #2563eb;
+    }
+
+    .dot-survei {
+      background: #f59e0b;
+    }
+
+    .dot-lainnya {
+      background: #7c3aed;
+    }
+
+    .titik-list {
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #f9fafb;
+      padding: 8px;
+      font-size: 12px;
+    }
+
+    .titik-item {
+      padding: 7px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .titik-item:last-child {
+      border-bottom: none;
+    }
+
+    .titik-item b {
+      color: #0f766e;
+    }
+
+    .titik-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .mini-btn {
+      border: none;
+      padding: 4px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: white;
+      font-size: 11px;
+      background: #0f766e;
+    }
+
+    .mini-btn.danger {
+      background: #b91c1c;
+    }
+
+    .print-title {
+      display: none;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      header,
+      #panel,
+      .leaflet-control-container {
+        display: none !important;
+      }
+
+      #appContainer {
+        display: block;
+        height: auto;
+      }
+
+      #map {
+        width: 100%;
+        height: 82vh;
+      }
+
+      .print-title {
+        display: block;
+        padding: 12px 0;
+        text-align: center;
+        font-family: "Times New Roman", serif;
+      }
+
+      .print-title h1 {
+        margin: 0;
+        font-size: 18pt;
+      }
+
+      .print-title p {
+        margin: 4px 0 0;
+        font-size: 11pt;
+      }
+    }
   </style>
 </head>
 
@@ -227,6 +369,11 @@
     <h1>Peta Sebaran Hujan</h1>
     <p>Overlay peta sebaran hujan BMKG di atas basemap satelit</p>
   </header>
+
+  <div class="print-title">
+    <h1>Peta Sebaran Hujan</h1>
+    <p id="judulCetakOverlay">Overlay hujan BMKG</p>
+  </div>
 
   <div id="appContainer">
     <div id="panel">
@@ -255,10 +402,16 @@
             <input type="range" id="opacityOverlayHujan" min="0" max="100" value="65">
           </label>
 
+          <div class="btn-row">
+            <button class="btn" onclick="setOpacityPreset(40)">40%</button>
+            <button class="btn" onclick="setOpacityPreset(65)">65%</button>
+            <button class="btn" onclick="setOpacityPreset(85)">85%</button>
+          </div>
+
           <button class="btn" id="btnZoomOverlay">Zoom ke Overlay</button>
 
           <div class="note">
-            Overlay menggunakan koordinat pojok gambar dari Google Earth, sehingga tidak perlu digeser manual di web.
+            Overlay menggunakan koordinat pojok gambar dari Google Earth, sehingga tidak perlu digeser manual di web selama template gambar sama.
           </div>
         </div>
 
@@ -274,7 +427,6 @@
 
           <div class="note">
             Upload ini hanya tampil sementara di browser. Jika halaman di-refresh, overlay upload akan hilang.
-            Posisi upload tetap memakai titik kontrol default.
           </div>
         </div>
 
@@ -286,8 +438,81 @@
             Tampilkan stasiun hujan
           </label>
 
+          <label>
+            <input type="checkbox" id="cekTitikKejadian" checked>
+            Tampilkan titik kejadian/lokasi
+          </label>
+
           <div class="note">
             Titik stasiun hujan dibaca dari file <b>data_stasiun_hujan.csv</b>.
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Tambah Titik Kejadian / Lokasi</h3>
+
+          <button class="btn btn-warning" id="btnModeTambahTitik">Aktifkan Mode Tambah Titik</button>
+
+          <label>
+            Nama Lokasi
+            <input type="text" id="inputNamaLokasi" placeholder="Contoh: Genangan Jl. Raya Bogor">
+          </label>
+
+          <label>
+            Jenis Titik
+            <select id="inputJenisTitik">
+              <option value="Genangan">Genangan</option>
+              <option value="Pekerjaan">Pekerjaan</option>
+              <option value="Survei">Survei</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </label>
+
+          <label>
+            Kecamatan
+            <input type="text" id="inputKecamatan" placeholder="Contoh: Kramat Jati">
+          </label>
+
+          <label>
+            Kategori Hujan di Lokasi
+            <select id="inputKategoriHujan">
+              <option value="Tidak Hujan">Tidak Hujan</option>
+              <option value="Ringan">Ringan</option>
+              <option value="Sedang">Sedang</option>
+              <option value="Lebat">Lebat</option>
+              <option value="Sangat Lebat">Sangat Lebat</option>
+              <option value="Ekstrem">Ekstrem</option>
+            </select>
+          </label>
+
+          <label>
+            Latitude
+            <input type="number" id="inputLat" step="0.000001" placeholder="-6.xxxxxx">
+          </label>
+
+          <label>
+            Longitude
+            <input type="number" id="inputLng" step="0.000001" placeholder="106.xxxxxx">
+          </label>
+
+          <label>
+            Catatan
+            <textarea id="inputCatatan" placeholder="Catatan singkat lokasi / kondisi lapangan"></textarea>
+          </label>
+
+          <button class="btn" id="btnSimpanTitik">Simpan Titik</button>
+          <button class="btn btn-secondary" id="btnExportCsv">Export Titik ke CSV</button>
+          <button class="btn btn-danger" id="btnHapusSemuaTitik">Hapus Semua Titik</button>
+
+          <div class="note">
+            Aktifkan mode tambah titik, lalu klik lokasi pada peta. Titik tersimpan di browser yang sama.
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Daftar Titik Tersimpan</h3>
+          <div class="titik-list" id="daftarTitik">
+            Belum ada titik.
           </div>
         </div>
 
@@ -327,6 +552,8 @@
           <div class="info-box" id="infoOverlay">
             Memuat informasi overlay...
           </div>
+
+          <button class="btn" id="btnCetakPeta">Cetak / Simpan PDF</button>
         </div>
 
         <a href="index.html" class="btn btn-secondary">Kembali ke Home</a>
@@ -341,32 +568,13 @@
   <script src="https://cdn.jsdelivr.net/gh/IvanSanchez/Leaflet.ImageOverlay.Rotated/Leaflet.ImageOverlay.Rotated.js"></script>
 
   <script>
-    /*
-      TITIK KONTROL OVERLAY DARI GOOGLE EARTH
-
-      Kiri atas   = -5.527075 ; 106.291765
-      Kanan atas  = -5.524738 ; 107.655985
-      Kiri bawah  = -6.784255 ; 106.293950
-      Kanan bawah = -6.781913 ; 107.658171
-
-      Leaflet rotated overlay hanya membutuhkan 3 titik:
-      kiriAtas, kananAtas, kiriBawah.
-      KananBawah disimpan untuk fitBounds dan pengecekan.
-    */
     const titikOverlayDefault = {
-       kiriAtas: [-5.517008, 106.293177],
-       kananAtas: [-5.511926, 107.654318],
-       kiriBawah: [-6.859648, 106.298205],
-       kananBawah: [-6.854593, 107.659360]
+      kiriAtas: [-5.517008, 106.293177],
+      kananAtas: [-5.511926, 107.654318],
+      kiriBawah: [-6.859648, 106.298205],
+      kananBawah: [-6.854593, 107.659360]
     };
 
-    /*
-      DAFTAR OVERLAY HUJAN
-
-      Pastikan nama file sama persis dengan file di GitHub.
-      File pertama:
-      17 Januari 2026.jpg
-    */
     const daftarOverlayHujan = [
       {
         id: "hujan_2026_01_17",
@@ -444,14 +652,21 @@
     }).addTo(map);
 
     map.createPane("paneOverlayHujan");
+    map.createPane("paneTitikKejadian");
     map.createPane("paneStasiun");
 
     map.getPane("paneOverlayHujan").style.zIndex = 420;
-    map.getPane("paneStasiun").style.zIndex = 500;
+    map.getPane("paneTitikKejadian").style.zIndex = 510;
+    map.getPane("paneStasiun").style.zIndex = 520;
 
     let overlayHujanAktif = null;
     let overlayUploadAktif = null;
     let layerStasiunHujan = L.layerGroup().addTo(map);
+    let layerTitikKejadian = L.layerGroup().addTo(map);
+    let modeTambahTitik = false;
+    let dataTitikKejadian = [];
+
+    const localStorageKey = "data_titik_kejadian_overlay_hujan";
 
     function angka(value) {
       return parseFloat(String(value).replace(",", "."));
@@ -518,6 +733,8 @@
         Kanan bawah: ${item.titik.kananBawah[0]}, ${item.titik.kananBawah[1]}
         ${tambahan}
       `;
+
+      document.getElementById("judulCetakOverlay").textContent = `${item.nama} | ${item.periode}`;
     }
 
     function buatRotatedOverlay(file, titik, opacity) {
@@ -573,6 +790,11 @@
       if (overlayUploadAktif) {
         overlayUploadAktif.setOpacity(opacity);
       }
+    }
+
+    function setOpacityPreset(value) {
+      document.getElementById("opacityOverlayHujan").value = value;
+      setOpacityOverlay();
     }
 
     function zoomKeOverlay() {
@@ -694,6 +916,270 @@
       }
     }
 
+    function toggleTitikKejadian() {
+      if (document.getElementById("cekTitikKejadian").checked) {
+        map.addLayer(layerTitikKejadian);
+      } else {
+        map.removeLayer(layerTitikKejadian);
+      }
+    }
+
+    function kelasMarker(jenis) {
+      if (jenis === "Genangan") return "dot-genangan";
+      if (jenis === "Pekerjaan") return "dot-pekerjaan";
+      if (jenis === "Survei") return "dot-survei";
+      return "dot-lainnya";
+    }
+
+    function buatIconTitik(jenis) {
+      return L.divIcon({
+        className: "",
+        html: `<div class="marker-dot ${kelasMarker(jenis)}"></div>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      });
+    }
+
+    function simpanKeLocalStorage() {
+      localStorage.setItem(localStorageKey, JSON.stringify(dataTitikKejadian));
+    }
+
+    function bacaDariLocalStorage() {
+      const data = localStorage.getItem(localStorageKey);
+
+      if (!data) {
+        dataTitikKejadian = [];
+        return;
+      }
+
+      try {
+        dataTitikKejadian = JSON.parse(data);
+      } catch (error) {
+        dataTitikKejadian = [];
+      }
+    }
+
+    function renderTitikKejadian() {
+      layerTitikKejadian.clearLayers();
+
+      dataTitikKejadian.forEach(item => {
+        const marker = L.marker([item.lat, item.lng], {
+          pane: "paneTitikKejadian",
+          icon: buatIconTitik(item.jenis)
+        });
+
+        marker.bindPopup(`
+          <b>${item.nama}</b><br>
+          Jenis: ${item.jenis}<br>
+          Kecamatan: ${item.kecamatan || "-"}<br>
+          Kategori Hujan: ${item.kategoriHujan || "-"}<br>
+          Latitude: ${Number(item.lat).toFixed(6)}<br>
+          Longitude: ${Number(item.lng).toFixed(6)}<br>
+          Catatan: ${item.catatan || "-"}
+        `);
+
+        marker.addTo(layerTitikKejadian);
+      });
+
+      tampilkanDaftarTitik();
+    }
+
+    function tampilkanDaftarTitik() {
+      const div = document.getElementById("daftarTitik");
+
+      if (dataTitikKejadian.length === 0) {
+        div.innerHTML = "Belum ada titik.";
+        return;
+      }
+
+      let html = "";
+
+      dataTitikKejadian.forEach((item, index) => {
+        html += `
+          <div class="titik-item">
+            <b>${item.nama}</b><br>
+            ${item.jenis} | ${item.kecamatan || "-"}<br>
+            ${Number(item.lat).toFixed(6)}, ${Number(item.lng).toFixed(6)}<br>
+            Hujan: ${item.kategoriHujan || "-"}
+            <div class="titik-actions">
+              <button class="mini-btn" onclick="zoomKeTitik(${index})">Zoom</button>
+              <button class="mini-btn danger" onclick="hapusTitik(${index})">Hapus</button>
+            </div>
+          </div>
+        `;
+      });
+
+      div.innerHTML = html;
+    }
+
+    function zoomKeTitik(index) {
+      const item = dataTitikKejadian[index];
+
+      if (!item) {
+        return;
+      }
+
+      map.setView([item.lat, item.lng], 15);
+    }
+
+    function hapusTitik(index) {
+      if (!confirm("Hapus titik ini?")) {
+        return;
+      }
+
+      dataTitikKejadian.splice(index, 1);
+      simpanKeLocalStorage();
+      renderTitikKejadian();
+    }
+
+    function aktifkanModeTambahTitik() {
+      modeTambahTitik = !modeTambahTitik;
+
+      const btn = document.getElementById("btnModeTambahTitik");
+
+      if (modeTambahTitik) {
+        btn.textContent = "Mode Tambah Titik Aktif";
+        btn.style.background = "#16a34a";
+        map.getContainer().style.cursor = "crosshair";
+      } else {
+        btn.textContent = "Aktifkan Mode Tambah Titik";
+        btn.style.background = "#d97706";
+        map.getContainer().style.cursor = "";
+      }
+    }
+
+    function isiKoordinatDariKlik(e) {
+      if (!modeTambahTitik) {
+        return;
+      }
+
+      document.getElementById("inputLat").value = e.latlng.lat.toFixed(6);
+      document.getElementById("inputLng").value = e.latlng.lng.toFixed(6);
+
+      modeTambahTitik = false;
+      document.getElementById("btnModeTambahTitik").textContent = "Aktifkan Mode Tambah Titik";
+      document.getElementById("btnModeTambahTitik").style.background = "#d97706";
+      map.getContainer().style.cursor = "";
+    }
+
+    function simpanTitikBaru() {
+      const nama = document.getElementById("inputNamaLokasi").value.trim();
+      const jenis = document.getElementById("inputJenisTitik").value;
+      const kecamatan = document.getElementById("inputKecamatan").value.trim();
+      const kategoriHujan = document.getElementById("inputKategoriHujan").value;
+      const lat = Number(document.getElementById("inputLat").value);
+      const lng = Number(document.getElementById("inputLng").value);
+      const catatan = document.getElementById("inputCatatan").value.trim();
+
+      if (!nama) {
+        alert("Nama lokasi belum diisi.");
+        return;
+      }
+
+      if (isNaN(lat) || isNaN(lng)) {
+        alert("Koordinat belum valid. Klik peta atau isi latitude dan longitude.");
+        return;
+      }
+
+      const item = {
+        id: Date.now(),
+        nama,
+        jenis,
+        kecamatan,
+        kategoriHujan,
+        lat,
+        lng,
+        catatan,
+        waktuInput: new Date().toISOString()
+      };
+
+      dataTitikKejadian.push(item);
+      simpanKeLocalStorage();
+      renderTitikKejadian();
+
+      document.getElementById("inputNamaLokasi").value = "";
+      document.getElementById("inputKecamatan").value = "";
+      document.getElementById("inputLat").value = "";
+      document.getElementById("inputLng").value = "";
+      document.getElementById("inputCatatan").value = "";
+
+      alert("Titik berhasil disimpan.");
+    }
+
+    function exportTitikKeCsv() {
+      if (dataTitikKejadian.length === 0) {
+        alert("Belum ada titik untuk diexport.");
+        return;
+      }
+
+      const header = [
+        "nama_lokasi",
+        "jenis",
+        "kecamatan",
+        "kategori_hujan",
+        "latitude",
+        "longitude",
+        "catatan",
+        "waktu_input"
+      ];
+
+      const rows = dataTitikKejadian.map(item => [
+        item.nama,
+        item.jenis,
+        item.kecamatan,
+        item.kategoriHujan,
+        item.lat,
+        item.lng,
+        item.catatan,
+        item.waktuInput
+      ]);
+
+      const csv = [
+        header.join(","),
+        ...rows.map(row => row.map(value => {
+          const text = String(value || "").replace(/"/g, '""');
+          return `"${text}"`;
+        }).join(","))
+      ].join("\n");
+
+      const blob = new Blob(["\ufeff", csv], {
+        type: "text/csv;charset=utf-8;"
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = "titik_kejadian_overlay_hujan.csv";
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function hapusSemuaTitik() {
+      if (dataTitikKejadian.length === 0) {
+        alert("Belum ada titik.");
+        return;
+      }
+
+      if (!confirm("Hapus semua titik tersimpan?")) {
+        return;
+      }
+
+      dataTitikKejadian = [];
+      simpanKeLocalStorage();
+      renderTitikKejadian();
+    }
+
+    function cetakPeta() {
+      setTimeout(function () {
+        map.invalidateSize();
+        window.print();
+      }, 300);
+    }
+
     document.getElementById("togglePanel").addEventListener("click", function () {
       const panel = document.getElementById("panel");
       panel.classList.toggle("minimized");
@@ -709,17 +1195,28 @@
       }, 300);
     });
 
+    map.on("click", isiKoordinatDariKlik);
+
     isiDropdownOverlay();
     muatOverlayHujan();
     loadStasiunHujan();
+
+    bacaDariLocalStorage();
+    renderTitikKejadian();
 
     document.getElementById("pilihOverlayHujan").addEventListener("change", muatOverlayHujan);
     document.getElementById("cekOverlayHujan").addEventListener("change", toggleOverlay);
     document.getElementById("opacityOverlayHujan").addEventListener("input", setOpacityOverlay);
     document.getElementById("btnZoomOverlay").addEventListener("click", zoomKeOverlay);
     document.getElementById("cekStasiunHujan").addEventListener("change", toggleStasiunHujan);
+    document.getElementById("cekTitikKejadian").addEventListener("change", toggleTitikKejadian);
     document.getElementById("uploadOverlay").addEventListener("change", uploadOverlaySementara);
     document.getElementById("btnHapusUpload").addEventListener("click", hapusOverlayUpload);
+    document.getElementById("btnModeTambahTitik").addEventListener("click", aktifkanModeTambahTitik);
+    document.getElementById("btnSimpanTitik").addEventListener("click", simpanTitikBaru);
+    document.getElementById("btnExportCsv").addEventListener("click", exportTitikKeCsv);
+    document.getElementById("btnHapusSemuaTitik").addEventListener("click", hapusSemuaTitik);
+    document.getElementById("btnCetakPeta").addEventListener("click", cetakPeta);
   </script>
 </body>
 </html>
