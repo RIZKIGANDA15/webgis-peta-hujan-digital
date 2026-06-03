@@ -258,8 +258,7 @@
           <button class="btn" id="btnZoomOverlay">Zoom ke Overlay</button>
 
           <div class="note">
-            Overlay menggunakan 3 titik kontrol agar gambar dapat mengikuti kemiringan seperti di Google Earth.
-            Titik kontrol sudah dikalibrasi awal berdasarkan gambar BMKG 17 Januari 2026.
+            Overlay menggunakan koordinat pojok gambar dari Google Earth, sehingga tidak perlu digeser manual di web.
           </div>
         </div>
 
@@ -343,30 +342,30 @@
 
   <script>
     /*
-      TITIK KONTROL OVERLAY
+      TITIK KONTROL OVERLAY DARI GOOGLE EARTH
 
-      Format:
-      kiriAtas  = sudut kiri atas gambar full
-      kananAtas = sudut kanan atas gambar full
-      kiriBawah = sudut kiri bawah gambar full
+      Kiri atas   = -5.527075 ; 106.291765
+      Kanan atas  = -5.524738 ; 107.655985
+      Kiri bawah  = -6.784255 ; 106.293950
+      Kanan bawah = -6.781913 ; 107.658171
 
-      Titik ini adalah hasil revisi dari screenshot overlay sebelumnya:
-      - overlay sebelumnya terlalu besar,
-      - terlalu ke barat,
-      - dan terlalu ke utara.
+      Leaflet rotated overlay hanya membutuhkan 3 titik:
+      kiriAtas, kananAtas, kiriBawah.
+      KananBawah disimpan untuk fitBounds dan pengecekan.
     */
     const titikOverlayDefault = {
-      kiriAtas: [-5.3248, 106.0971],
-      kananAtas: [-5.4973, 108.1779],
-      kiriBawah: [-6.9334, 105.4495]
+      kiriAtas: [-5.527075, 106.291765],
+      kananAtas: [-5.524738, 107.655985],
+      kiriBawah: [-6.784255, 106.293950],
+      kananBawah: [-6.781913, 107.658171]
     };
 
     /*
       DAFTAR OVERLAY HUJAN
 
       Pastikan nama file sama persis dengan file di GitHub.
-      Untuk aman, boleh tetap pakai "17 Januari 2026.jpg".
-      Tapi untuk jangka panjang lebih bagus rename jadi tanpa spasi.
+      File pertama:
+      17 Januari 2026.jpg
     */
     const daftarOverlayHujan = [
       {
@@ -433,7 +432,7 @@
 
     const baseMaps = {
       "Google Maps": googleMaps,
-      "Google Satellite": googleSatellite,
+      "Google Satellite / Earth": googleSatellite,
       "Google Hybrid": googleHybrid,
       "OpenStreetMap": osmMap,
       "Esri Satellite": esriSatellite
@@ -480,7 +479,8 @@
       return [
         titik.kiriAtas,
         titik.kananAtas,
-        titik.kiriBawah
+        titik.kiriBawah,
+        titik.kananBawah
       ];
     }
 
@@ -514,7 +514,8 @@
         Titik kontrol:<br>
         Kiri atas: ${item.titik.kiriAtas[0]}, ${item.titik.kiriAtas[1]}<br>
         Kanan atas: ${item.titik.kananAtas[0]}, ${item.titik.kananAtas[1]}<br>
-        Kiri bawah: ${item.titik.kiriBawah[0]}, ${item.titik.kiriBawah[1]}
+        Kiri bawah: ${item.titik.kiriBawah[0]}, ${item.titik.kiriBawah[1]}<br>
+        Kanan bawah: ${item.titik.kananBawah[0]}, ${item.titik.kananBawah[1]}
         ${tambahan}
       `;
     }
