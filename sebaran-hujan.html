@@ -38,8 +38,8 @@
     }
 
     #panel {
-      width: 350px;
-      min-width: 350px;
+      width: 360px;
+      min-width: 360px;
       height: 100%;
       background: white;
       box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
@@ -137,7 +137,8 @@
 
     select,
     input[type="range"],
-    input[type="file"] {
+    input[type="file"],
+    input[type="number"] {
       width: 100%;
       margin-top: 5px;
       padding: 7px;
@@ -277,13 +278,47 @@
       border: 3px solid white;
       box-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
     }
+
+    .station-label {
+      background: white;
+      border: 1px solid #0f766e;
+      border-radius: 6px;
+      padding: 3px 6px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #0f766e;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    .small-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .small-table th,
+    .small-table td {
+      border: 1px solid #d1d5db;
+      padding: 5px;
+      text-align: right;
+    }
+
+    .small-table th {
+      background: #e5e7eb;
+      text-align: center;
+    }
+
+    .small-table td:first-child {
+      text-align: left;
+    }
   </style>
 </head>
 
 <body>
   <header>
     <h1>Peta Sebaran Hujan</h1>
-    <p>Overlay peta sebaran hujan BMKG di atas basemap satelit</p>
+    <p>Overlay BMKG dan estimasi isohyet hujan rencana berbasis data stasiun</p>
   </header>
 
   <div id="appContainer">
@@ -296,12 +331,29 @@
       <div id="panelContent">
 
         <div class="control-group">
-          <h3>Cek Kategori Hujan dari Peta</h3>
+          <h3>Sumber Analisis</h3>
+
+          <label>
+            Mode Tampilan
+            <select id="modeTampilan">
+              <option value="overlay">Overlay BMKG</option>
+              <option value="isohyet">Isohyet Kala Ulang IDW</option>
+              <option value="gabungan">Overlay + Isohyet</option>
+            </select>
+          </label>
+
+          <div class="note">
+            Mode Overlay membaca warna dari JPG BMKG. Mode Isohyet menghitung estimasi hujan rencana dari data stasiun.
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Cek Hujan pada Lokasi</h3>
 
           <button class="btn btn-warning" id="btnModeCekArea">Aktifkan Mode Cek Area</button>
 
           <div class="note">
-            Setelah mode aktif, klik area pada peta. Sistem akan membaca warna overlay dan memperkirakan kategori hujan pada lokasi tersebut.
+            Setelah mode aktif, klik lokasi pada peta untuk membaca kategori hujan sesuai mode tampilan.
           </div>
 
           <div id="hasilCekArea" class="result-box" style="margin-top:10px;">
@@ -312,23 +364,23 @@
         </div>
 
         <div class="control-group">
-          <h3>Peta Sebaran Hujan</h3>
+          <h3>Peta Sebaran Hujan BMKG</h3>
 
           <label>
             Transparansi Overlay
-            <input type="range" id="opacityOverlayHujan" min="0" max="100" value="65">
+            <input type="range" id="opacityOverlayHujan" min="0" max="100" value="60">
           </label>
 
           <div class="btn-row">
-            <button class="btn" onclick="setOpacityPreset(40)">40%</button>
-            <button class="btn" onclick="setOpacityPreset(65)">65%</button>
+            <button class="btn" onclick="setOpacityPreset(35)">35%</button>
+            <button class="btn" onclick="setOpacityPreset(60)">60%</button>
             <button class="btn" onclick="setOpacityPreset(85)">85%</button>
           </div>
 
           <button class="btn" id="btnZoomOverlay">Zoom ke Overlay</button>
 
           <div class="note">
-            Overlay menggunakan koordinat pojok gambar dari Google Earth, sehingga tidak perlu digeser manual selama format gambar sama.
+            Overlay menggunakan koordinat pojok gambar dari Google Earth.
           </div>
         </div>
 
@@ -343,8 +395,51 @@
           <button class="btn btn-danger" id="btnHapusUpload">Hapus Overlay Upload</button>
 
           <div class="note">
-            Upload ini bisa dipakai untuk mencoba gambar baru tanpa edit kode. Namun sifatnya sementara dan hilang saat halaman di-refresh.
+            Upload ini hanya untuk percobaan sementara dan hilang saat halaman di-refresh.
           </div>
+        </div>
+
+        <div class="control-group">
+          <h3>Isohyet Hujan Rencana IDW</h3>
+
+          <label>
+            Kala Ulang
+            <select id="pilihKalaUlang">
+              <option value="2">2 tahun</option>
+              <option value="5">5 tahun</option>
+              <option value="10">10 tahun</option>
+              <option value="25" selected>25 tahun</option>
+              <option value="50">50 tahun</option>
+              <option value="100">100 tahun</option>
+            </select>
+          </label>
+
+          <label>
+            Interval Garis Isohyet
+            <select id="pilihIntervalIsohyet">
+              <option value="10">10 mm</option>
+              <option value="25" selected>25 mm</option>
+              <option value="50">50 mm</option>
+            </select>
+          </label>
+
+          <label>
+            Power IDW
+            <select id="pilihPowerIDW">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+            </select>
+          </label>
+
+          <button class="btn" id="btnTampilkanIsohyet">Tampilkan / Perbarui Isohyet</button>
+          <button class="btn btn-danger" id="btnHapusIsohyet">Hapus Isohyet</button>
+
+          <div class="note">
+            Hujan rencana dihitung per stasiun menggunakan pendekatan Log Pearson III, lalu diinterpolasi dengan IDW.
+          </div>
+
+          <div id="rekapIsohyet" class="note"></div>
         </div>
 
         <div class="control-group">
@@ -370,18 +465,23 @@
             Tampilkan stasiun hujan
           </label>
 
+          <label>
+            <input type="checkbox" id="cekNilaiStasiun" checked>
+            Tampilkan label nilai stasiun
+          </label>
+
           <div class="note">
-            Titik stasiun hujan dibaca dari file <b>data_stasiun_hujan.csv</b>.
+            Data stasiun dibaca dari <b>data_stasiun_hujan.csv</b> dan data hujan tahunan dari <b>data_hujan_bmkg_3stasiun.csv</b>.
           </div>
         </div>
 
         <div class="control-group">
-          <h3>Legenda Intensitas</h3>
+          <h3>Legenda Hujan</h3>
 
           <div class="legend">
             <div class="legend-item">
               <span class="legend-color" style="background:#d1d5db;"></span>
-              Tidak Hujan
+              Tidak Hujan: 0 mm/hari
             </div>
             <div class="legend-item">
               <span class="legend-color" style="background:#4ade80;"></span>
@@ -418,6 +518,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/IvanSanchez/Leaflet.ImageOverlay.Rotated/Leaflet.ImageOverlay.Rotated.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
 
   <script>
     const titikOverlayDefault = {
@@ -437,62 +538,34 @@
       titik: titikOverlayDefault
     };
 
-    const kategoriWarna = [
+    const konfigurasiStasiun = [
       {
-        nama: "Tidak Hujan",
-        warnaTampil: "#d1d5db",
-        sampel: [
-          [210, 210, 210],
-          [150, 170, 180],
-          [75, 165, 205],
-          [65, 150, 190]
-        ]
+        key: "stasiun_meteorologi_halim_perdana_kusuma",
+        nama: "Halim Perdanakusuma",
+        lat: -6.266610,
+        lng: 106.890980
       },
       {
-        nama: "Ringan",
-        warnaTampil: "#4ade80",
-        sampel: [
-          [74, 222, 128],
-          [90, 210, 80],
-          [120, 220, 70]
-        ]
+        key: "stasiun_meteorologi_kemayoran",
+        nama: "Kemayoran",
+        lat: -6.155590,
+        lng: 106.842970
       },
       {
-        nama: "Sedang",
-        warnaTampil: "#fde047",
-        sampel: [
-          [253, 224, 71],
-          [245, 210, 45],
-          [235, 190, 45]
-        ]
-      },
-      {
-        nama: "Lebat",
-        warnaTampil: "#fb923c",
-        sampel: [
-          [251, 146, 60],
-          [235, 120, 40],
-          [220, 105, 35]
-        ]
-      },
-      {
-        nama: "Sangat Lebat",
-        warnaTampil: "#ef4444",
-        sampel: [
-          [239, 68, 68],
-          [220, 50, 50],
-          [200, 40, 45]
-        ]
-      },
-      {
-        nama: "Ekstrem",
-        warnaTampil: "#d946ef",
-        sampel: [
-          [217, 70, 239],
-          [200, 50, 180],
-          [180, 45, 160]
-        ]
+        key: "stasiun_meteorologi_bogor",
+        nama: "Bogor",
+        lat: -6.501950,
+        lng: 106.756990
       }
+    ];
+
+    const kategoriWarna = [
+      { nama: "Tidak Hujan", warnaTampil: "#d1d5db", sampel: [[210,210,210],[150,170,180],[75,165,205],[65,150,190]] },
+      { nama: "Ringan", warnaTampil: "#4ade80", sampel: [[74,222,128],[90,210,80],[120,220,70]] },
+      { nama: "Sedang", warnaTampil: "#fde047", sampel: [[253,224,71],[245,210,45],[235,190,45]] },
+      { nama: "Lebat", warnaTampil: "#fb923c", sampel: [[251,146,60],[235,120,40],[220,105,35]] },
+      { nama: "Sangat Lebat", warnaTampil: "#ef4444", sampel: [[239,68,68],[220,50,50],[200,40,45]] },
+      { nama: "Ekstrem", warnaTampil: "#d946ef", sampel: [[217,70,239],[200,50,180],[180,45,160]] }
     ];
 
     const map = L.map("map", {
@@ -534,26 +607,69 @@
     let basemapAktif = googleHybrid;
 
     map.createPane("paneOverlayHujan");
+    map.createPane("paneIsohyet");
+    map.createPane("paneIsohyetLine");
     map.createPane("paneHasilCek");
     map.createPane("paneStasiun");
+    map.createPane("paneLabelStasiun");
 
     map.getPane("paneOverlayHujan").style.zIndex = 420;
-    map.getPane("paneHasilCek").style.zIndex = 530;
-    map.getPane("paneStasiun").style.zIndex = 520;
+    map.getPane("paneIsohyet").style.zIndex = 430;
+    map.getPane("paneIsohyetLine").style.zIndex = 450;
+    map.getPane("paneHasilCek").style.zIndex = 540;
+    map.getPane("paneStasiun").style.zIndex = 530;
+    map.getPane("paneLabelStasiun").style.zIndex = 535;
 
     let overlayHujanAktif = null;
     let overlayUploadAktif = null;
     let overlayAktifInfo = null;
 
     let layerStasiunHujan = L.layerGroup().addTo(map);
+    let layerLabelStasiun = L.layerGroup().addTo(map);
+    let layerIsohyet = L.layerGroup().addTo(map);
+    let layerIsohyetLine = L.layerGroup().addTo(map);
+
     let markerHasilCek = null;
     let modeCekArea = false;
 
     let overlayImage = null;
     let overlayCanvasSiap = false;
 
+    let dataHujanBMKG = [];
+    let nilaiRencanaStasiun = [];
+    let gridIsohyet = null;
+
     function angka(value) {
       return parseFloat(String(value).replace(",", "."));
+    }
+
+    function formatAngka(value, digit = 2) {
+      if (value === null || value === undefined || isNaN(value)) return "-";
+      return Number(value).toFixed(digit);
+    }
+
+    function rataRata(data) {
+      return data.reduce((sum, value) => sum + value, 0) / data.length;
+    }
+
+    function standarDeviasi(data) {
+      const mean = rataRata(data);
+      const jumlah = data.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0);
+      return Math.sqrt(jumlah / (data.length - 1));
+    }
+
+    function skewnessSample(data) {
+      const n = data.length;
+      const mean = rataRata(data);
+      const sd = standarDeviasi(data);
+
+      if (n < 3 || sd === 0) return 0;
+
+      const jumlah = data.reduce((sum, value) => {
+        return sum + Math.pow((value - mean) / sd, 3);
+      }, 0);
+
+      return (n / ((n - 1) * (n - 2))) * jumlah;
     }
 
     function estimasiCurahHujan(kategori) {
@@ -567,6 +683,24 @@
       };
 
       return data[kategori] || "-";
+    }
+
+    function kategoriDariNilai(nilai) {
+      if (nilai <= 0) return "Tidak Hujan";
+      if (nilai < 20) return "Ringan";
+      if (nilai < 50) return "Sedang";
+      if (nilai < 100) return "Lebat";
+      if (nilai < 150) return "Sangat Lebat";
+      return "Ekstrem";
+    }
+
+    function warnaDariNilai(nilai) {
+      if (nilai <= 0) return "#d1d5db";
+      if (nilai < 20) return "#4ade80";
+      if (nilai < 50) return "#fde047";
+      if (nilai < 100) return "#fb923c";
+      if (nilai < 150) return "#ef4444";
+      return "#d946ef";
     }
 
     function parseCsvOtomatis(csvText) {
@@ -656,20 +790,14 @@
 
       overlayAktifInfo = overlayUtama;
       muatGambarKeCanvas(overlayUtama.file);
-      map.fitBounds(boundsDariTitik(overlayUtama.titik));
       resetHasilCek();
     }
 
     function setOpacityOverlay() {
       const opacity = Number(document.getElementById("opacityOverlayHujan").value) / 100;
 
-      if (overlayHujanAktif) {
-        overlayHujanAktif.setOpacity(opacity);
-      }
-
-      if (overlayUploadAktif) {
-        overlayUploadAktif.setOpacity(opacity);
-      }
+      if (overlayHujanAktif) overlayHujanAktif.setOpacity(opacity);
+      if (overlayUploadAktif) overlayUploadAktif.setOpacity(opacity);
     }
 
     function setOpacityPreset(value) {
@@ -686,20 +814,13 @@
     function uploadOverlaySementara(event) {
       const file = event.target.files[0];
 
-      if (!file) {
-        return;
-      }
+      if (!file) return;
 
       const reader = new FileReader();
 
       reader.onload = function(e) {
-        if (overlayUploadAktif) {
-          map.removeLayer(overlayUploadAktif);
-        }
-
-        if (overlayHujanAktif) {
-          map.removeLayer(overlayHujanAktif);
-        }
+        if (overlayUploadAktif) map.removeLayer(overlayUploadAktif);
+        if (overlayHujanAktif) map.removeLayer(overlayHujanAktif);
 
         const opacity = Number(document.getElementById("opacityOverlayHujan").value) / 100;
         const imageUrl = e.target.result;
@@ -730,14 +851,13 @@
 
       document.getElementById("uploadOverlay").value = "";
       muatOverlayUtama();
+      terapkanModeTampilan();
     }
 
     function gantiBasemap() {
       const pilihan = document.getElementById("pilihBasemap").value;
 
-      if (basemapAktif) {
-        map.removeLayer(basemapAktif);
-      }
+      if (basemapAktif) map.removeLayer(basemapAktif);
 
       if (pilihan === "googleMaps") {
         basemapAktif = googleMaps;
@@ -753,46 +873,32 @@
 
       basemapAktif.addTo(map);
 
-      if (overlayHujanAktif) {
-        overlayHujanAktif.bringToFront();
-      }
-
-      if (overlayUploadAktif) {
-        overlayUploadAktif.bringToFront();
-      }
-
-      if (markerHasilCek) {
-        markerHasilCek.bringToFront();
-      }
+      if (overlayHujanAktif) overlayHujanAktif.bringToFront();
+      if (overlayUploadAktif) overlayUploadAktif.bringToFront();
+      if (markerHasilCek) markerHasilCek.bringToFront();
     }
 
     function loadStasiunHujan() {
-      fetch("data_stasiun_hujan.csv")
-        .then(response => response.text())
-        .then(csvText => {
-          const dataCsv = parseCsvOtomatis(csvText);
+      layerStasiunHujan.clearLayers();
 
-          dataCsv.forEach(data => {
-            const latitude = angka(data.latitude);
-            const longitude = angka(data.longitude);
-
-            if (!isNaN(latitude) && !isNaN(longitude)) {
-              const marker = L.marker([latitude, longitude], {
-                pane: "paneStasiun"
-              });
-
-              marker.bindPopup(`
-                <b>${data.nama_stasiun}</b><br>
-                Wilayah: ${data.wilayah || "-"}
-              `);
-
-              marker.addTo(layerStasiunHujan);
-            }
-          });
-        })
-        .catch(error => {
-          console.error("Gagal membaca data_stasiun_hujan.csv", error);
+      konfigurasiStasiun.forEach(stasiun => {
+        const marker = L.circleMarker([stasiun.lat, stasiun.lng], {
+          pane: "paneStasiun",
+          radius: 7,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: "#0f766e",
+          fillOpacity: 1
         });
+
+        marker.bindPopup(`
+          <b>${stasiun.nama}</b><br>
+          Latitude: ${stasiun.lat}<br>
+          Longitude: ${stasiun.lng}
+        `);
+
+        marker.addTo(layerStasiunHujan);
+      });
     }
 
     function toggleStasiunHujan() {
@@ -803,43 +909,39 @@
       }
     }
 
+    function toggleLabelStasiun() {
+      if (document.getElementById("cekNilaiStasiun").checked) {
+        map.addLayer(layerLabelStasiun);
+      } else {
+        map.removeLayer(layerLabelStasiun);
+      }
+    }
+
     function latLngKePixelGambar(latlng, titik, imageWidth, imageHeight) {
-      const tl = {
-        lat: titik.kiriAtas[0],
-        lng: titik.kiriAtas[1]
-      };
-
-      const tr = {
-        lat: titik.kananAtas[0],
-        lng: titik.kananAtas[1]
-      };
-
-      const bl = {
-        lat: titik.kiriBawah[0],
-        lng: titik.kiriBawah[1]
-      };
+      const tl = { lat: titik.kiriAtas[0], lng: titik.kiriAtas[1] };
+      const tr = { lat: titik.kananAtas[0], lng: titik.kananAtas[1] };
+      const bl = { lat: titik.kiriBawah[0], lng: titik.kiriBawah[1] };
 
       const aLat = tr.lat - tl.lat;
       const aLng = tr.lng - tl.lng;
       const bLat = bl.lat - tl.lat;
       const bLng = bl.lng - tl.lng;
-
       const cLat = latlng.lat - tl.lat;
       const cLng = latlng.lng - tl.lng;
 
       const det = aLat * bLng - aLng * bLat;
 
-      if (Math.abs(det) < 0.000000001) {
-        return null;
-      }
+      if (Math.abs(det) < 0.000000001) return null;
 
       const u = (cLat * bLng - cLng * bLat) / det;
       const v = (aLat * cLng - aLng * cLat) / det;
 
-      const x = Math.round(u * imageWidth);
-      const y = Math.round(v * imageHeight);
-
-      return { u, v, x, y };
+      return {
+        u,
+        v,
+        x: Math.round(u * imageWidth),
+        y: Math.round(v * imageHeight)
+      };
     }
 
     function jarakWarna(rgb1, rgb2) {
@@ -878,9 +980,7 @@
     }
 
     function analisisKategoriDariPixel(x, y) {
-      if (!overlayCanvasSiap || !overlayImage) {
-        return null;
-      }
+      if (!overlayCanvasSiap || !overlayImage) return null;
 
       const canvas = document.getElementById("canvasOverlay");
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -920,9 +1020,7 @@
         }
       }
 
-      if (warnaValid.length === 0) {
-        return null;
-      }
+      if (warnaValid.length === 0) return null;
 
       let kategoriDominan = null;
       let jumlahDominan = 0;
@@ -940,6 +1038,357 @@
         kategori: kategoriDominan,
         warnaTampil: kategoriObj ? kategoriObj.warnaTampil : "#000000"
       };
+    }
+
+    function hitungLogPearsonIII(nilai, kalaUlang) {
+      const logData = nilai.map(x => Math.log10(x));
+      const meanLog = rataRata(logData);
+      const sdLog = standarDeviasi(logData);
+      const cs = skewnessSample(logData);
+
+      const peluang = 1 - (1 / kalaUlang);
+      const z = jStat.normal.inv(peluang, 0, 1);
+
+      const k =
+        z +
+        ((z * z - 1) * cs / 6) +
+        ((Math.pow(z, 3) - 6 * z) * cs * cs / 24) -
+        ((2 * Math.pow(z, 3) - 5 * z) * Math.pow(cs, 3) / 36);
+
+      const logXt = meanLog + k * sdLog;
+      const xt = Math.pow(10, logXt);
+
+      return {
+        xt,
+        meanLog,
+        sdLog,
+        cs,
+        k
+      };
+    }
+
+    function hitungHujanRencanaSemuaStasiun() {
+      const kalaUlang = Number(document.getElementById("pilihKalaUlang").value);
+      const hasil = [];
+
+      konfigurasiStasiun.forEach(stasiun => {
+        const nilai = dataHujanBMKG
+          .map(row => angka(row[stasiun.key]))
+          .filter(value => !isNaN(value) && value > 0);
+
+        if (nilai.length >= 10) {
+          const lp3 = hitungLogPearsonIII(nilai, kalaUlang);
+
+          hasil.push({
+            ...stasiun,
+            nilai: lp3.xt,
+            n: nilai.length,
+            lp3
+          });
+        }
+      });
+
+      return hasil;
+    }
+
+    function jarakMeter(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const rad = Math.PI / 180;
+
+      const dLat = (lat2 - lat1) * rad;
+      const dLng = (lng2 - lng1) * rad;
+
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+      return R * c;
+    }
+
+    function hitungIDW(lat, lng, dataStasiun, power) {
+      let pembilang = 0;
+      let penyebut = 0;
+
+      for (const stasiun of dataStasiun) {
+        const d = jarakMeter(lat, lng, stasiun.lat, stasiun.lng);
+
+        if (d < 1) return stasiun.nilai;
+
+        const w = 1 / Math.pow(d, power);
+        pembilang += w * stasiun.nilai;
+        penyebut += w;
+      }
+
+      return pembilang / penyebut;
+    }
+
+    function warnaIsohyet(nilai, min, max) {
+      const rentang = max - min || 1;
+      const ratio = Math.max(0, Math.min(1, (nilai - min) / rentang));
+
+      const hue = 220 - ratio * 220;
+      return `hsl(${hue}, 85%, 55%)`;
+    }
+
+    function tampilkanLabelStasiun() {
+      layerLabelStasiun.clearLayers();
+
+      if (nilaiRencanaStasiun.length === 0) return;
+
+      nilaiRencanaStasiun.forEach(stasiun => {
+        const icon = L.divIcon({
+          className: "",
+          html: `<div class="station-label">${stasiun.nama}<br>${formatAngka(stasiun.nilai, 1)} mm</div>`,
+          iconSize: [90, 34],
+          iconAnchor: [-8, 34]
+        });
+
+        L.marker([stasiun.lat, stasiun.lng], {
+          icon,
+          pane: "paneLabelStasiun",
+          interactive: false
+        }).addTo(layerLabelStasiun);
+      });
+
+      toggleLabelStasiun();
+    }
+
+    function tampilkanIsohyet() {
+      if (dataHujanBMKG.length === 0) {
+        alert("Data hujan belum selesai dimuat.");
+        return;
+      }
+
+      layerIsohyet.clearLayers();
+      layerIsohyetLine.clearLayers();
+
+      const kalaUlang = Number(document.getElementById("pilihKalaUlang").value);
+      const power = Number(document.getElementById("pilihPowerIDW").value);
+      const interval = Number(document.getElementById("pilihIntervalIsohyet").value);
+
+      nilaiRencanaStasiun = hitungHujanRencanaSemuaStasiun();
+
+      if (nilaiRencanaStasiun.length < 3) {
+        alert("Data stasiun belum cukup untuk membuat isohyet.");
+        return;
+      }
+
+      const bbox = {
+        south: -6.85,
+        north: -5.52,
+        west: 106.29,
+        east: 107.66
+      };
+
+      const rows = 34;
+      const cols = 34;
+
+      const dLat = (bbox.north - bbox.south) / rows;
+      const dLng = (bbox.east - bbox.west) / cols;
+
+      const nilaiGrid = [];
+      let nilaiMin = Infinity;
+      let nilaiMax = -Infinity;
+
+      for (let i = 0; i <= rows; i++) {
+        nilaiGrid[i] = [];
+        const lat = bbox.south + i * dLat;
+
+        for (let j = 0; j <= cols; j++) {
+          const lng = bbox.west + j * dLng;
+          const nilai = hitungIDW(lat, lng, nilaiRencanaStasiun, power);
+
+          nilaiGrid[i][j] = nilai;
+          nilaiMin = Math.min(nilaiMin, nilai);
+          nilaiMax = Math.max(nilaiMax, nilai);
+        }
+      }
+
+      gridIsohyet = {
+        bbox,
+        rows,
+        cols,
+        dLat,
+        dLng,
+        nilaiGrid,
+        nilaiMin,
+        nilaiMax,
+        power,
+        kalaUlang
+      };
+
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          const lat1 = bbox.south + i * dLat;
+          const lat2 = bbox.south + (i + 1) * dLat;
+          const lng1 = bbox.west + j * dLng;
+          const lng2 = bbox.west + (j + 1) * dLng;
+
+          const nilai =
+            (nilaiGrid[i][j] +
+             nilaiGrid[i + 1][j] +
+             nilaiGrid[i][j + 1] +
+             nilaiGrid[i + 1][j + 1]) / 4;
+
+          L.rectangle([[lat1, lng1], [lat2, lng2]], {
+            pane: "paneIsohyet",
+            stroke: false,
+            fillColor: warnaIsohyet(nilai, nilaiMin, nilaiMax),
+            fillOpacity: 0.42,
+            interactive: false
+          }).addTo(layerIsohyet);
+        }
+      }
+
+      const startLevel = Math.ceil(nilaiMin / interval) * interval;
+      const endLevel = Math.floor(nilaiMax / interval) * interval;
+
+      for (let level = startLevel; level <= endLevel; level += interval) {
+        gambarKonturSederhana(level, nilaiGrid, bbox, rows, cols, dLat, dLng);
+      }
+
+      tampilkanLabelStasiun();
+
+      const rekap = document.getElementById("rekapIsohyet");
+      rekap.innerHTML = `
+        <b>Hasil Hujan Rencana T = ${kalaUlang} tahun</b>
+        <table class="small-table">
+          <thead>
+            <tr>
+              <th>Stasiun</th>
+              <th>Hujan Rencana</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${nilaiRencanaStasiun.map(s => `
+              <tr>
+                <td>${s.nama}</td>
+                <td>${formatAngka(s.nilai, 2)} mm</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div class="note">
+          Nilai interpolasi IDW berkisar ${formatAngka(nilaiMin, 2)} - ${formatAngka(nilaiMax, 2)} mm.
+        </div>
+      `;
+
+      terapkanModeTampilan();
+    }
+
+    function titikInterpolasi(p1, p2, v1, v2, level) {
+      if (v1 === v2) return p1;
+
+      const t = (level - v1) / (v2 - v1);
+
+      return [
+        p1[0] + t * (p2[0] - p1[0]),
+        p1[1] + t * (p2[1] - p1[1])
+      ];
+    }
+
+    function gambarKonturSederhana(level, grid, bbox, rows, cols, dLat, dLng) {
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+          const lat0 = bbox.south + i * dLat;
+          const lat1 = bbox.south + (i + 1) * dLat;
+          const lng0 = bbox.west + j * dLng;
+          const lng1 = bbox.west + (j + 1) * dLng;
+
+          const pBL = [lat0, lng0];
+          const pBR = [lat0, lng1];
+          const pTR = [lat1, lng1];
+          const pTL = [lat1, lng0];
+
+          const vBL = grid[i][j];
+          const vBR = grid[i][j + 1];
+          const vTR = grid[i + 1][j + 1];
+          const vTL = grid[i + 1][j];
+
+          const potong = [];
+
+          if ((vBL - level) * (vBR - level) < 0) {
+            potong.push(titikInterpolasi(pBL, pBR, vBL, vBR, level));
+          }
+
+          if ((vBR - level) * (vTR - level) < 0) {
+            potong.push(titikInterpolasi(pBR, pTR, vBR, vTR, level));
+          }
+
+          if ((vTR - level) * (vTL - level) < 0) {
+            potong.push(titikInterpolasi(pTR, pTL, vTR, vTL, level));
+          }
+
+          if ((vTL - level) * (vBL - level) < 0) {
+            potong.push(titikInterpolasi(pTL, pBL, vTL, vBL, level));
+          }
+
+          if (potong.length === 2) {
+            L.polyline(potong, {
+              pane: "paneIsohyetLine",
+              color: "#111827",
+              weight: 1.4,
+              opacity: 0.75,
+              interactive: false
+            }).addTo(layerIsohyetLine);
+          } else if (potong.length === 4) {
+            L.polyline([potong[0], potong[1]], {
+              pane: "paneIsohyetLine",
+              color: "#111827",
+              weight: 1.4,
+              opacity: 0.75,
+              interactive: false
+            }).addTo(layerIsohyetLine);
+
+            L.polyline([potong[2], potong[3]], {
+              pane: "paneIsohyetLine",
+              color: "#111827",
+              weight: 1.4,
+              opacity: 0.75,
+              interactive: false
+            }).addTo(layerIsohyetLine);
+          }
+        }
+      }
+    }
+
+    function hapusIsohyet() {
+      layerIsohyet.clearLayers();
+      layerIsohyetLine.clearLayers();
+      layerLabelStasiun.clearLayers();
+      nilaiRencanaStasiun = [];
+      gridIsohyet = null;
+      document.getElementById("rekapIsohyet").innerHTML = "";
+    }
+
+    function terapkanModeTampilan() {
+      const mode = document.getElementById("modeTampilan").value;
+
+      if (mode === "overlay") {
+        if (overlayHujanAktif && !map.hasLayer(overlayHujanAktif)) overlayHujanAktif.addTo(map);
+        if (overlayUploadAktif && !map.hasLayer(overlayUploadAktif)) overlayUploadAktif.addTo(map);
+
+        map.removeLayer(layerIsohyet);
+        map.removeLayer(layerIsohyetLine);
+      } else if (mode === "isohyet") {
+        if (overlayHujanAktif) map.removeLayer(overlayHujanAktif);
+        if (overlayUploadAktif) map.removeLayer(overlayUploadAktif);
+
+        if (!map.hasLayer(layerIsohyet)) layerIsohyet.addTo(map);
+        if (!map.hasLayer(layerIsohyetLine)) layerIsohyetLine.addTo(map);
+      } else {
+        if (overlayHujanAktif && !map.hasLayer(overlayHujanAktif)) overlayHujanAktif.addTo(map);
+        if (overlayUploadAktif && !map.hasLayer(overlayUploadAktif)) overlayUploadAktif.addTo(map);
+
+        if (!map.hasLayer(layerIsohyet)) layerIsohyet.addTo(map);
+        if (!map.hasLayer(layerIsohyetLine)) layerIsohyetLine.addTo(map);
+      }
+
+      toggleLabelStasiun();
+      resetHasilCek();
     }
 
     function aktifkanModeCekArea() {
@@ -960,43 +1409,114 @@
       }
     }
 
-    function cekAreaDariKlik(e) {
-      if (!modeCekArea) {
-        return;
-      }
-
-      if (!overlayAktifInfo) {
-        alert("Overlay belum siap.");
-        return;
-      }
-
-      if (!overlayCanvasSiap || !overlayImage) {
-        alert("Gambar overlay belum selesai dimuat. Coba tunggu sebentar.");
-        return;
-      }
+    function cekOverlayBMKG(latlng) {
+      if (!overlayAktifInfo || !overlayCanvasSiap || !overlayImage) return null;
 
       const pixel = latLngKePixelGambar(
-        e.latlng,
+        latlng,
         overlayAktifInfo.titik,
         overlayImage.naturalWidth,
         overlayImage.naturalHeight
       );
 
       if (!pixel || pixel.u < 0 || pixel.u > 1 || pixel.v < 0 || pixel.v > 1) {
-        document.getElementById("hasilCekArea").innerHTML = `
-          Titik berada di luar area gambar overlay.
-        `;
-        return;
+        return null;
       }
 
       const hasil = analisisKategoriDariPixel(pixel.x, pixel.y);
 
-      if (!hasil) {
-        document.getElementById("hasilCekArea").innerHTML = `
-          Warna pada titik ini tidak dapat dibaca dengan baik.
-          Coba klik area warna yang lebih bersih dari tulisan/angka.
+      if (!hasil) return null;
+
+      return {
+        kategori: hasil.kategori,
+        nilai: estimasiCurahHujan(hasil.kategori),
+        warna: hasil.warnaTampil
+      };
+    }
+
+    function cekIsohyetIDW(latlng) {
+      if (nilaiRencanaStasiun.length < 3) return null;
+
+      const power = Number(document.getElementById("pilihPowerIDW").value);
+      const nilai = hitungIDW(latlng.lat, latlng.lng, nilaiRencanaStasiun, power);
+      const kategori = kategoriDariNilai(nilai);
+
+      return {
+        kategori,
+        nilai: `${formatAngka(nilai, 2)} mm`,
+        warna: warnaDariNilai(nilai)
+      };
+    }
+
+    function cekAreaDariKlik(e) {
+      if (!modeCekArea) return;
+
+      const mode = document.getElementById("modeTampilan").value;
+      let hasilHtml = "";
+      let warnaMarker = "#0f766e";
+
+      if (mode === "overlay") {
+        const hasilOverlay = cekOverlayBMKG(e.latlng);
+
+        if (!hasilOverlay) {
+          hasilHtml = "Area tidak dapat dibaca dari overlay BMKG.";
+        } else {
+          warnaMarker = hasilOverlay.warna;
+          hasilHtml = `
+            <b>Hasil Cek Area</b><br>
+            Sumber: Peta BMKG<br>
+            Kategori hujan: <b>${hasilOverlay.kategori}</b>
+            <span class="color-preview" style="background:${hasilOverlay.warna};"></span><br>
+            Estimasi curah hujan: <b>${hasilOverlay.nilai}</b><br>
+            Latitude: ${e.latlng.lat.toFixed(6)}<br>
+            Longitude: ${e.latlng.lng.toFixed(6)}<br>
+            <span class="note">Estimasi berdasarkan warna pada peta sebaran hujan BMKG.</span>
+          `;
+        }
+      } else if (mode === "isohyet") {
+        const hasilIDW = cekIsohyetIDW(e.latlng);
+
+        if (!hasilIDW) {
+          hasilHtml = "Isohyet belum dihitung. Klik Tampilkan / Perbarui Isohyet terlebih dahulu.";
+        } else {
+          warnaMarker = hasilIDW.warna;
+          hasilHtml = `
+            <b>Hasil Cek Area</b><br>
+            Sumber: Isohyet IDW<br>
+            Kala ulang: <b>${document.getElementById("pilihKalaUlang").value} tahun</b><br>
+            Estimasi hujan rencana: <b>${hasilIDW.nilai}</b><br>
+            Kategori hujan: <b>${hasilIDW.kategori}</b>
+            <span class="color-preview" style="background:${hasilIDW.warna};"></span><br>
+            Latitude: ${e.latlng.lat.toFixed(6)}<br>
+            Longitude: ${e.latlng.lng.toFixed(6)}<br>
+            <span class="note">Estimasi berdasarkan interpolasi IDW dari data stasiun.</span>
+          `;
+        }
+      } else {
+        const hasilOverlay = cekOverlayBMKG(e.latlng);
+        const hasilIDW = cekIsohyetIDW(e.latlng);
+
+        warnaMarker = hasilIDW ? hasilIDW.warna : (hasilOverlay ? hasilOverlay.warna : "#0f766e");
+
+        hasilHtml = `
+          <b>Hasil Cek Area</b><br>
+          <b>Peta BMKG</b><br>
+          ${
+            hasilOverlay
+              ? `Kategori hujan: ${hasilOverlay.kategori}<br>Estimasi curah hujan: ${hasilOverlay.nilai}<br>`
+              : `Area tidak dapat dibaca dari overlay BMKG.<br>`
+          }
+          <br>
+          <b>Isohyet IDW</b><br>
+          ${
+            hasilIDW
+              ? `Kala ulang: ${document.getElementById("pilihKalaUlang").value} tahun<br>Estimasi hujan rencana: ${hasilIDW.nilai}<br>Kategori hujan: ${hasilIDW.kategori}<br>`
+              : `Isohyet belum dihitung.<br>`
+          }
+          <br>
+          Latitude: ${e.latlng.lat.toFixed(6)}<br>
+          Longitude: ${e.latlng.lng.toFixed(6)}
         `;
-        return;
       }
 
       if (markerHasilCek) {
@@ -1005,7 +1525,7 @@
 
       const icon = L.divIcon({
         className: "",
-        html: `<div class="marker-result" style="background:${hasil.warnaTampil};"></div>`,
+        html: `<div class="marker-result" style="background:${warnaMarker};"></div>`,
         iconSize: [18, 18],
         iconAnchor: [9, 9]
       });
@@ -1015,25 +1535,9 @@
         pane: "paneHasilCek"
       }).addTo(map);
 
-      markerHasilCek.bindPopup(`
-        <b>Hasil Cek Area</b><br>
-        Kategori hujan: ${hasil.kategori}<br>
-        Estimasi curah hujan: ${estimasiCurahHujan(hasil.kategori)}<br>
-        Latitude: ${e.latlng.lat.toFixed(6)}<br>
-        Longitude: ${e.latlng.lng.toFixed(6)}
-      `).openPopup();
+      markerHasilCek.bindPopup(hasilHtml).openPopup();
 
-      document.getElementById("hasilCekArea").innerHTML = `
-        <b>Hasil Cek Area</b><br>
-        Kategori hujan: <b>${hasil.kategori}</b>
-        <span class="color-preview" style="background:${hasil.warnaTampil};"></span><br>
-        Estimasi curah hujan: <b>${estimasiCurahHujan(hasil.kategori)}</b><br>
-        Latitude: ${e.latlng.lat.toFixed(6)}<br>
-        Longitude: ${e.latlng.lng.toFixed(6)}<br>
-        <span class="note">
-          Estimasi berdasarkan warna pada peta sebaran hujan BMKG.
-        </span>
-      `;
+      document.getElementById("hasilCekArea").innerHTML = hasilHtml;
 
       modeCekArea = false;
       document.getElementById("btnModeCekArea").textContent = "Aktifkan Mode Cek Area";
@@ -1057,6 +1561,17 @@
       map.getContainer().style.cursor = "";
     }
 
+    function loadDataHujan() {
+      fetch("data_hujan_bmkg_3stasiun.csv")
+        .then(response => response.text())
+        .then(csvText => {
+          dataHujanBMKG = parseCsvOtomatis(csvText);
+        })
+        .catch(error => {
+          console.error("Gagal membaca data_hujan_bmkg_3stasiun.csv", error);
+        });
+    }
+
     document.getElementById("togglePanel").addEventListener("click", function () {
       const panel = document.getElementById("panel");
       panel.classList.toggle("minimized");
@@ -1076,15 +1591,29 @@
 
     muatOverlayUtama();
     loadStasiunHujan();
+    loadDataHujan();
 
+    document.getElementById("modeTampilan").addEventListener("change", terapkanModeTampilan);
     document.getElementById("pilihBasemap").addEventListener("change", gantiBasemap);
     document.getElementById("opacityOverlayHujan").addEventListener("input", setOpacityOverlay);
     document.getElementById("btnZoomOverlay").addEventListener("click", zoomKeOverlay);
     document.getElementById("cekStasiunHujan").addEventListener("change", toggleStasiunHujan);
+    document.getElementById("cekNilaiStasiun").addEventListener("change", toggleLabelStasiun);
     document.getElementById("uploadOverlay").addEventListener("change", uploadOverlaySementara);
     document.getElementById("btnHapusUpload").addEventListener("click", hapusOverlayUpload);
     document.getElementById("btnModeCekArea").addEventListener("click", aktifkanModeCekArea);
     document.getElementById("btnResetHasilCek").addEventListener("click", resetHasilCek);
+    document.getElementById("btnTampilkanIsohyet").addEventListener("click", tampilkanIsohyet);
+    document.getElementById("btnHapusIsohyet").addEventListener("click", hapusIsohyet);
+    document.getElementById("pilihKalaUlang").addEventListener("change", function () {
+      if (nilaiRencanaStasiun.length > 0) tampilkanIsohyet();
+    });
+    document.getElementById("pilihIntervalIsohyet").addEventListener("change", function () {
+      if (nilaiRencanaStasiun.length > 0) tampilkanIsohyet();
+    });
+    document.getElementById("pilihPowerIDW").addEventListener("change", function () {
+      if (nilaiRencanaStasiun.length > 0) tampilkanIsohyet();
+    });
   </script>
 </body>
 </html>
