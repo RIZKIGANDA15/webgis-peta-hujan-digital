@@ -259,6 +259,7 @@
 
           <div class="note">
             Overlay menggunakan 3 titik kontrol agar gambar dapat mengikuti kemiringan seperti di Google Earth.
+            Titik kontrol sudah dikalibrasi awal berdasarkan gambar BMKG 17 Januari 2026.
           </div>
         </div>
 
@@ -274,6 +275,7 @@
 
           <div class="note">
             Upload ini hanya tampil sementara di browser. Jika halaman di-refresh, overlay upload akan hilang.
+            Posisi upload tetap memakai titik kontrol default.
           </div>
         </div>
 
@@ -348,15 +350,24 @@
       kananAtas = sudut kanan atas gambar full
       kiriBawah = sudut kiri bawah gambar full
 
-      Angka ini adalah titik awal berdasarkan file "17 Januari 2026.jpg".
-      Kalau masih kurang pas, cukup kalibrasi 3 titik ini.
+      Titik ini adalah hasil revisi dari screenshot overlay sebelumnya:
+      - overlay sebelumnya terlalu besar,
+      - terlalu ke barat,
+      - dan terlalu ke utara.
     */
     const titikOverlayDefault = {
-      kiriAtas: [-5.45, 105.96],
-      kananAtas: [-5.45, 107.96],
-      kiriBawah: [-6.92, 105.96]
+      kiriAtas: [-5.60, 106.10],
+      kananAtas: [-5.58, 107.72],
+      kiriBawah: [-6.86, 106.08]
     };
 
+    /*
+      DAFTAR OVERLAY HUJAN
+
+      Pastikan nama file sama persis dengan file di GitHub.
+      Untuk aman, boleh tetap pakai "17 Januari 2026.jpg".
+      Tapi untuk jangka panjang lebih bagus rename jadi tanpa spasi.
+    */
     const daftarOverlayHujan = [
       {
         id: "hujan_2026_01_17",
@@ -369,8 +380,7 @@
       }
 
       /*
-      Kalau mau tambah file baru, upload gambar ke repo,
-      lalu tambahkan data seperti ini:
+      Contoh tambah gambar baru:
 
       ,
       {
