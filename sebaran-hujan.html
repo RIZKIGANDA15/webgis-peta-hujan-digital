@@ -501,6 +501,10 @@
               Ekstrem: >150 mm/hari
             </div>
           </div>
+
+          <div class="note">
+            Catatan: warna legenda di atas digunakan untuk kategori hujan. Warna isohyet IDW memakai gradasi nilai relatif dari rendah ke tinggi.
+          </div>
         </div>
 
         <a href="index.html" class="btn btn-secondary">Kembali ke Home</a>
@@ -654,8 +658,11 @@
       return "#d946ef";
     }
 
-    function warnaIsohyet(nilai) {
-      return warnaDariNilai(nilai);
+    function warnaIsohyet(nilai, min, max) {
+      const rentang = max - min || 1;
+      const ratio = Math.max(0, Math.min(1, (nilai - min) / rentang));
+      const hue = 220 - ratio * 220;
+      return `hsl(${hue}, 85%, 55%)`;
     }
 
     function parseCsvOtomatis(csvText) {
@@ -1050,7 +1057,7 @@
           L.rectangle([[lat1, lng1], [lat2, lng2]], {
             pane: "paneIsohyet",
             stroke: false,
-            fillColor: warnaIsohyet(nilai),
+            fillColor: warnaIsohyet(nilai, nilaiMin, nilaiMax),
             fillOpacity: 0.42,
             interactive: false
           }).addTo(layerIsohyet);
