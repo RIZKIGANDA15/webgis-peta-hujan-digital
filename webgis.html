@@ -873,6 +873,7 @@
                 Metode Tc
                 <select id="metodeTc">
                   <option value="kirpich" selected>Kirpich</option>
+                  <option value="mcdermott">McDermott / Pilgrim-McDermott</option>
                 </select>
               </label>
             </div>
@@ -1637,9 +1638,37 @@
 
     function hitungIntensitasSegmen(seg) {
       hitungTurunanDasar(seg);
-      if (!seg.panjangL || seg.panjangL <= 0) return { error: "Panjang saluran belum valid." };
-      if (!seg.slope || seg.slope <= 0) return { error: "Slope belum valid. Isi elevasi atau slope manual." };
-      if (!seg.r24 || seg.r24 <= 0) return { error: "R24 belum valid." };
+
+      if (!seg.r24 || seg.r24 <= 0) {
+        return { error: "R24 belum valid." };
+      }
+
+      const metodeTc = seg.metodeTc || "kirpich";
+
+      if (metodeTc === "mcdermott") {
+        const totalTutupan = seg.tutupan.reduce((sum, item) => sum + item.luas, 0);
+        const luasHa = totalTutupan > 0 ? totalTutupan : seg.luasCA;
+
+        if (!luasHa || luasHa <= 0) {
+          return { error: "Luas catchment belum valid untuk metode McDermott." };
+        }
+
+        const luasKm2 = luasHa / 100;
+        const tcJamAsli = 0.76 * Math.pow(luasKm2, 0.38);
+        seg.tcMenit = tcJamAsli * 60;
+        seg.tcJam = parseFloat(tcJamAsli.toFixed(3));
+        seg.intensitas = (seg.r24 / 24) * Math.pow(24 / seg.tcJam, 2 / 3);
+        return { ok: true };
+      }
+
+      if (!seg.panjangL || seg.panjangL <= 0) {
+        return { error: "Panjang saluran belum valid." };
+      }
+
+      if (!seg.slope || seg.slope <= 0) {
+        return { error: "Slope belum valid. Isi elevasi atau slope manual." };
+      }
+
       seg.tcMenit = 0.0195 * Math.pow(seg.panjangL, 0.77) * Math.pow(seg.slope, -0.385);
       const tcJamAsli = seg.tcMenit / 60;
       seg.tcJam = parseFloat(tcJamAsli.toFixed(3));
@@ -1951,7 +1980,7 @@
       const seg = getActiveSegment();
       if (!seg) {
         document.getElementById("hasilSlopeMini").innerHTML = `Beda elevasi: <b>-</b><br>Slope / S0: <b>-</b>`;
-        document.getElementById("hasilIntensitasMini").innerHTML = `Tc: <b>-</b><br>Tc jam: <b>-</b><br>Intensitas / I: <b>-</b>`;
+        document.getElementById("hasilIntensitasMini").innerHTML = `Metode Tc: <b>-</b><br>Tc: <b>-</b><br>Tc jam: <b>-</b><br>Intensitas / I: <b>-</b>`;
         document.getElementById("hasilCMini").innerHTML = `Total luas tutupan: <b>-</b><br>Σ(C × A): <b>-</b><br>C gabungan: <b>-</b>`;
         document.getElementById("hasilQMini").innerHTML = `Rumus: Q = 0,00278 × Cgab × I × A<br>Q Rencana: <b>-</b>`;
         document.getElementById("hasilKapasitasMini").innerHTML = `A hidrolik: <b>-</b><br>P basah: <b>-</b><br>R hidrolik: <b>-</b><br>V: <b>-</b><br>Q Saluran: <b>-</b>`;
@@ -1963,7 +1992,9 @@
         Beda elevasi: <b>${seg.elevasiHulu !== null && seg.elevasiHilir !== null ? formatAngka(seg.elevasiHulu - seg.elevasiHilir, 3) + " m" : "-"}</b><br>
         Slope / S0: <b>${seg.slope !== null ? formatAngka(seg.slope, 6) : "-"}</b>
       `;
+      const labelMetodeTc = (seg.metodeTc || "kirpich") === "mcdermott" ? "McDermott / Pilgrim-McDermott" : "Kirpich";
       document.getElementById("hasilIntensitasMini").innerHTML = `
+        Metode Tc: <b>${labelMetodeTc}</b><br>
         Tc: <b>${seg.tcMenit !== null ? formatAngka(seg.tcMenit, 2) + " menit" : "-"}</b><br>
         Tc jam: <b>${seg.tcJam !== null ? formatAngka(seg.tcJam, 3) + " jam" : "-"}</b><br>
         Intensitas / I: <b>${seg.intensitas !== null ? formatAngka(seg.intensitas, 2) + " mm/jam" : "-"}</b>
