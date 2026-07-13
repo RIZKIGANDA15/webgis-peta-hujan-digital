@@ -699,9 +699,8 @@
               </select>
             </label>
           </div>
-          <button class="btn btn-light" id="btnTerapkanR24Semua">Terapkan R24 ke Semua Segmen</button>
           <div class="note">
-            Jika Kala Ulang atau R24 Default diganti, nilai R24 otomatis masuk ke semua segmen.
+            R24 otomatis mengikuti kala ulang dan digunakan untuk semua segmen.
           </div>
         </div>
 
@@ -1879,14 +1878,6 @@
       simpanKeLocal(false);
     }
 
-    document.getElementById("btnTerapkanR24Semua").addEventListener("click", function() {
-      const r24 = angka(document.getElementById("r24Default").value);
-      if (isNaN(r24) || r24 <= 0) { alert("R24 default belum valid."); return; }
-      terapkanR24KeSemuaSegmen(r24);
-      loadSegmenToForm();
-      simpanKeLocal(false);
-    });
-
     /* DRAW CA DAN PANJANG */
     const drawControl = new L.Control.Draw({
       position: "topleft",
@@ -2052,12 +2043,12 @@
         segmenList,
         activeSegmentId
       };
-      localStorage.setItem("webgisDrainaseExcelWorkflowRevisi3", JSON.stringify(dataSimpan));
+      localStorage.setItem("webgisDrainaseExcelWorkflowRevisi4", JSON.stringify(dataSimpan));
       if (showAlert) alert("Data perhitungan tersimpan di browser ini.");
     }
 
     function loadDariLocal() {
-      const raw = localStorage.getItem("webgisDrainaseExcelWorkflowRevisi3");
+      const raw = localStorage.getItem("webgisDrainaseExcelWorkflowRevisi4");
       if (!raw) return false;
       try {
         const data = JSON.parse(raw);
@@ -2076,7 +2067,7 @@
     document.getElementById("btnSimpanLocal").addEventListener("click", function() { saveFormToSegmen(); simpanKeLocal(true); });
     document.getElementById("btnResetSemua").addEventListener("click", function() {
       if (!confirm("Reset semua data segmen dan perhitungan?")) return;
-      localStorage.removeItem("webgisDrainaseExcelWorkflowRevisi3");
+      localStorage.removeItem("webgisDrainaseExcelWorkflowRevisi4");
       layerGambarUkur.clearLayers();
       segmenList = [];
       activeSegmentId = null;
