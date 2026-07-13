@@ -687,8 +687,12 @@
           </label>
           <div class="input-grid-2">
             <label>
-              R24 Default (mm)
-              <input type="number" id="r24Default" value="205.93" step="0.001">
+              Stasiun Hujan
+              <select id="stasiunR24Default">
+                <option value="halim" selected>Halim Perdanakusuma</option>
+                <option value="kemayoran">Kemayoran</option>
+                <option value="bogor">Bogor</option>
+              </select>
             </label>
             <label>
               Kala Ulang
@@ -699,9 +703,10 @@
               </select>
             </label>
           </div>
-          <div class="note">
-            R24 otomatis mengikuti kala ulang dan digunakan untuk semua segmen.
-          </div>
+          <label>
+            R24 Default (mm)
+            <input type="number" id="r24Default" value="205.93" step="0.001">
+          </label>
         </div>
 
         <div class="box-white">
@@ -1300,7 +1305,7 @@
     function getR24DefaultAktif() {
       const r24Input = angka(document.getElementById("r24Default").value);
       if (!isNaN(r24Input) && r24Input > 0) return r24Input;
-      return r24DariKalaUlang(document.getElementById("kalaUlangDefault").value);
+      return r24DariKalaUlang(document.getElementById("kalaUlangDefault").value, document.getElementById("stasiunR24Default").value);
     }
 
     function formMulaiDiisi() {
@@ -1856,18 +1861,35 @@
       refreshAll();
     });
 
-    function r24DariKalaUlang(kalaUlang) {
+    function r24DariKalaUlang(kalaUlang, stasiun) {
       const tabelR24 = {
-        "2": 137.54,
-        "5": 205.93,
-        "10": 266.68
+        halim: {
+          "2": 137.54,
+          "5": 205.93,
+          "10": 266.68
+        },
+        kemayoran: {
+          "2": 138.80,
+          "5": 197.36,
+          "10": 238.61
+        },
+        bogor: {
+          "2": 129.51,
+          "5": 148.24,
+          "10": 158.27
+        }
       };
-      return tabelR24[String(kalaUlang)] || 205.93;
+
+      const stasiunAktif = stasiun || (document.getElementById("stasiunR24Default") ? document.getElementById("stasiunR24Default").value : "halim");
+      const dataStasiun = tabelR24[stasiunAktif] || tabelR24.halim;
+
+      return dataStasiun[String(kalaUlang)] || dataStasiun["5"];
     }
 
     function updateR24DefaultDariKalaUlang(terapkanKeSemuaSegmen) {
       const kalaUlang = document.getElementById("kalaUlangDefault").value;
-      const r24 = r24DariKalaUlang(kalaUlang);
+      const stasiun = document.getElementById("stasiunR24Default").value;
+      const r24 = r24DariKalaUlang(kalaUlang, stasiun);
       document.getElementById("r24Default").value = r24.toFixed(2);
 
       if (terapkanKeSemuaSegmen) {
@@ -2038,21 +2060,23 @@
     function simpanKeLocal(showAlert) {
       const dataSimpan = {
         namaProyek: document.getElementById("namaProyek").value,
+        stasiunR24Default: document.getElementById("stasiunR24Default").value,
         r24Default: document.getElementById("r24Default").value,
         kalaUlangDefault: document.getElementById("kalaUlangDefault").value,
         segmenList,
         activeSegmentId
       };
-      localStorage.setItem("webgisDrainaseExcelWorkflowRevisi4", JSON.stringify(dataSimpan));
+      localStorage.setItem("webgisDrainaseExcelWorkflowRevisi5", JSON.stringify(dataSimpan));
       if (showAlert) alert("Data perhitungan tersimpan di browser ini.");
     }
 
     function loadDariLocal() {
-      const raw = localStorage.getItem("webgisDrainaseExcelWorkflowRevisi4");
+      const raw = localStorage.getItem("webgisDrainaseExcelWorkflowRevisi5");
       if (!raw) return false;
       try {
         const data = JSON.parse(raw);
         document.getElementById("namaProyek").value = data.namaProyek || "";
+        document.getElementById("stasiunR24Default").value = data.stasiunR24Default || "halim";
         document.getElementById("r24Default").value = data.r24Default || "205.93";
         document.getElementById("kalaUlangDefault").value = data.kalaUlangDefault || "5";
         segmenList = data.segmenList || [];
@@ -2067,7 +2091,7 @@
     document.getElementById("btnSimpanLocal").addEventListener("click", function() { saveFormToSegmen(); simpanKeLocal(true); });
     document.getElementById("btnResetSemua").addEventListener("click", function() {
       if (!confirm("Reset semua data segmen dan perhitungan?")) return;
-      localStorage.removeItem("webgisDrainaseExcelWorkflowRevisi4");
+      localStorage.removeItem("webgisDrainaseExcelWorkflowRevisi5");
       layerGambarUkur.clearLayers();
       segmenList = [];
       activeSegmentId = null;
@@ -2083,6 +2107,10 @@
       }
       simpanKeLocal(false);
     });
+    document.getElementById("stasiunR24Default").addEventListener("change", function () {
+      updateR24DefaultDariKalaUlang(true);
+    });
+
     document.getElementById("kalaUlangDefault").addEventListener("change", function () {
       updateR24DefaultDariKalaUlang(true);
     });
