@@ -700,6 +700,9 @@
             </label>
           </div>
           <button class="btn btn-light" id="btnTerapkanR24Semua">Terapkan R24 ke Semua Segmen</button>
+          <div class="note">
+            Jika Kala Ulang atau R24 Default diganti, nilai R24 otomatis masuk ke semua segmen.
+          </div>
         </div>
 
         <div class="box-white">
@@ -739,29 +742,8 @@
               Nama Segmen Saluran
               <input type="text" id="namaSegmen" placeholder="Contoh: Saluran I Sisi Selatan">
             </label>
-            <div class="input-grid-2">
-              <label>
-                Sisi / Arah
-                <select id="sisiSegmen">
-                  <option value="Selatan">Sisi Selatan</option>
-                  <option value="Utara">Sisi Utara</option>
-                  <option value="Timur">Sisi Timur</option>
-                  <option value="Barat">Sisi Barat</option>
-                  <option value="Lainnya">Lainnya</option>
-                </select>
-              </label>
-              <label>
-                Warna Segmen
-                <select id="warnaSegmen">
-                  <option value="#dc2626">Merah</option>
-                  <option value="#2563eb">Biru</option>
-                  <option value="#16a34a">Hijau</option>
-                  <option value="#d97706">Oranye</option>
-                  <option value="#7c3aed">Ungu</option>
-                  <option value="#0f766e">Toska</option>
-                </select>
-              </label>
-            </div>
+            <input type="hidden" id="sisiSegmen" value="Lainnya">
+            <input type="hidden" id="warnaSegmen" value="#dc2626">
             <button class="btn" id="btnSimpanIdentitas">Simpan Identitas Segmen</button>
           </div>
         </div>
@@ -1316,6 +1298,75 @@
     let modeGambar = null;
     let handlerGambarAktif = null;
 
+    function getR24DefaultAktif() {
+      const r24Input = angka(document.getElementById("r24Default").value);
+      if (!isNaN(r24Input) && r24Input > 0) return r24Input;
+      return r24DariKalaUlang(document.getElementById("kalaUlangDefault").value);
+    }
+
+    function formMulaiDiisi() {
+      const daftarId = [
+        "namaSegmen", "luasCATotal", "panjangSaluran", "elevasiHulu",
+        "elevasiHilir", "slopeManual", "r24Segmen", "lebarSaluran",
+        "tinggiSaluran", "diameterRcp", "tinggiAirRcp"
+      ];
+
+      return daftarId.some(id => {
+        const el = document.getElementById(id);
+        return el && String(el.value || "").trim() !== "";
+      });
+    }
+
+    function pastikanSegmenAktifJikaMulaiInput() {
+      if (getActiveSegment()) return false;
+      if (!formMulaiDiisi()) return false;
+
+      const namaInput = document.getElementById("namaSegmen").value.trim();
+      const seg = buatSegmenDefault(namaInput || "Saluran 1");
+      segmenList.push(seg);
+      activeSegmentId = seg.id;
+      return true;
+    }
+
+    function refreshPilihanSegmenAktif() {
+      const select = document.getElementById("pilihSegmenAktif");
+      select.innerHTML = "";
+
+      if (segmenList.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Belum ada segmen";
+        select.appendChild(opt);
+        return;
+      }
+
+      segmenList.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = s.nama;
+        if (s.id === activeSegmentId) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function terapkanR24KeSemuaSegmen(r24) {
+      const nilaiR24 = (!isNaN(r24) && r24 > 0) ? r24 : getR24DefaultAktif();
+
+      segmenList.forEach(seg => {
+        seg.r24 = nilaiR24;
+        seg.tcMenit = null;
+        seg.tcJam = null;
+        seg.intensitas = null;
+        seg.qRencana = null;
+        updateStatusSegmen(seg);
+      });
+
+      const aktif = getActiveSegment();
+      if (aktif) {
+        document.getElementById("r24Segmen").value = nilaiR24.toFixed(3);
+      }
+    }
+
     function buatSegmenDefault(nama) {
       return {
         id: "seg_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
@@ -1328,7 +1379,7 @@
         elevasiHilir: null,
         slopeManual: null,
         slope: null,
-        r24: angka(document.getElementById("r24Default").value) || 205.93,
+        r24: getR24DefaultAktif(),
         metodeTc: "kirpich",
         tcMenit: null,
         tcJam: null,
@@ -1356,23 +1407,9 @@
     }
 
     function initSegmenAwal() {
-      if (segmenList.length === 0) {
-        const contoh = [
-          "Saluran I Sisi Selatan",
-          "Saluran II Sisi Selatan",
-          "Saluran III Sisi Selatan",
-          "Saluran I Sisi Utara",
-          "Saluran II Sisi Utara",
-          "Saluran III Sisi Utara"
-        ];
-        contoh.forEach((nama, i) => {
-          const s = buatSegmenDefault(nama);
-          s.sisi = nama.includes("Utara") ? "Utara" : "Selatan";
-          s.warna = i < 3 ? "#dc2626" : "#2563eb";
-          segmenList.push(s);
-        });
-        activeSegmentId = segmenList[0].id;
-      }
+      // Default dibuat kosong agar pengguna mulai dari pekerjaan/segmen sendiri.
+      segmenList = [];
+      activeSegmentId = null;
     }
 
     function getActiveSegment() { return segmenList.find(s => s.id === activeSegmentId) || null; }
@@ -1398,19 +1435,36 @@
       else el.value = digit !== undefined ? Number(value).toFixed(digit) : value;
     }
 
+    function kosongkanFormSegmen() {
+      ["namaSegmen", "luasCATotal", "panjangSaluran", "elevasiHulu", "elevasiHilir", "slopeManual", "r24Segmen", "lebarSaluran", "tinggiSaluran", "diameterRcp", "tinggiAirRcp", "slopeKapasitas"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      document.getElementById("sisiSegmen").value = "Lainnya";
+      document.getElementById("warnaSegmen").value = "#dc2626";
+      document.getElementById("metodeTc").value = "kirpich";
+      document.getElementById("jenisSaluranKapasitas").value = "rect";
+      document.getElementById("jagaanSaluran").value = "0.01";
+      document.getElementById("manningN").value = "0.015";
+      document.querySelector("#tabelTutupan tbody").innerHTML = "";
+      updateFieldJenisSaluran();
+      renderHasilMini();
+      renderRekapSegmen();
+      updateSummary();
+    }
+
     function loadSegmenToForm() {
       const seg = getActiveSegment();
-      const select = document.getElementById("pilihSegmenAktif");
-      select.innerHTML = "";
-      segmenList.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.id;
-        opt.textContent = s.nama;
-        if (s.id === activeSegmentId) opt.selected = true;
-        select.appendChild(opt);
-      });
+      refreshPilihanSegmenAktif();
 
-      if (!seg) return;
+      if (!seg) {
+        kosongkanFormSegmen();
+        return;
+      }
+
+      if (!seg.r24 || seg.r24 <= 0) {
+        seg.r24 = getR24DefaultAktif();
+      }
       document.getElementById("namaSegmen").value = seg.nama;
       document.getElementById("sisiSegmen").value = seg.sisi;
       document.getElementById("warnaSegmen").value = seg.warna;
@@ -1437,6 +1491,7 @@
     }
 
     function saveFormToSegmen() {
+      pastikanSegmenAktifJikaMulaiInput();
       const seg = getActiveSegment();
       if (!seg) return;
       seg.nama = document.getElementById("namaSegmen").value || seg.nama;
@@ -1453,7 +1508,10 @@
       seg.slopeManual = angka(document.getElementById("slopeManual").value);
       if (isNaN(seg.slopeManual)) seg.slopeManual = null;
       seg.r24 = angka(document.getElementById("r24Segmen").value);
-      if (isNaN(seg.r24)) seg.r24 = null;
+      if (isNaN(seg.r24) || seg.r24 <= 0) {
+        seg.r24 = getR24DefaultAktif();
+        document.getElementById("r24Segmen").value = seg.r24.toFixed(3);
+      }
       seg.metodeTc = document.getElementById("metodeTc").value;
       seg.jenisSaluran = document.getElementById("jenisSaluranKapasitas").value;
       seg.lebar = angka(document.getElementById("lebarSaluran").value);
@@ -1571,7 +1629,14 @@
 
     function renderHasilMini() {
       const seg = getActiveSegment();
-      if (!seg) return;
+      if (!seg) {
+        document.getElementById("hasilSlopeMini").innerHTML = `Beda elevasi: <b>-</b><br>Slope / S0: <b>-</b>`;
+        document.getElementById("hasilIntensitasMini").innerHTML = `Tc: <b>-</b><br>Tc jam: <b>-</b><br>Intensitas / I: <b>-</b>`;
+        document.getElementById("hasilCMini").innerHTML = `Total luas tutupan: <b>-</b><br>Σ(C × A): <b>-</b><br>C gabungan: <b>-</b>`;
+        document.getElementById("hasilQMini").innerHTML = `Rumus: Q = 0,00278 × Cgab × I × A<br>Q Rencana: <b>-</b>`;
+        document.getElementById("hasilKapasitasMini").innerHTML = `A hidrolik: <b>-</b><br>P basah: <b>-</b><br>R hidrolik: <b>-</b><br>V: <b>-</b><br>Q Saluran: <b>-</b>`;
+        return;
+      }
       hitungTurunanDasar(seg);
       document.getElementById("hasilSlopeMini").innerHTML = `
         Beda elevasi: <b>${seg.elevasiHulu !== null && seg.elevasiHilir !== null ? formatAngka(seg.elevasiHulu - seg.elevasiHilir, 3) + " m" : "-"}</b><br>
@@ -1618,6 +1683,12 @@
     function renderRekapSegmen() {
       const tbody = document.querySelector("#tabelRekapSegmen tbody");
       tbody.innerHTML = "";
+      if (segmenList.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="10" style="text-align:center;color:#6b7280;padding:12px;">Belum ada segmen. Klik + Tambah Segmen untuk mulai.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
       segmenList.forEach(seg => {
         updateStatusSegmen(seg);
         const tr = document.createElement("tr");
@@ -1641,7 +1712,17 @@
 
     function updateSummary() {
       const seg = getActiveSegment();
-      if (!seg) return;
+      if (!seg) {
+        document.getElementById("judulSegmenAktif").textContent = "Belum ada segmen";
+        const statusEl = document.getElementById("statusSegmenAktif");
+        statusEl.textContent = "Kosong";
+        statusEl.className = "status-pill status-belum";
+        document.getElementById("sumQRencana").textContent = "-";
+        document.getElementById("sumQSaluran").textContent = "-";
+        document.getElementById("sumIntensitas").textContent = "-";
+        document.getElementById("sumCA").textContent = "-";
+        return;
+      }
       document.getElementById("judulSegmenAktif").textContent = seg.nama;
       const statusEl = document.getElementById("statusSegmenAktif");
       statusEl.textContent = seg.status;
@@ -1653,7 +1734,9 @@
     }
 
     function refreshAll() {
+      const jumlahSebelum = segmenList.length;
       saveFormToSegmen();
+      if (segmenList.length !== jumlahSebelum) refreshPilihanSegmenAktif();
       renderTutupan();
       renderHasilMini();
       renderRekapSegmen();
@@ -1672,7 +1755,7 @@
 
     function duplikatSegmen() {
       const aktif = getActiveSegment();
-      if (!aktif) return;
+      if (!aktif) { alert("Belum ada segmen untuk diduplikat."); return; }
       const copy = JSON.parse(JSON.stringify(aktif));
       copy.id = "seg_" + Date.now() + "_" + Math.floor(Math.random() * 9999);
       copy.nama = aktif.nama + " Copy";
@@ -1685,13 +1768,12 @@
     }
 
     function hapusSegmen() {
-      if (segmenList.length <= 1) { alert("Minimal harus ada satu segmen."); return; }
       const seg = getActiveSegment();
-      if (!seg) return;
+      if (!seg) { alert("Belum ada segmen yang bisa dihapus."); return; }
       if (!confirm("Hapus segmen aktif?")) return;
       hapusLayerSegmen(seg);
       segmenList = segmenList.filter(s => s.id !== activeSegmentId);
-      activeSegmentId = segmenList[0].id;
+      activeSegmentId = segmenList[0] ? segmenList[0].id : null;
       loadSegmenToForm();
       simpanKeLocal(false);
     }
@@ -1775,10 +1857,32 @@
       refreshAll();
     });
 
+    function r24DariKalaUlang(kalaUlang) {
+      const tabelR24 = {
+        "2": 137.54,
+        "5": 205.93,
+        "10": 266.68
+      };
+      return tabelR24[String(kalaUlang)] || 205.93;
+    }
+
+    function updateR24DefaultDariKalaUlang(terapkanKeSemuaSegmen) {
+      const kalaUlang = document.getElementById("kalaUlangDefault").value;
+      const r24 = r24DariKalaUlang(kalaUlang);
+      document.getElementById("r24Default").value = r24.toFixed(2);
+
+      if (terapkanKeSemuaSegmen) {
+        terapkanR24KeSemuaSegmen(r24);
+        loadSegmenToForm();
+      }
+
+      simpanKeLocal(false);
+    }
+
     document.getElementById("btnTerapkanR24Semua").addEventListener("click", function() {
       const r24 = angka(document.getElementById("r24Default").value);
       if (isNaN(r24) || r24 <= 0) { alert("R24 default belum valid."); return; }
-      segmenList.forEach(seg => { seg.r24 = r24; });
+      terapkanR24KeSemuaSegmen(r24);
       loadSegmenToForm();
       simpanKeLocal(false);
     });
@@ -1948,12 +2052,12 @@
         segmenList,
         activeSegmentId
       };
-      localStorage.setItem("webgisDrainaseExcelWorkflow", JSON.stringify(dataSimpan));
+      localStorage.setItem("webgisDrainaseExcelWorkflowRevisi3", JSON.stringify(dataSimpan));
       if (showAlert) alert("Data perhitungan tersimpan di browser ini.");
     }
 
     function loadDariLocal() {
-      const raw = localStorage.getItem("webgisDrainaseExcelWorkflow");
+      const raw = localStorage.getItem("webgisDrainaseExcelWorkflowRevisi3");
       if (!raw) return false;
       try {
         const data = JSON.parse(raw);
@@ -1972,17 +2076,25 @@
     document.getElementById("btnSimpanLocal").addEventListener("click", function() { saveFormToSegmen(); simpanKeLocal(true); });
     document.getElementById("btnResetSemua").addEventListener("click", function() {
       if (!confirm("Reset semua data segmen dan perhitungan?")) return;
-      localStorage.removeItem("webgisDrainaseExcelWorkflow");
+      localStorage.removeItem("webgisDrainaseExcelWorkflowRevisi3");
       layerGambarUkur.clearLayers();
       segmenList = [];
       activeSegmentId = null;
-      initSegmenAwal();
       loadSegmenToForm();
     });
 
     document.getElementById("namaProyek").addEventListener("input", () => simpanKeLocal(false));
-    document.getElementById("r24Default").addEventListener("input", () => simpanKeLocal(false));
-    document.getElementById("kalaUlangDefault").addEventListener("change", () => simpanKeLocal(false));
+    document.getElementById("r24Default").addEventListener("input", function () {
+      const r24 = angka(this.value);
+      if (!isNaN(r24) && r24 > 0) {
+        terapkanR24KeSemuaSegmen(r24);
+        loadSegmenToForm();
+      }
+      simpanKeLocal(false);
+    });
+    document.getElementById("kalaUlangDefault").addEventListener("change", function () {
+      updateR24DefaultDariKalaUlang(true);
+    });
 
     window.hapusTutupan = hapusTutupan;
     window.pilihHasilCariJalan = pilihHasilCariJalan;
@@ -1990,7 +2102,10 @@
     window.toggleGroup = toggleGroup;
     window.toggleStep = toggleStep;
 
-    if (!loadDariLocal()) initSegmenAwal();
+    if (!loadDariLocal()) {
+      updateR24DefaultDariKalaUlang(false);
+      initSegmenAwal();
+    }
     loadSegmenToForm();
   </script>
 </body>
