@@ -1002,8 +1002,9 @@
           </div>
         </div>
 
-        <div class="btn-row">
+        <div class="btn-row-3">
           <button class="btn btn-secondary" id="btnSimpanLocal" type="button">Simpan Data</button>
+          <button class="btn" id="btnExportWord" type="button">Jadikan Word</button>
           <button class="btn btn-danger" id="btnResetSemua" type="button">Reset Semua</button>
         </div>
       </div>
@@ -2405,6 +2406,275 @@
       panel.innerHTML = "";
     }
 
+
+    /* EXPORT WORD */
+    function escapeHtml(value) {
+      return String(value === null || value === undefined ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function namaStasiunLabel(value) {
+      const data = {
+        halim: "Halim Perdanakusuma",
+        kemayoran: "Kemayoran",
+        bogor: "Bogor"
+      };
+      return data[value] || value || "-";
+    }
+
+    function namaJenisSaluranLabel(value) {
+      if (value === "rcp") return "Round Concrete Pipe / RCP";
+      return "U-Ditch / Box Culvert Persegi";
+    }
+
+    function namaMetodeTcLabel(value) {
+      if (value === "mcdermott") return "McDermott / Pilgrim-McDermott";
+      return "Kirpich";
+    }
+
+    function cleanFileName(value) {
+      const nama = String(value || "laporan-drainase")
+        .replace(/[^a-zA-Z0-9\-_\s]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+      return nama || "laporan-drainase";
+    }
+
+    function nilaiWord(value, digit, suffix) {
+      if (value === null || value === undefined || isNaN(value)) return "-";
+      return formatAngka(Number(value), digit) + (suffix || "");
+    }
+
+    function hitungSemuaSegmenUntukExport() {
+      segmenList.forEach(seg => {
+        hitungTurunanDasar(seg);
+        hitungIntensitasSegmen(seg);
+        hitungCGabungan(seg);
+        hitungQRencanaSegmen(seg);
+        hitungKapasitasSegmen(seg);
+        updateStatusSegmen(seg);
+      });
+    }
+
+    function buatTabelTutupanWord(seg) {
+      if (!seg.tutupan || seg.tutupan.length === 0) {
+        return `<p class="muted">Belum ada data tata guna lahan.</p>`;
+      }
+
+      let rows = seg.tutupan.map(item => `
+        <tr>
+          <td>${escapeHtml(item.nama)}</td>
+          <td class="num">${nilaiWord(item.c, 3, "")}</td>
+          <td class="num">${nilaiWord(item.luas, 4, " ha")}</td>
+          <td class="num">${nilaiWord(item.c * item.luas, 4, "")}</td>
+        </tr>
+      `).join("");
+
+      const totalA = seg.tutupan.reduce((sum, item) => sum + item.luas, 0);
+      const totalCA = seg.tutupan.reduce((sum, item) => sum + item.c * item.luas, 0);
+
+      rows += `
+        <tr class="total-row">
+          <td><b>Total</b></td>
+          <td></td>
+          <td class="num"><b>${nilaiWord(totalA, 4, " ha")}</b></td>
+          <td class="num"><b>${nilaiWord(totalCA, 4, "")}</b></td>
+        </tr>
+      `;
+
+      return `
+        <table>
+          <thead>
+            <tr>
+              <th>Tata Guna Lahan</th>
+              <th>C</th>
+              <th>A</th>
+              <th>C x A</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function buatRekapWord() {
+      if (segmenList.length === 0) {
+        return `<p>Belum ada segmen yang dihitung.</p>`;
+      }
+
+      const rows = segmenList.map(seg => `
+        <tr>
+          <td>${escapeHtml(seg.nama)}</td>
+          <td class="num">${nilaiWord(seg.panjangL, 2, "")}</td>
+          <td class="num">${nilaiWord(seg.slope, 6, "")}</td>
+          <td class="num">${nilaiWord(seg.tcMenit, 2, "")}</td>
+          <td class="num">${nilaiWord(seg.tcJam, 3, "")}</td>
+          <td class="num">${nilaiWord(seg.intensitas, 2, "")}</td>
+          <td class="num">${nilaiWord(seg.luasCA, 4, "")}</td>
+          <td class="num">${nilaiWord(seg.cGabungan, 3, "")}</td>
+          <td class="num">${nilaiWord(seg.qRencana, 3, "")}</td>
+          <td class="num">${nilaiWord(seg.qSaluran, 3, "")}</td>
+          <td>${escapeHtml(seg.status)}</td>
+        </tr>
+      `).join("");
+
+      return `
+        <table>
+          <thead>
+            <tr>
+              <th>Segmen</th>
+              <th>L (m)</th>
+              <th>S</th>
+              <th>Tc (menit)</th>
+              <th>Tc (jam)</th>
+              <th>I (mm/jam)</th>
+              <th>A (ha)</th>
+              <th>Cgab</th>
+              <th>Qrencana (m³/det)</th>
+              <th>Qsaluran (m³/det)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function buatDetailSegmenWord() {
+      if (segmenList.length === 0) return "";
+
+      return segmenList.map((seg, index) => `
+        <h2>${index + 1}. ${escapeHtml(seg.nama)}</h2>
+
+        <h3>Data Hidrologi</h3>
+        <table>
+          <tbody>
+            <tr><td>Metode Tc</td><td>${escapeHtml(namaMetodeTcLabel(seg.metodeTc))}</td></tr>
+            <tr><td>Luas Catchment Area</td><td>${nilaiWord(seg.luasCA, 4, " ha")}</td></tr>
+            <tr><td>Panjang Saluran / L</td><td>${nilaiWord(seg.panjangL, 2, " m")}</td></tr>
+            <tr><td>Elevasi Hulu</td><td>${nilaiWord(seg.elevasiHulu, 3, " m")}</td></tr>
+            <tr><td>Elevasi Hilir</td><td>${nilaiWord(seg.elevasiHilir, 3, " m")}</td></tr>
+            <tr><td>Slope / S0</td><td>${nilaiWord(seg.slope, 6, "")}</td></tr>
+            <tr><td>R24</td><td>${nilaiWord(seg.r24, 2, " mm")}</td></tr>
+            <tr><td>Tc</td><td>${nilaiWord(seg.tcMenit, 2, " menit")} / ${nilaiWord(seg.tcJam, 3, " jam")}</td></tr>
+            <tr><td>Intensitas Hujan / I</td><td>${nilaiWord(seg.intensitas, 2, " mm/jam")}</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Tata Guna Lahan dan Koefisien Limpasan</h3>
+        ${buatTabelTutupanWord(seg)}
+        <p><b>C gabungan:</b> ${nilaiWord(seg.cGabungan, 3, "")}</p>
+
+        <h3>Debit Rencana</h3>
+        <table>
+          <tbody>
+            <tr><td>Rumus</td><td>Q = 0,00278 x Cgab x I x A</td></tr>
+            <tr><td>Q Rencana</td><td><b>${nilaiWord(seg.qRencana, 3, " m³/detik")}</b></td></tr>
+          </tbody>
+        </table>
+
+        <h3>Kapasitas Saluran</h3>
+        <table>
+          <tbody>
+            <tr><td>Jenis Saluran</td><td>${escapeHtml(namaJenisSaluranLabel(seg.jenisSaluran))}</td></tr>
+            <tr><td>Dimensi</td><td>${seg.jenisSaluran === "rcp" ? "D = " + nilaiWord(seg.diameter, 3, " m") + "; y = " + nilaiWord(seg.tinggiAirRcp, 3, " m") : "b = " + nilaiWord(seg.lebar, 3, " m") + "; h = " + nilaiWord(seg.tinggi, 3, " m") + "; jagaan = " + nilaiWord(seg.jagaan, 3, " m")}</td></tr>
+            <tr><td>S Kapasitas</td><td>${nilaiWord(seg.slopeKapasitas && seg.slopeKapasitas > 0 ? seg.slopeKapasitas : seg.slope, 6, "")}</td></tr>
+            <tr><td>n Manning</td><td>${nilaiWord(seg.manningN, 3, "")}</td></tr>
+            <tr><td>A hidrolik</td><td>${nilaiWord(seg.aHidrolik, 3, " m²")}</td></tr>
+            <tr><td>P basah</td><td>${nilaiWord(seg.pBasah, 3, " m")}</td></tr>
+            <tr><td>R hidrolik</td><td>${nilaiWord(seg.rHidrolik, 3, " m")}</td></tr>
+            <tr><td>V</td><td>${nilaiWord(seg.vSaluran, 2, " m/detik")}</td></tr>
+            <tr><td>Q Saluran</td><td><b>${nilaiWord(seg.qSaluran, 3, " m³/detik")}</b></td></tr>
+            <tr><td>Status Kontrol</td><td><b>${escapeHtml(seg.status)}</b></td></tr>
+          </tbody>
+        </table>
+      `).join("<br style='page-break-before:always'>");
+    }
+
+    function exportKeWord() {
+      saveFormToSegmen();
+      hitungSemuaSegmenUntukExport();
+      renderTutupan();
+      renderHasilMini();
+      renderRekapSegmen();
+      updateSummary();
+      simpanKeLocal(false);
+
+      if (segmenList.length === 0) {
+        alert("Belum ada segmen untuk dijadikan Word.");
+        return;
+      }
+
+      const namaProyek = document.getElementById("namaProyek").value || "Laporan Perhitungan Drainase";
+      const stasiun = namaStasiunLabel(document.getElementById("stasiunR24Default").value);
+      const kalaUlang = document.getElementById("kalaUlangDefault").value;
+      const r24 = document.getElementById("r24Default").value;
+      const tanggal = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+
+      const html = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:w="urn:schemas-microsoft-com:office:word"
+              xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="UTF-8">
+          <title>${escapeHtml(namaProyek)}</title>
+          <style>
+            @page { size: A4 landscape; margin: 1.5cm; }
+            body { font-family: Arial, sans-serif; font-size: 10pt; color: #111827; }
+            h1 { text-align: center; font-size: 16pt; margin-bottom: 4px; }
+            h2 { color: #0f766e; font-size: 13pt; margin-top: 20px; }
+            h3 { color: #111827; font-size: 11pt; margin-top: 14px; margin-bottom: 6px; }
+            p { line-height: 1.4; }
+            .subtitle { text-align: center; color: #4b5563; margin-top: 0; }
+            .muted { color: #6b7280; }
+            table { border-collapse: collapse; width: 100%; margin: 8px 0 12px; }
+            th, td { border: 1px solid #555; padding: 5px 6px; vertical-align: top; }
+            th { background: #d9ead3; text-align: center; font-weight: bold; }
+            td.num { text-align: right; }
+            .total-row td { background: #f3f4f6; }
+            .info-table td:first-child { width: 28%; font-weight: bold; background: #f9fafb; }
+          </style>
+        </head>
+        <body>
+          <h1>LAPORAN PERHITUNGAN HIDROLOGI DAN HIDROLIKA DRAINASE</h1>
+          <p class="subtitle">${escapeHtml(namaProyek)}</p>
+
+          <h2>Data Proyek</h2>
+          <table class="info-table">
+            <tbody>
+              <tr><td>Nama Lokasi / Pekerjaan</td><td>${escapeHtml(namaProyek)}</td></tr>
+              <tr><td>Stasiun Hujan</td><td>${escapeHtml(stasiun)}</td></tr>
+              <tr><td>Kala Ulang</td><td>${escapeHtml(kalaUlang)} tahun</td></tr>
+              <tr><td>R24</td><td>${escapeHtml(r24)} mm</td></tr>
+              <tr><td>Tanggal Ekspor</td><td>${escapeHtml(tanggal)}</td></tr>
+            </tbody>
+          </table>
+
+          <h2>Rekapitulasi Segmen</h2>
+          ${buatRekapWord()}
+
+          <br style="page-break-before:always">
+          <h2>Detail Perhitungan Segmen</h2>
+          ${buatDetailSegmenWord()}
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = cleanFileName(namaProyek) + '-laporan-drainase.doc';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
     /* SIMPAN LOCAL */
     function simpanKeLocal(showAlert) {
       const dataSimpan = {
@@ -2438,6 +2708,7 @@
     }
 
     document.getElementById("btnSimpanLocal").addEventListener("click", function() { saveFormToSegmen(); simpanKeLocal(true); });
+    document.getElementById("btnExportWord").addEventListener("click", exportKeWord);
     document.getElementById("btnResetSemua").addEventListener("click", function() {
       if (!confirm("Reset semua data segmen dan perhitungan?")) return;
       localStorage.removeItem("webgisDrainaseExcelWorkflowRevisi5");
