@@ -33,6 +33,7 @@
     header h1 {
       margin: 0;
       font-size: 21px;
+      line-height: 1.2;
     }
 
     header p {
@@ -110,6 +111,7 @@
       text-align: center;
       text-decoration: none;
       font-weight: bold;
+      font-size: 13px;
       cursor: pointer;
     }
 
@@ -140,17 +142,25 @@
 </head>
 
 <body>
+
   <header>
     <h1>Daftar Pekerjaan Drainase</h1>
-    <p>Inventarisasi lokasi, layer, dan hasil perhitungan pekerjaan drainase</p>
+    <p>
+      Inventarisasi lokasi, layer, dan hasil perhitungan pekerjaan drainase
+    </p>
   </header>
 
   <div id="appContainer">
 
+    <!-- PANEL KIRI -->
     <aside id="panelKiri">
-      <div class="panel-header">Layer Pekerjaan</div>
+
+      <div class="panel-header">
+        Layer Pekerjaan
+      </div>
 
       <div class="panel-content">
+
         <div class="info-box">
           Daftar tahun, pekerjaan, catchment area, dan segmen saluran akan
           ditampilkan di panel ini.
@@ -159,20 +169,30 @@
         <a href="index.html" class="btn btn-secondary">
           Kembali ke Home
         </a>
+
       </div>
+
     </aside>
 
+    <!-- PETA -->
     <div id="map"></div>
 
+    <!-- PANEL KANAN -->
     <aside id="panelKanan">
-      <div class="panel-header">Rekap Pekerjaan</div>
+
+      <div class="panel-header">
+        Rekap Pekerjaan
+      </div>
 
       <div class="panel-content">
+
         <div class="info-box">
           Pilih pekerjaan pada panel kiri untuk menampilkan tabel rekap
           saluran dan data perhitungannya.
         </div>
+
       </div>
+
     </aside>
 
   </div>
@@ -180,16 +200,52 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    const map = L.map("map").setView([-6.225, 106.900], 11);
+    /*
+      URL API GOOGLE APPS SCRIPT
+      URL ini digunakan untuk membaca data dari tab:
+      - Pekerjaan
+      - Segmen
+      - Geometri
+    */
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbxl_ZXQrUbhp5k339Khc18o_N49cCiW31K6YA0HqGBegxlSNkE0J0XFxQi5DBbWNJvf/exec";
 
-    L.tileLayer(
+    /*
+      MEMBUAT PETA LEAFLET
+    */
+    const map = L.map("map", {
+      zoomControl: true
+    }).setView([-6.225, 106.900], 11);
+
+    /*
+      BASEMAP GOOGLE HYBRID
+    */
+    const googleHybrid = L.tileLayer(
       "https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
       {
         maxZoom: 20,
         subdomains: ["mt0", "mt1", "mt2", "mt3"],
         attribution: "&copy; Google Hybrid"
       }
-    ).addTo(map);
+    );
+
+    googleHybrid.addTo(map);
+
+    /*
+      URL pembacaan data nantinya:
+
+      Data pekerjaan:
+      API_URL + "?sheet=Pekerjaan"
+
+      Data segmen:
+      API_URL + "?sheet=Segmen"
+
+      Data geometri:
+      API_URL + "?sheet=Geometri"
+    */
+
+    console.log("API Daftar Pekerjaan:", API_URL);
   </script>
+
 </body>
 </html>
