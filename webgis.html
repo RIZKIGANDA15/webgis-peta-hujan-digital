@@ -2460,13 +2460,66 @@
       });
     }
 
+    function statusWordClass(status) {
+      if (status === "Memenuhi") return "status-ok";
+      if (status === "Tidak Memenuhi") return "status-no";
+      return "status-warn";
+    }
+
+    function statusBadgeWord(status) {
+      return `<span class="status ${statusWordClass(status)}">${escapeHtml(status || "Belum Lengkap")}</span>`;
+    }
+
+    function safeText(value) {
+      return escapeHtml(value === null || value === undefined || value === "" ? "-" : String(value));
+    }
+
+    function metodeTcFormulaWord(metode) {
+      if (metode === "mcdermott") return "Tc = 0,76 x A^0,38";
+      return "Tc = 0,0195 x L^0,77 x S^-0,385";
+    }
+
+    function dimensiSaluranWord(seg) {
+      if (seg.jenisSaluran === "rcp") {
+        return `D = ${nilaiWord(seg.diameter, 3, " m")}${seg.tinggiAirRcp ? `; tinggi air input = ${nilaiWord(seg.tinggiAirRcp, 3, " m")}` : ""}`;
+      }
+      return `b = ${nilaiWord(seg.lebar, 3, " m")}; h = ${nilaiWord(seg.tinggi, 3, " m")}; jagaan = ${nilaiWord(seg.jagaan, 3, " m")}`;
+    }
+
+    function buatRingkasanWord() {
+      const total = segmenList.length;
+      const memenuhi = segmenList.filter(s => s.status === "Memenuhi").length;
+      const tidak = segmenList.filter(s => s.status === "Tidak Memenuhi").length;
+      const belum = segmenList.filter(s => s.status !== "Memenuhi" && s.status !== "Tidak Memenuhi").length;
+      const totalQr = segmenList.reduce((sum, s) => sum + (s.qRencana || 0), 0);
+      const totalQs = segmenList.reduce((sum, s) => sum + (s.qSaluran || 0), 0);
+      const statusUmum = tidak > 0 ? "Ada Segmen Tidak Memenuhi" : (belum > 0 ? "Belum Lengkap" : "Memenuhi");
+
+      return `
+        <table class="summary-table">
+          <tr>
+            <td><span>Jumlah Segmen</span><b>${total}</b></td>
+            <td><span>Memenuhi</span><b>${memenuhi}</b></td>
+            <td><span>Tidak Memenuhi</span><b>${tidak}</b></td>
+            <td><span>Belum Lengkap</span><b>${belum}</b></td>
+          </tr>
+          <tr>
+            <td><span>Total Q Rencana</span><b>${nilaiWord(totalQr, 3, " m³/det")}</b></td>
+            <td><span>Total Q Saluran</span><b>${nilaiWord(totalQs, 3, " m³/det")}</b></td>
+            <td colspan="2"><span>Status Umum</span><b>${statusBadgeWord(statusUmum)}</b></td>
+          </tr>
+        </table>
+      `;
+    }
+
     function buatTabelTutupanWord(seg) {
       if (!seg.tutupan || seg.tutupan.length === 0) {
         return `<p class="muted">Belum ada data tata guna lahan.</p>`;
       }
 
-      let rows = seg.tutupan.map(item => `
+      let rows = seg.tutupan.map((item, index) => `
         <tr>
+          <td class="center">${index + 1}</td>
           <td>${escapeHtml(item.nama)}</td>
           <td class="num">${nilaiWord(item.c, 3, "")}</td>
           <td class="num">${nilaiWord(item.luas, 4, " ha")}</td>
@@ -2479,20 +2532,20 @@
 
       rows += `
         <tr class="total-row">
-          <td><b>Total</b></td>
-          <td></td>
+          <td colspan="3"><b>Total</b></td>
           <td class="num"><b>${nilaiWord(totalA, 4, " ha")}</b></td>
           <td class="num"><b>${nilaiWord(totalCA, 4, "")}</b></td>
         </tr>
       `;
 
       return `
-        <table>
+        <table class="data-table small-table">
           <thead>
             <tr>
+              <th>No.</th>
               <th>Tata Guna Lahan</th>
               <th>C</th>
-              <th>A</th>
+              <th>Luas A</th>
               <th>C x A</th>
             </tr>
           </thead>
@@ -2502,40 +2555,38 @@
     }
 
     function buatRekapWord() {
-      if (segmenList.length === 0) {
-        return `<p>Belum ada segmen yang dihitung.</p>`;
-      }
+      if (segmenList.length === 0) return `<p>Belum ada segmen yang dihitung.</p>`;
 
-      const rows = segmenList.map(seg => `
+      const rows = segmenList.map((seg, index) => `
         <tr>
+          <td class="center">${index + 1}</td>
           <td>${escapeHtml(seg.nama)}</td>
           <td class="num">${nilaiWord(seg.panjangL, 2, "")}</td>
           <td class="num">${nilaiWord(seg.slope, 6, "")}</td>
           <td class="num">${nilaiWord(seg.tcMenit, 2, "")}</td>
-          <td class="num">${nilaiWord(seg.tcJam, 3, "")}</td>
           <td class="num">${nilaiWord(seg.intensitas, 2, "")}</td>
           <td class="num">${nilaiWord(seg.luasCA, 4, "")}</td>
           <td class="num">${nilaiWord(seg.cGabungan, 3, "")}</td>
           <td class="num">${nilaiWord(seg.qRencana, 3, "")}</td>
           <td class="num">${nilaiWord(seg.qSaluran, 3, "")}</td>
-          <td>${escapeHtml(seg.status)}</td>
+          <td class="center">${statusBadgeWord(seg.status)}</td>
         </tr>
       `).join("");
 
       return `
-        <table>
+        <table class="data-table rekap-table">
           <thead>
             <tr>
+              <th>No.</th>
               <th>Segmen</th>
               <th>L (m)</th>
               <th>S</th>
               <th>Tc (menit)</th>
-              <th>Tc (jam)</th>
               <th>I (mm/jam)</th>
               <th>A (ha)</th>
               <th>Cgab</th>
-              <th>Qrencana (m³/det)</th>
-              <th>Qsaluran (m³/det)</th>
+              <th>Qr (m³/det)</th>
+              <th>Qs (m³/det)</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -2544,54 +2595,87 @@
       `;
     }
 
+    function buatKesimpulanSegmenWord(seg) {
+      if (seg.qRencana === null || seg.qSaluran === null) {
+        return `Data perhitungan segmen belum lengkap sehingga status kapasitas belum dapat disimpulkan.`;
+      }
+      const selisih = seg.qSaluran - seg.qRencana;
+      const rasio = seg.qRencana > 0 ? (seg.qSaluran / seg.qRencana) : null;
+      if (seg.qSaluran >= seg.qRencana) {
+        return `Kapasitas saluran sebesar ${nilaiWord(seg.qSaluran, 3, " m³/detik")} lebih besar daripada debit rencana sebesar ${nilaiWord(seg.qRencana, 3, " m³/detik")}. Dengan demikian, segmen ini dinyatakan memenuhi secara kapasitas hidrolika. Selisih kapasitas adalah ${nilaiWord(selisih, 3, " m³/detik")} dengan rasio Qs/Qr sebesar ${nilaiWord(rasio, 2, "")}.`;
+      }
+      return `Kapasitas saluran sebesar ${nilaiWord(seg.qSaluran, 3, " m³/detik")} lebih kecil daripada debit rencana sebesar ${nilaiWord(seg.qRencana, 3, " m³/detik")}. Dengan demikian, segmen ini belum memenuhi secara kapasitas hidrolika dan perlu evaluasi dimensi, kemiringan, atau alternatif penanganan. Kekurangan kapasitas adalah ${nilaiWord(Math.abs(selisih), 3, " m³/detik")} dengan rasio Qs/Qr sebesar ${nilaiWord(rasio, 2, "")}.`;
+    }
+
     function buatDetailSegmenWord() {
       if (segmenList.length === 0) return "";
 
       return segmenList.map((seg, index) => `
-        <h2>${index + 1}. ${escapeHtml(seg.nama)}</h2>
+        <div class="segment-page">
+          <div class="section-bar">
+            <span>Detail Perhitungan Segmen ${index + 1}</span>
+            ${statusBadgeWord(seg.status)}
+          </div>
 
-        <h3>Data Hidrologi</h3>
-        <table>
-          <tbody>
-            <tr><td>Metode Tc</td><td>${escapeHtml(namaMetodeTcLabel(seg.metodeTc))}</td></tr>
-            <tr><td>Luas Catchment Area</td><td>${nilaiWord(seg.luasCA, 4, " ha")}</td></tr>
-            <tr><td>Panjang Saluran / L</td><td>${nilaiWord(seg.panjangL, 2, " m")}</td></tr>
-            <tr><td>Elevasi Hulu</td><td>${nilaiWord(seg.elevasiHulu, 3, " m")}</td></tr>
-            <tr><td>Elevasi Hilir</td><td>${nilaiWord(seg.elevasiHilir, 3, " m")}</td></tr>
-            <tr><td>Slope / S0</td><td>${nilaiWord(seg.slope, 6, "")}</td></tr>
-            <tr><td>R24</td><td>${nilaiWord(seg.r24, 2, " mm")}</td></tr>
-            <tr><td>Tc</td><td>${nilaiWord(seg.tcMenit, 2, " menit")} / ${nilaiWord(seg.tcJam, 3, " jam")}</td></tr>
-            <tr><td>Intensitas Hujan / I</td><td>${nilaiWord(seg.intensitas, 2, " mm/jam")}</td></tr>
-          </tbody>
-        </table>
+          <h2>${index + 1}. ${escapeHtml(seg.nama)}</h2>
 
-        <h3>Tata Guna Lahan dan Koefisien Limpasan</h3>
-        ${buatTabelTutupanWord(seg)}
-        <p><b>C gabungan:</b> ${nilaiWord(seg.cGabungan, 3, "")}</p>
+          <table class="layout-table">
+            <tr>
+              <td style="width:50%;">
+                <h3>A. Parameter Hidrologi</h3>
+                <table class="info-table compact">
+                  <tbody>
+                    <tr><td>Metode Tc</td><td>${escapeHtml(namaMetodeTcLabel(seg.metodeTc))}</td></tr>
+                    <tr><td>Rumus Tc</td><td>${escapeHtml(metodeTcFormulaWord(seg.metodeTc))}</td></tr>
+                    <tr><td>Luas Catchment Area</td><td>${nilaiWord(seg.luasCA, 4, " ha")}</td></tr>
+                    <tr><td>Panjang Saluran / L</td><td>${nilaiWord(seg.panjangL, 2, " m")}</td></tr>
+                    <tr><td>Elevasi Hulu</td><td>${nilaiWord(seg.elevasiHulu, 3, " m")}</td></tr>
+                    <tr><td>Elevasi Hilir</td><td>${nilaiWord(seg.elevasiHilir, 3, " m")}</td></tr>
+                    <tr><td>Slope / S0</td><td>${nilaiWord(seg.slope, 6, "")}</td></tr>
+                    <tr><td>R24</td><td>${nilaiWord(seg.r24, 2, " mm")}</td></tr>
+                    <tr><td>Tc</td><td>${nilaiWord(seg.tcMenit, 2, " menit")} / ${nilaiWord(seg.tcJam, 3, " jam")}</td></tr>
+                    <tr><td>Intensitas Hujan / I</td><td>${nilaiWord(seg.intensitas, 2, " mm/jam")}</td></tr>
+                  </tbody>
+                </table>
+              </td>
+              <td style="width:50%;">
+                <h3>B. Kapasitas Saluran</h3>
+                <table class="info-table compact">
+                  <tbody>
+                    <tr><td>Jenis Saluran</td><td>${escapeHtml(namaJenisSaluranLabel(seg.jenisSaluran))}</td></tr>
+                    <tr><td>Dimensi</td><td>${dimensiSaluranWord(seg)}</td></tr>
+                    <tr><td>S Kapasitas</td><td>${nilaiWord(seg.slopeKapasitas && seg.slopeKapasitas > 0 ? seg.slopeKapasitas : seg.slope, 6, "")}</td></tr>
+                    <tr><td>n Manning</td><td>${nilaiWord(seg.manningN, 3, "")}</td></tr>
+                    <tr><td>A hidrolik</td><td>${nilaiWord(seg.aHidrolik, 3, " m²")}</td></tr>
+                    <tr><td>P basah</td><td>${nilaiWord(seg.pBasah, 3, " m")}</td></tr>
+                    <tr><td>R hidrolik</td><td>${nilaiWord(seg.rHidrolik, 3, " m")}</td></tr>
+                    <tr><td>V</td><td>${nilaiWord(seg.vSaluran, 2, " m/detik")}</td></tr>
+                    <tr><td>Q Saluran</td><td><b>${nilaiWord(seg.qSaluran, 3, " m³/detik")}</b></td></tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </table>
 
-        <h3>Debit Rencana</h3>
-        <table>
-          <tbody>
-            <tr><td>Rumus</td><td>Q = 0,00278 x Cgab x I x A</td></tr>
-            <tr><td>Q Rencana</td><td><b>${nilaiWord(seg.qRencana, 3, " m³/detik")}</b></td></tr>
-          </tbody>
-        </table>
+          <h3>C. Tata Guna Lahan dan Koefisien Limpasan</h3>
+          ${buatTabelTutupanWord(seg)}
 
-        <h3>Kapasitas Saluran</h3>
-        <table>
-          <tbody>
-            <tr><td>Jenis Saluran</td><td>${escapeHtml(namaJenisSaluranLabel(seg.jenisSaluran))}</td></tr>
-            <tr><td>Dimensi</td><td>${seg.jenisSaluran === "rcp" ? "D = " + nilaiWord(seg.diameter, 3, " m") + "; y = " + nilaiWord(seg.tinggiAirRcp, 3, " m") : "b = " + nilaiWord(seg.lebar, 3, " m") + "; h = " + nilaiWord(seg.tinggi, 3, " m") + "; jagaan = " + nilaiWord(seg.jagaan, 3, " m")}</td></tr>
-            <tr><td>S Kapasitas</td><td>${nilaiWord(seg.slopeKapasitas && seg.slopeKapasitas > 0 ? seg.slopeKapasitas : seg.slope, 6, "")}</td></tr>
-            <tr><td>n Manning</td><td>${nilaiWord(seg.manningN, 3, "")}</td></tr>
-            <tr><td>A hidrolik</td><td>${nilaiWord(seg.aHidrolik, 3, " m²")}</td></tr>
-            <tr><td>P basah</td><td>${nilaiWord(seg.pBasah, 3, " m")}</td></tr>
-            <tr><td>R hidrolik</td><td>${nilaiWord(seg.rHidrolik, 3, " m")}</td></tr>
-            <tr><td>V</td><td>${nilaiWord(seg.vSaluran, 2, " m/detik")}</td></tr>
-            <tr><td>Q Saluran</td><td><b>${nilaiWord(seg.qSaluran, 3, " m³/detik")}</b></td></tr>
-            <tr><td>Status Kontrol</td><td><b>${escapeHtml(seg.status)}</b></td></tr>
-          </tbody>
-        </table>
+          <h3>D. Perhitungan Debit dan Kontrol Kapasitas</h3>
+          <table class="info-table">
+            <tbody>
+              <tr><td>Rumus Debit Rencana</td><td>Q = 0,00278 x Cgab x I x A</td></tr>
+              <tr><td>C Gabungan</td><td>${nilaiWord(seg.cGabungan, 3, "")}</td></tr>
+              <tr><td>Q Rencana</td><td><b>${nilaiWord(seg.qRencana, 3, " m³/detik")}</b></td></tr>
+              <tr><td>Q Saluran</td><td><b>${nilaiWord(seg.qSaluran, 3, " m³/detik")}</b></td></tr>
+              <tr><td>Status Kontrol</td><td>${statusBadgeWord(seg.status)}</td></tr>
+            </tbody>
+          </table>
+
+          <div class="conclusion-box">
+            <b>Kesimpulan Segmen:</b><br>
+            ${escapeHtml(buatKesimpulanSegmenWord(seg))}
+          </div>
+        </div>
       `).join("<br style='page-break-before:always'>");
     }
 
@@ -2614,6 +2698,7 @@
       const kalaUlang = document.getElementById("kalaUlangDefault").value;
       const r24 = document.getElementById("r24Default").value;
       const tanggal = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+      const tahun = new Date().getFullYear();
 
       const html = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -2623,27 +2708,69 @@
           <meta charset="UTF-8">
           <title>${escapeHtml(namaProyek)}</title>
           <style>
-            @page { size: A4 landscape; margin: 1.5cm; }
-            body { font-family: Arial, sans-serif; font-size: 10pt; color: #111827; }
-            h1 { text-align: center; font-size: 16pt; margin-bottom: 4px; }
-            h2 { color: #0f766e; font-size: 13pt; margin-top: 20px; }
-            h3 { color: #111827; font-size: 11pt; margin-top: 14px; margin-bottom: 6px; }
-            p { line-height: 1.4; }
-            .subtitle { text-align: center; color: #4b5563; margin-top: 0; }
+            @page { size: A4 landscape; margin: 1.35cm 1.35cm 1.25cm 1.35cm; }
+            body { font-family: Arial, sans-serif; font-size: 9.5pt; color: #111827; }
+            h1 { font-size: 18pt; margin: 0 0 10px; text-align: center; letter-spacing: .5px; }
+            h2 { color: #0f766e; font-size: 13pt; margin: 14px 0 8px; }
+            h3 { color: #111827; font-size: 10.5pt; margin: 10px 0 6px; }
+            p { line-height: 1.45; margin: 5px 0 8px; }
+            table { border-collapse: collapse; width: 100%; margin: 6px 0 10px; }
+            th, td { border: 1px solid #5b677a; padding: 5px 6px; vertical-align: top; }
+            th { background: #0f766e; color: white; text-align: center; font-weight: bold; }
+            td.num { text-align: right; white-space: nowrap; }
+            .center { text-align: center; }
             .muted { color: #6b7280; }
-            table { border-collapse: collapse; width: 100%; margin: 8px 0 12px; }
-            th, td { border: 1px solid #555; padding: 5px 6px; vertical-align: top; }
-            th { background: #d9ead3; text-align: center; font-weight: bold; }
-            td.num { text-align: right; }
-            .total-row td { background: #f3f4f6; }
-            .info-table td:first-child { width: 28%; font-weight: bold; background: #f9fafb; }
+            .cover { height: 560px; border: 3px solid #0f766e; padding: 36px 44px; text-align: center; }
+            .cover-top { font-weight: bold; font-size: 13pt; line-height: 1.6; text-transform: uppercase; }
+            .cover-title { margin-top: 95px; }
+            .cover-title h1 { font-size: 22pt; line-height: 1.25; }
+            .cover-location { margin: 30px auto 0; border-top: 2px solid #0f766e; border-bottom: 2px solid #0f766e; padding: 14px; font-size: 14pt; font-weight: bold; width: 72%; }
+            .cover-footer { margin-top: 120px; font-weight: bold; font-size: 12pt; }
+            .page-break { page-break-before: always; }
+            .doc-header { border-bottom: 3px solid #0f766e; padding-bottom: 8px; margin-bottom: 12px; }
+            .doc-header-title { font-weight: bold; font-size: 14pt; color: #0f766e; }
+            .doc-header-sub { font-size: 9pt; color: #4b5563; margin-top: 2px; }
+            .section-bar { background: #0f766e; color: white; padding: 7px 10px; font-weight: bold; margin: 4px 0 10px; display: flex; justify-content: space-between; align-items: center; }
+            .info-table td:first-child { width: 28%; font-weight: bold; background: #f3f4f6; }
+            .compact td { padding: 4px 5px; }
+            .layout-table, .layout-table td { border: none; margin: 0; padding: 0 8px 0 0; }
+            .layout-table td + td { padding: 0 0 0 8px; }
+            .data-table tr:nth-child(even) td { background: #f8fafc; }
+            .rekap-table th, .rekap-table td { font-size: 8.5pt; }
+            .small-table th, .small-table td { font-size: 9pt; }
+            .total-row td { background: #e7f5ef !important; font-weight: bold; }
+            .summary-table td { width: 25%; background: #f8fafc; border: 1px solid #99b8ad; }
+            .summary-table span { display: block; color: #4b5563; font-size: 8.5pt; margin-bottom: 3px; }
+            .summary-table b { color: #0f766e; font-size: 12pt; }
+            .status { display: inline-block; padding: 3px 8px; border-radius: 10px; font-weight: bold; font-size: 8.5pt; }
+            .status-ok { background: #dcfce7; color: #166534; }
+            .status-no { background: #fee2e2; color: #991b1b; }
+            .status-warn { background: #fef3c7; color: #92400e; }
+            .conclusion-box { border-left: 5px solid #0f766e; background: #f8fafc; padding: 10px 12px; line-height: 1.45; margin-top: 8px; }
+            .sign-table td { border: none; text-align: center; height: 72px; vertical-align: bottom; }
           </style>
         </head>
         <body>
-          <h1>LAPORAN PERHITUNGAN HIDROLOGI DAN HIDROLIKA DRAINASE</h1>
-          <p class="subtitle">${escapeHtml(namaProyek)}</p>
+          <div class="cover">
+            <div class="cover-top">
+              Pemerintah Provinsi DKI Jakarta<br>
+              Suku Dinas Sumber Daya Air<br>
+              Kota Administrasi Jakarta Timur
+            </div>
+            <div class="cover-title">
+              <h1>LAPORAN PERHITUNGAN<br>HIDROLOGI DAN HIDROLIKA DRAINASE</h1>
+            </div>
+            <div class="cover-location">${escapeHtml(namaProyek)}</div>
+            <div class="cover-footer">${tahun}</div>
+          </div>
 
-          <h2>Data Proyek</h2>
+          <div class="page-break"></div>
+          <div class="doc-header">
+            <div class="doc-header-title">Laporan Perhitungan Hidrologi dan Hidrolika Drainase</div>
+            <div class="doc-header-sub">${escapeHtml(namaProyek)} | Diekspor pada ${escapeHtml(tanggal)}</div>
+          </div>
+
+          <h2>1. Data Umum Pekerjaan</h2>
           <table class="info-table">
             <tbody>
               <tr><td>Nama Lokasi / Pekerjaan</td><td>${escapeHtml(namaProyek)}</td></tr>
@@ -2654,12 +2781,30 @@
             </tbody>
           </table>
 
-          <h2>Rekapitulasi Segmen</h2>
+          <h2>2. Ringkasan Hasil Kontrol</h2>
+          ${buatRingkasanWord()}
+
+          <h2>3. Rekapitulasi Segmen</h2>
           ${buatRekapWord()}
 
-          <br style="page-break-before:always">
-          <h2>Detail Perhitungan Segmen</h2>
+          <div class="page-break"></div>
+          <div class="doc-header">
+            <div class="doc-header-title">Detail Perhitungan Segmen</div>
+            <div class="doc-header-sub">${escapeHtml(namaProyek)}</div>
+          </div>
           ${buatDetailSegmenWord()}
+
+          <div class="page-break"></div>
+          <h2>Penutup</h2>
+          <p>Dokumen ini merupakan hasil perhitungan awal berbasis data yang diinput pada aplikasi WebGIS. Hasil perhitungan dapat digunakan sebagai bahan kerja teknis awal dan tetap perlu diverifikasi kembali terhadap kondisi lapangan, data pengukuran, serta ketentuan teknis yang berlaku.</p>
+
+          <br><br>
+          <table class="sign-table">
+            <tr>
+              <td style="width:50%;">Diperiksa oleh,<br><br><br><br><b>________________________</b></td>
+              <td style="width:50%;">Dibuat oleh,<br><br><br><br><b>________________________</b></td>
+            </tr>
+          </table>
         </body>
         </html>
       `;
