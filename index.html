@@ -2,8 +2,9 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Sistem Informasi Data Hujan dan Drainase</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Sistem Informasi Data Hujan dan Drainase</title>
 
   <style>
     * {
@@ -138,15 +139,6 @@
       background: #0b5f59;
     }
 
-    .btn-disabled {
-      background: #6b7280;
-      cursor: pointer;
-    }
-
-    .btn-disabled:hover {
-      background: #4b5563;
-    }
-
     .simple-note {
       background: white;
       border-radius: 16px;
@@ -202,8 +194,10 @@
 </head>
 
 <body>
+
   <header>
     <h1>Sistem Informasi Data Hujan dan Drainase Jakarta Timur</h1>
+
     <p>
       Portal untuk mengakses WebGIS drainase, data hujan tahunan,
       peta sebaran hujan, dan daftar pekerjaan yang telah dianalisis.
@@ -211,64 +205,123 @@
   </header>
 
   <main>
+
     <section class="menu-grid">
 
+      <!-- MENU WEBGIS -->
       <div class="menu-card">
+
         <div class="icon">🗺️</div>
-        <span class="tag">WebGIS</span>
-        <h2>Peta WebGIS Drainase</h2>
+
+        <span class="tag">
+          WebGIS
+        </span>
+
+        <h2>
+          Peta WebGIS Drainase
+        </h2>
+
         <p>
           Menampilkan jaringan saluran drainase, titik stasiun hujan,
           basemap, serta kalkulator hujan rencana.
         </p>
-        <a href="webgis.html" class="btn">Buka WebGIS</a>
+
+        <a href="webgis.html" class="btn">
+          Buka WebGIS
+        </a>
+
       </div>
 
+      <!-- MENU DATA HUJAN -->
       <div class="menu-card">
+
         <div class="icon">📊</div>
-        <span class="tag blue">Data Hujan</span>
-        <h2>Data Hujan Tahunan</h2>
+
+        <span class="tag blue">
+          Data Hujan
+        </span>
+
+        <h2>
+          Data Hujan Tahunan
+        </h2>
+
         <p>
           Menampilkan tabel, grafik, uji kualitas data hujan,
           serta laporan analisis dalam format PDF dan Word.
         </p>
-        <a href="data-hujan.html" class="btn">Lihat Data</a>
+
+        <a href="data-hujan.html" class="btn">
+          Lihat Data
+        </a>
+
       </div>
 
+      <!-- MENU PETA SEBARAN HUJAN -->
       <div class="menu-card">
+
         <div class="icon">🌧️</div>
-        <span class="tag purple">Peta Overlay</span>
-        <h2>Peta Sebaran Hujan</h2>
+
+        <span class="tag purple">
+          Peta Overlay
+        </span>
+
+        <h2>
+          Peta Sebaran Hujan
+        </h2>
+
         <p>
           Menampilkan overlay peta sebaran hujan BMKG di atas basemap
           satelit dengan pengaturan transparansi.
         </p>
-        <a href="sebaran-hujan.html" class="btn">Buka Peta</a>
+
+        <a href="sebaran-hujan.html" class="btn">
+          Buka Peta
+        </a>
+
       </div>
 
+      <!-- MENU DAFTAR PEKERJAAN -->
       <div class="menu-card">
+
         <div class="icon">📋</div>
-        <span class="tag orange">Inventarisasi</span>
-        <h2>Daftar Pekerjaan</h2>
+
+        <span class="tag orange">
+          Inventarisasi
+        </span>
+
+        <h2>
+          Daftar Pekerjaan
+        </h2>
+
         <p>
-          Menu untuk inventarisasi pekerjaan yang telah dianalisis,
-          termasuk lokasi, status, dan catatan hasil analisis.
+          Menampilkan inventarisasi pekerjaan drainase yang telah dianalisis,
+          termasuk lokasi, layer peta, status, dan hasil perhitungan saluran.
         </p>
-        <a href="#" class="btn btn-disabled" onclick="alert('Menu daftar pekerjaan masih dalam tahap pengembangan.'); return false;">
-          Dalam Pengembangan
+
+        <a href="daftar-pekerjaan.html" class="btn">
+          Buka Daftar
         </a>
+
       </div>
 
     </section>
 
     <section class="simple-note">
-      <b>Catatan:</b> gunakan menu sesuai kebutuhan. Data hujan tahunan digunakan untuk analisis statistik,
-      sedangkan WebGIS dan peta sebaran hujan digunakan untuk visualisasi spasial.
+
+      <b>Catatan:</b>
+
+      gunakan menu sesuai kebutuhan. Data hujan tahunan digunakan untuk
+      analisis statistik, sedangkan WebGIS dan peta sebaran hujan digunakan
+      untuk visualisasi spasial. Daftar pekerjaan digunakan untuk menyimpan
+      dan menampilkan kembali hasil pekerjaan perencanaan drainase.
+
     </section>
+
   </main>
 
   <footer>
     Sistem Informasi Data Hujan dan Drainase Jakarta Timur
   </footer>
+
 </body>
 </html>
