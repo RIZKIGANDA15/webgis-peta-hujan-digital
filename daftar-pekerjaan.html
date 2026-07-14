@@ -49,8 +49,8 @@
     }
 
     #panelKiri {
-      width: 280px;
-      min-width: 280px;
+      width: 300px;
+      min-width: 300px;
       height: 100%;
       background: white;
       box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
@@ -58,8 +58,8 @@
     }
 
     #panelKanan {
-      width: 390px;
-      min-width: 390px;
+      width: 410px;
+      min-width: 410px;
       height: 100%;
       background: white;
       box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
@@ -99,6 +99,108 @@
       line-height: 1.5;
     }
 
+    .loading-box {
+      padding: 12px;
+      background: #ecfdf5;
+      border: 1px solid #99f6e4;
+      border-radius: 8px;
+      color: #0f766e;
+      font-size: 13px;
+    }
+
+    .error-box {
+      padding: 12px;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #991b1b;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .tahun-group {
+      margin-bottom: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .tahun-header {
+      padding: 9px 10px;
+      background: #e5e7eb;
+      color: #111827;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .pekerjaan-item {
+      padding: 10px;
+      border-top: 1px solid #e5e7eb;
+      cursor: pointer;
+      background: white;
+    }
+
+    .pekerjaan-item:hover {
+      background: #f0fdfa;
+    }
+
+    .pekerjaan-item.active {
+      background: #ccfbf1;
+      border-left: 4px solid #0f766e;
+      padding-left: 6px;
+    }
+
+    .pekerjaan-nama {
+      font-weight: bold;
+      color: #0f766e;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .pekerjaan-lokasi {
+      margin-top: 4px;
+      color: #6b7280;
+      font-size: 11.5px;
+      line-height: 1.4;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 10.5px;
+      font-weight: bold;
+    }
+
+    .detail-title {
+      margin: 0 0 12px;
+      color: #0f766e;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .detail-table td {
+      padding: 8px 7px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+
+    .detail-table td:first-child {
+      width: 125px;
+      color: #4b5563;
+      font-weight: bold;
+    }
+
     .btn {
       display: block;
       width: 100%;
@@ -127,15 +229,15 @@
       background: #1f2937;
     }
 
-    @media (max-width: 950px) {
+    @media (max-width: 1050px) {
       #panelKiri {
-        width: 230px;
-        min-width: 230px;
+        width: 250px;
+        min-width: 250px;
       }
 
       #panelKanan {
-        width: 320px;
-        min-width: 320px;
+        width: 340px;
+        min-width: 340px;
       }
     }
   </style>
@@ -145,54 +247,48 @@
 
   <header>
     <h1>Daftar Pekerjaan Drainase</h1>
-    <p>
-      Inventarisasi lokasi, layer, dan hasil perhitungan pekerjaan drainase
-    </p>
+    <p>Inventarisasi lokasi, layer, dan hasil perhitungan pekerjaan drainase</p>
   </header>
 
   <div id="appContainer">
 
-    <!-- PANEL KIRI -->
     <aside id="panelKiri">
-
       <div class="panel-header">
         Layer Pekerjaan
       </div>
 
       <div class="panel-content">
 
-        <div class="info-box">
-          Daftar tahun, pekerjaan, catchment area, dan segmen saluran akan
-          ditampilkan di panel ini.
+        <div id="daftarPekerjaan">
+          <div class="loading-box">
+            Membaca data pekerjaan dari Google Sheets...
+          </div>
         </div>
+
+        <button class="btn" id="btnMuatUlang" type="button">
+          Muat Ulang Data
+        </button>
 
         <a href="index.html" class="btn btn-secondary">
           Kembali ke Home
         </a>
 
       </div>
-
     </aside>
 
-    <!-- PETA -->
     <div id="map"></div>
 
-    <!-- PANEL KANAN -->
     <aside id="panelKanan">
-
       <div class="panel-header">
         Rekap Pekerjaan
       </div>
 
-      <div class="panel-content">
-
+      <div class="panel-content" id="detailPekerjaan">
         <div class="info-box">
-          Pilih pekerjaan pada panel kiri untuk menampilkan tabel rekap
-          saluran dan data perhitungannya.
+          Pilih salah satu pekerjaan pada panel kiri untuk melihat data
+          pekerjaan tersebut.
         </div>
-
       </div>
-
     </aside>
 
   </div>
@@ -200,26 +296,13 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    /*
-      URL API GOOGLE APPS SCRIPT
-      URL ini digunakan untuk membaca data dari tab:
-      - Pekerjaan
-      - Segmen
-      - Geometri
-    */
     const API_URL =
       "https://script.google.com/macros/s/AKfycbxl_ZXQrUbhp5k339Khc18o_N49cCiW31K6YA0HqGBegxlSNkE0J0XFxQi5DBbWNJvf/exec";
 
-    /*
-      MEMBUAT PETA LEAFLET
-    */
     const map = L.map("map", {
       zoomControl: true
     }).setView([-6.225, 106.900], 11);
 
-    /*
-      BASEMAP GOOGLE HYBRID
-    */
     const googleHybrid = L.tileLayer(
       "https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
       {
@@ -227,24 +310,239 @@
         subdomains: ["mt0", "mt1", "mt2", "mt3"],
         attribution: "&copy; Google Hybrid"
       }
-    );
+    ).addTo(map);
 
-    googleHybrid.addTo(map);
+    let dataPekerjaan = [];
+    let pekerjaanAktifId = null;
 
-    /*
-      URL pembacaan data nantinya:
+    function escapeHtml(teks) {
+      return String(teks || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
 
-      Data pekerjaan:
-      API_URL + "?sheet=Pekerjaan"
+    function tampilkanKosong() {
+      document.getElementById("daftarPekerjaan").innerHTML = `
+        <div class="info-box">
+          Belum ada data pekerjaan pada Google Sheets.
+        </div>
+      `;
+    }
 
-      Data segmen:
-      API_URL + "?sheet=Segmen"
+    function tampilkanError(pesan) {
+      document.getElementById("daftarPekerjaan").innerHTML = `
+        <div class="error-box">
+          <b>Data gagal dibaca.</b><br>
+          ${escapeHtml(pesan)}
+        </div>
+      `;
+    }
 
-      Data geometri:
-      API_URL + "?sheet=Geometri"
-    */
+    function kelompokkanPekerjaanPerTahun(data) {
+      const kelompok = {};
 
-    console.log("API Daftar Pekerjaan:", API_URL);
+      data.forEach(function (pekerjaan) {
+        const tahun = pekerjaan.tahun || "Tanpa Tahun";
+
+        if (!kelompok[tahun]) {
+          kelompok[tahun] = [];
+        }
+
+        kelompok[tahun].push(pekerjaan);
+      });
+
+      return kelompok;
+    }
+
+    function renderDaftarPekerjaan() {
+      const wadah = document.getElementById("daftarPekerjaan");
+
+      if (!dataPekerjaan.length) {
+        tampilkanKosong();
+        return;
+      }
+
+      const kelompok = kelompokkanPekerjaanPerTahun(dataPekerjaan);
+
+      const daftarTahun = Object.keys(kelompok).sort(function (a, b) {
+        return String(b).localeCompare(String(a));
+      });
+
+      let html = "";
+
+      daftarTahun.forEach(function (tahun) {
+        html += `
+          <div class="tahun-group">
+            <div class="tahun-header">
+              ▼ Tahun ${escapeHtml(tahun)}
+            </div>
+        `;
+
+        kelompok[tahun].forEach(function (pekerjaan) {
+          const aktif =
+            pekerjaan.id_pekerjaan === pekerjaanAktifId
+              ? "active"
+              : "";
+
+          html += `
+            <div
+              class="pekerjaan-item ${aktif}"
+              data-id="${escapeHtml(pekerjaan.id_pekerjaan)}"
+            >
+              <div class="pekerjaan-nama">
+                ${escapeHtml(pekerjaan.nama_pekerjaan || "Tanpa Nama")}
+              </div>
+
+              <div class="pekerjaan-lokasi">
+                ${escapeHtml(pekerjaan.lokasi || "Lokasi belum diisi")}
+              </div>
+
+              <span class="badge">
+                ${escapeHtml(pekerjaan.status || "Belum Ada Status")}
+              </span>
+            </div>
+          `;
+        });
+
+        html += `</div>`;
+      });
+
+      wadah.innerHTML = html;
+
+      document
+        .querySelectorAll(".pekerjaan-item")
+        .forEach(function (elemen) {
+          elemen.addEventListener("click", function () {
+            pilihPekerjaan(this.dataset.id);
+          });
+        });
+    }
+
+    function pilihPekerjaan(idPekerjaan) {
+      const pekerjaan = dataPekerjaan.find(function (item) {
+        return item.id_pekerjaan === idPekerjaan;
+      });
+
+      if (!pekerjaan) {
+        return;
+      }
+
+      pekerjaanAktifId = idPekerjaan;
+      renderDaftarPekerjaan();
+      tampilkanDetailPekerjaan(pekerjaan);
+    }
+
+    function tampilkanDetailPekerjaan(pekerjaan) {
+      const detail = document.getElementById("detailPekerjaan");
+
+      detail.innerHTML = `
+        <h2 class="detail-title">
+          ${escapeHtml(pekerjaan.nama_pekerjaan || "Tanpa Nama")}
+        </h2>
+
+        <table class="detail-table">
+          <tbody>
+            <tr>
+              <td>ID Pekerjaan</td>
+              <td>${escapeHtml(pekerjaan.id_pekerjaan || "-")}</td>
+            </tr>
+
+            <tr>
+              <td>Tahun</td>
+              <td>${escapeHtml(pekerjaan.tahun || "-")}</td>
+            </tr>
+
+            <tr>
+              <td>Lokasi</td>
+              <td>${escapeHtml(pekerjaan.lokasi || "-")}</td>
+            </tr>
+
+            <tr>
+              <td>Kecamatan</td>
+              <td>${escapeHtml(pekerjaan.kecamatan || "-")}</td>
+            </tr>
+
+            <tr>
+              <td>Kelurahan</td>
+              <td>${escapeHtml(pekerjaan.kelurahan || "-")}</td>
+            </tr>
+
+            <tr>
+              <td>Status</td>
+              <td>${escapeHtml(pekerjaan.status || "-")}</td>
+            </tr>
+
+            <tr>
+              <td>Catatan</td>
+              <td>${escapeHtml(pekerjaan.catatan || "-")}</td>
+            </tr>
+
+            <tr>
+              <td>Dibuat</td>
+              <td>${escapeHtml(pekerjaan.dibuat_pada || "-")}</td>
+            </tr>
+
+            <tr>
+              <td>Diperbarui</td>
+              <td>${escapeHtml(pekerjaan.diperbarui_pada || "-")}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="info-box" style="margin-top:14px;">
+          Tabel rekap segmen saluran akan ditampilkan pada tahap berikutnya.
+        </div>
+      `;
+    }
+
+    async function muatDataPekerjaan() {
+      const wadah = document.getElementById("daftarPekerjaan");
+
+      wadah.innerHTML = `
+        <div class="loading-box">
+          Membaca data pekerjaan dari Google Sheets...
+        </div>
+      `;
+
+      try {
+        const response = await fetch(
+          API_URL + "?sheet=Pekerjaan&t=" + Date.now()
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            "Respons server tidak berhasil: " + response.status
+          );
+        }
+
+        const hasil = await response.json();
+
+        if (!hasil.success) {
+          throw new Error(
+            hasil.message || "API mengembalikan status gagal."
+          );
+        }
+
+        dataPekerjaan = Array.isArray(hasil.data)
+          ? hasil.data
+          : [];
+
+        renderDaftarPekerjaan();
+
+      } catch (error) {
+        console.error(error);
+        tampilkanError(error.message);
+      }
+    }
+
+    document
+      .getElementById("btnMuatUlang")
+      .addEventListener("click", muatDataPekerjaan);
+
+    muatDataPekerjaan();
   </script>
 
 </body>
