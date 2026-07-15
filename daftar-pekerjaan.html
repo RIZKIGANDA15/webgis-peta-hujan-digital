@@ -49,20 +49,20 @@
     }
 
     #panelKiri {
-      width: 300px;
-      min-width: 300px;
+      width: 320px;
+      min-width: 320px;
       height: 100%;
       background: white;
-      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.22);
       z-index: 1000;
     }
 
     #panelKanan {
-      width: 410px;
-      min-width: 410px;
+      width: 500px;
+      min-width: 500px;
       height: 100%;
       background: white;
-      box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
+      box-shadow: -2px 0 8px rgba(0, 0, 0, 0.22);
       z-index: 1000;
     }
 
@@ -95,7 +95,7 @@
       background: #f8fafc;
       border: 1px solid #d1d5db;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 12.5px;
       line-height: 1.5;
     }
 
@@ -105,7 +105,8 @@
       border: 1px solid #99f6e4;
       border-radius: 8px;
       color: #0f766e;
-      font-size: 13px;
+      font-size: 12.5px;
+      line-height: 1.5;
     }
 
     .error-box {
@@ -114,92 +115,293 @@
       border: 1px solid #fecaca;
       border-radius: 8px;
       color: #991b1b;
-      font-size: 13px;
+      font-size: 12.5px;
       line-height: 1.5;
     }
 
+    /* TREE LAYER SEPERTI GOOGLE EARTH */
+
     .tahun-group {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       border: 1px solid #d1d5db;
       border-radius: 8px;
       overflow: hidden;
+      background: white;
     }
 
     .tahun-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
       padding: 9px 10px;
       background: #e5e7eb;
       color: #111827;
       font-size: 13px;
       font-weight: bold;
-    }
-
-    .pekerjaan-item {
-      padding: 10px;
-      border-top: 1px solid #e5e7eb;
       cursor: pointer;
-      background: white;
+      user-select: none;
     }
 
-    .pekerjaan-item:hover {
+    .tahun-header:hover {
+      background: #dbe1e8;
+    }
+
+    .tahun-content {
+      display: block;
+    }
+
+    .tahun-content.collapsed {
+      display: none;
+    }
+
+    .pekerjaan-block {
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .pekerjaan-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 9px 8px;
+      background: white;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .pekerjaan-row:hover {
       background: #f0fdfa;
     }
 
-    .pekerjaan-item.active {
+    .pekerjaan-row.active {
       background: #ccfbf1;
       border-left: 4px solid #0f766e;
-      padding-left: 6px;
+      padding-left: 4px;
+    }
+
+    .tree-caret {
+      width: 20px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #374151;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .project-label {
+      flex: 1;
+      min-width: 0;
     }
 
     .pekerjaan-nama {
-      font-weight: bold;
       color: #0f766e;
       font-size: 13px;
-      line-height: 1.4;
+      font-weight: bold;
+      line-height: 1.35;
     }
 
     .pekerjaan-lokasi {
-      margin-top: 4px;
+      margin-top: 3px;
       color: #6b7280;
       font-size: 11.5px;
-      line-height: 1.4;
+      line-height: 1.35;
     }
 
-    .badge {
-      display: inline-block;
-      margin-top: 6px;
-      padding: 3px 7px;
-      border-radius: 999px;
-      background: #fef3c7;
-      color: #92400e;
-      font-size: 10.5px;
+    .layer-anak {
+      display: none;
+      padding: 4px 0 6px 25px;
+      background: #fafafa;
+      border-top: 1px solid #eef0f3;
+    }
+
+    .layer-anak.open {
+      display: block;
+    }
+
+    .layer-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      padding: 6px 8px 6px 4px;
+      color: #374151;
+      font-size: 12px;
+      line-height: 1.35;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .layer-row:hover {
+      background: #e7f8f5;
+    }
+
+    .layer-row input {
+      margin-top: 2px;
+      cursor: pointer;
+    }
+
+    .layer-symbol {
+      width: 18px;
+      min-width: 18px;
+      text-align: center;
       font-weight: bold;
     }
 
+    .layer-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .layer-name {
+      font-weight: bold;
+      color: #374151;
+    }
+
+    .layer-subtitle {
+      margin-top: 2px;
+      color: #6b7280;
+      font-size: 10.5px;
+    }
+
+    .layer-empty {
+      padding: 8px 10px 8px 5px;
+      color: #6b7280;
+      font-size: 11.5px;
+      font-style: italic;
+    }
+
+    /* PANEL KANAN */
+
     .detail-title {
-      margin: 0 0 12px;
+      margin: 0 0 5px;
       color: #0f766e;
       font-size: 18px;
-      line-height: 1.4;
+      line-height: 1.35;
+    }
+
+    .detail-subtitle {
+      margin-bottom: 13px;
+      color: #6b7280;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .summary-item {
+      padding: 9px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 7px;
+    }
+
+    .summary-item span {
+      display: block;
+      margin-bottom: 3px;
+      color: #6b7280;
+      font-size: 10.5px;
+    }
+
+    .summary-item b {
+      color: #0f766e;
+      font-size: 13px;
+    }
+
+    .section-title {
+      margin: 15px 0 8px;
+      color: #0f766e;
+      font-size: 14px;
     }
 
     .detail-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12.5px;
+      font-size: 12px;
     }
 
     .detail-table td {
-      padding: 8px 7px;
+      padding: 7px;
       border-bottom: 1px solid #e5e7eb;
       vertical-align: top;
-      line-height: 1.45;
+      line-height: 1.4;
     }
 
     .detail-table td:first-child {
-      width: 125px;
+      width: 115px;
       color: #4b5563;
       font-weight: bold;
     }
+
+    .rekap-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: white;
+    }
+
+    .rekap-table {
+      width: 100%;
+      min-width: 1000px;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .rekap-table th,
+    .rekap-table td {
+      padding: 7px 6px;
+      border: 1px solid #d1d5db;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .rekap-table th {
+      position: sticky;
+      top: 0;
+      background: #0f766e;
+      color: white;
+      z-index: 1;
+    }
+
+    .rekap-table td:nth-child(2) {
+      text-align: left;
+      font-weight: bold;
+    }
+
+    .rekap-table tbody tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .status-ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-no {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-empty {
+      background: #e5e7eb;
+      color: #4b5563;
+    }
+
+    /* TOMBOL */
 
     .btn {
       display: block;
@@ -229,10 +431,22 @@
       background: #1f2937;
     }
 
-    @media (max-width: 1050px) {
+    @media (max-width: 1150px) {
       #panelKiri {
-        width: 250px;
-        min-width: 250px;
+        width: 280px;
+        min-width: 280px;
+      }
+
+      #panelKanan {
+        width: 410px;
+        min-width: 410px;
+      }
+    }
+
+    @media (max-width: 850px) {
+      #panelKiri {
+        width: 230px;
+        min-width: 230px;
       }
 
       #panelKanan {
@@ -247,12 +461,15 @@
 
   <header>
     <h1>Daftar Pekerjaan Drainase</h1>
-    <p>Inventarisasi lokasi, layer, dan hasil perhitungan pekerjaan drainase</p>
+    <p>
+      Inventarisasi layer dan hasil perhitungan pekerjaan drainase
+    </p>
   </header>
 
   <div id="appContainer">
 
     <aside id="panelKiri">
+
       <div class="panel-header">
         Layer Pekerjaan
       </div>
@@ -261,7 +478,7 @@
 
         <div id="daftarPekerjaan">
           <div class="loading-box">
-            Membaca data pekerjaan dari Google Sheets...
+            Membaca data pekerjaan, segmen, dan geometri...
           </div>
         </div>
 
@@ -274,21 +491,26 @@
         </a>
 
       </div>
+
     </aside>
 
     <div id="map"></div>
 
     <aside id="panelKanan">
+
       <div class="panel-header">
         Rekap Pekerjaan
       </div>
 
       <div class="panel-content" id="detailPekerjaan">
+
         <div class="info-box">
-          Pilih salah satu pekerjaan pada panel kiri untuk melihat data
-          pekerjaan tersebut.
+          Pilih pekerjaan pada panel kiri untuk menampilkan layer peta
+          dan rekap dimensi salurannya.
         </div>
+
       </div>
+
     </aside>
 
   </div>
@@ -298,6 +520,10 @@
   <script>
     const API_URL =
       "https://script.google.com/macros/s/AKfycbxl_ZXQrUbhp5k339Khc18o_N49cCiW31K6YA0HqGBegxlSNkE0J0XFxQi5DBbWNJvf/exec";
+
+    /*
+      PETA
+    */
 
     const map = L.map("map", {
       zoomControl: true
@@ -312,11 +538,57 @@
       }
     ).addTo(map);
 
+    const googleMaps = L.tileLayer(
+      "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+      {
+        maxZoom: 20,
+        subdomains: ["mt0", "mt1", "mt2", "mt3"],
+        attribution: "&copy; Google Maps"
+      }
+    );
+
+    const osmMap = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }
+    );
+
+    L.control.layers(
+      {
+        "Google Hybrid": googleHybrid,
+        "Google Maps": googleMaps,
+        "OpenStreetMap": osmMap
+      },
+      null,
+      {
+        position: "topright"
+      }
+    ).addTo(map);
+
+    /*
+      DATA UTAMA
+    */
+
     let dataPekerjaan = [];
+    let dataSegmen = [];
+    let dataGeometri = [];
+
     let pekerjaanAktifId = null;
 
+    const expandedProjectIds = new Set();
+    const collapsedYears = new Set();
+    const visibleGeometryIds = new Set();
+
+    const layerGeometriMap = new Map();
+
+    /*
+      UTILITAS
+    */
+
     function escapeHtml(teks) {
-      return String(teks || "")
+      return String(teks ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
@@ -324,225 +596,1119 @@
         .replaceAll("'", "&#039;");
     }
 
-    function tampilkanKosong() {
-      document.getElementById("daftarPekerjaan").innerHTML = `
-        <div class="info-box">
-          Belum ada data pekerjaan pada Google Sheets.
-        </div>
+    function angka(nilai) {
+      const hasil = parseFloat(
+        String(nilai ?? "")
+          .replace(",", ".")
+          .trim()
+      );
+
+      return Number.isFinite(hasil) ? hasil : null;
+    }
+
+    function formatAngka(nilai, digit = 2) {
+      const hasil = angka(nilai);
+
+      if (hasil === null) {
+        return "-";
+      }
+
+      return hasil.toLocaleString("id-ID", {
+        minimumFractionDigits: digit,
+        maximumFractionDigits: digit
+      });
+    }
+
+    function normalisasiOpacity(nilai, defaultValue) {
+      let hasil = angka(nilai);
+
+      if (hasil === null) {
+        return defaultValue;
+      }
+
+      if (hasil > 1) {
+        hasil = hasil / 100;
+      }
+
+      return Math.max(0, Math.min(1, hasil));
+    }
+
+    function warnaDefault(item) {
+      const jenis = String(item.jenis_objek || "").toLowerCase();
+      const tipe = String(item.tipe_geometri || "").toLowerCase();
+
+      if (
+        jenis.includes("catchment") ||
+        jenis.includes("ca") ||
+        tipe.includes("polygon")
+      ) {
+        return "#2563eb";
+      }
+
+      if (
+        jenis.includes("saluran") ||
+        tipe.includes("line")
+      ) {
+        return "#dc2626";
+      }
+
+      return "#f59e0b";
+    }
+
+    function ikonJenisObjek(item) {
+      const jenis = String(item.jenis_objek || "").toLowerCase();
+      const tipe = String(item.tipe_geometri || "").toLowerCase();
+
+      if (
+        jenis.includes("catchment") ||
+        jenis.includes("ca") ||
+        tipe.includes("polygon")
+      ) {
+        return "▰";
+      }
+
+      if (
+        jenis.includes("saluran") ||
+        tipe.includes("line")
+      ) {
+        return "━";
+      }
+
+      return "●";
+    }
+
+    function namaJenisObjek(item) {
+      const jenis = String(item.jenis_objek || "").toLowerCase();
+      const tipe = String(item.tipe_geometri || "").toLowerCase();
+
+      if (
+        jenis.includes("catchment") ||
+        jenis.includes("ca") ||
+        tipe.includes("polygon")
+      ) {
+        return "Catchment Area";
+      }
+
+      if (
+        jenis.includes("saluran") ||
+        tipe.includes("line")
+      ) {
+        return "Saluran";
+      }
+
+      if (tipe.includes("point")) {
+        return "Titik Lokasi";
+      }
+
+      return item.jenis_objek || "Objek Peta";
+    }
+
+    function statusSegmenHtml(status) {
+      const teks = String(status || "").trim();
+      const kecil = teks.toLowerCase();
+
+      if (
+        kecil.includes("memenuhi") &&
+        !kecil.includes("tidak")
+      ) {
+        return `
+          <span class="status-pill status-ok">
+            ${escapeHtml(teks)}
+          </span>
+        `;
+      }
+
+      if (
+        kecil.includes("tidak") ||
+        kecil.includes("belum memenuhi")
+      ) {
+        return `
+          <span class="status-pill status-no">
+            ${escapeHtml(teks)}
+          </span>
+        `;
+      }
+
+      return `
+        <span class="status-pill status-empty">
+          ${escapeHtml(teks || "-")}
+        </span>
       `;
     }
 
-    function tampilkanError(pesan) {
-      document.getElementById("daftarPekerjaan").innerHTML = `
-        <div class="error-box">
-          <b>Data gagal dibaca.</b><br>
-          ${escapeHtml(pesan)}
-        </div>
-      `;
+    function dimensiSegmen(segmen) {
+      const jenis = String(segmen.jenis_saluran || "").toLowerCase();
+
+      const lebar = angka(segmen.lebar_m);
+      const tinggi = angka(segmen.tinggi_m);
+      const diameter = angka(segmen.diameter_m);
+
+      if (
+        diameter !== null &&
+        (
+          jenis.includes("rcp") ||
+          jenis.includes("pipa") ||
+          jenis.includes("round")
+        )
+      ) {
+        return "Ø " + formatAngka(diameter, 2) + " m";
+      }
+
+      if (lebar !== null || tinggi !== null) {
+        return (
+          formatAngka(lebar, 2) +
+          " × " +
+          formatAngka(tinggi, 2) +
+          " m"
+        );
+      }
+
+      if (diameter !== null) {
+        return "Ø " + formatAngka(diameter, 2) + " m";
+      }
+
+      return "-";
     }
 
-    function kelompokkanPekerjaanPerTahun(data) {
-      const kelompok = {};
+    /*
+      API
+    */
 
-      data.forEach(function (pekerjaan) {
-        const tahun = pekerjaan.tahun || "Tanpa Tahun";
+    async function bacaSheet(namaSheet) {
+      const response = await fetch(
+        API_URL +
+        "?sheet=" +
+        encodeURIComponent(namaSheet) +
+        "&t=" +
+        Date.now()
+      );
 
-        if (!kelompok[tahun]) {
-          kelompok[tahun] = [];
+      if (!response.ok) {
+        throw new Error(
+          "Gagal membaca " +
+          namaSheet +
+          ". Status: " +
+          response.status
+        );
+      }
+
+      const hasil = await response.json();
+
+      if (!hasil.success) {
+        throw new Error(
+          hasil.message ||
+          "Data " + namaSheet + " gagal dibaca."
+        );
+      }
+
+      return Array.isArray(hasil.data)
+        ? hasil.data
+        : [];
+    }
+
+    /*
+      PEMBUATAN LAYER GEOJSON
+    */
+
+    function parseGeoJson(item) {
+      const isi = String(item.geojson || "").trim();
+
+      if (!isi) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(isi);
+      } catch (error) {
+        console.warn(
+          "GeoJSON tidak valid:",
+          item.id_geometri,
+          error
+        );
+
+        return null;
+      }
+    }
+
+    function buatLayerGeoJson(item) {
+      const geojson = parseGeoJson(item);
+
+      if (!geojson) {
+        return null;
+      }
+
+      const warna =
+        String(item.warna || "").trim() ||
+        warnaDefault(item);
+
+      const ketebalan =
+        angka(item.ketebalan) ?? 3;
+
+      const opacity =
+        normalisasiOpacity(item.opasitas, 0.9);
+
+      const fillOpacity =
+        normalisasiOpacity(item.opasitas, 0.25);
+
+      const layer = L.geoJSON(
+        geojson,
+        {
+          style: function () {
+            return {
+              color: warna,
+              weight: ketebalan,
+              opacity: opacity,
+              fillColor: warna,
+              fillOpacity: fillOpacity
+            };
+          },
+
+          pointToLayer: function (feature, latlng) {
+            return L.circleMarker(
+              latlng,
+              {
+                radius: 7,
+                color: "#ffffff",
+                weight: 2,
+                fillColor: warna,
+                fillOpacity: opacity
+              }
+            );
+          },
+
+          onEachFeature: function (feature, subLayer) {
+            const nama =
+              item.nama_objek ||
+              namaJenisObjek(item);
+
+            subLayer.bindPopup(`
+              <b>${escapeHtml(nama)}</b><br>
+              Jenis: ${escapeHtml(namaJenisObjek(item))}
+            `);
+          }
+        }
+      );
+
+      return layer;
+    }
+
+    function hapusSemuaLayerDariPeta() {
+      layerGeometriMap.forEach(function (dataLayer) {
+        if (map.hasLayer(dataLayer.layer)) {
+          map.removeLayer(dataLayer.layer);
+        }
+      });
+    }
+
+    function siapkanLayerGeometri() {
+      hapusSemuaLayerDariPeta();
+      layerGeometriMap.clear();
+
+      dataGeometri.forEach(function (item) {
+        const id = item.id_geometri;
+
+        if (!id) {
+          return;
         }
 
-        kelompok[tahun].push(pekerjaan);
-      });
+        const layer = buatLayerGeoJson(item);
 
-      return kelompok;
+        if (!layer) {
+          return;
+        }
+
+        layerGeometriMap.set(
+          id,
+          {
+            item: item,
+            layer: layer
+          }
+        );
+      });
     }
 
-    function renderDaftarPekerjaan() {
-      const wadah = document.getElementById("daftarPekerjaan");
+    function sinkronkanLayerPeta() {
+      hapusSemuaLayerDariPeta();
 
-      if (!dataPekerjaan.length) {
-        tampilkanKosong();
+      if (!pekerjaanAktifId) {
         return;
       }
 
-      const kelompok = kelompokkanPekerjaanPerTahun(dataPekerjaan);
+      dataGeometri
+        .filter(function (item) {
+          return (
+            item.id_pekerjaan === pekerjaanAktifId &&
+            visibleGeometryIds.has(item.id_geometri)
+          );
+        })
+        .forEach(function (item) {
+          const dataLayer =
+            layerGeometriMap.get(item.id_geometri);
 
-      const daftarTahun = Object.keys(kelompok).sort(function (a, b) {
-        return String(b).localeCompare(String(a));
+          if (dataLayer) {
+            dataLayer.layer.addTo(map);
+          }
+        });
+    }
+
+    function zoomKePekerjaan(idPekerjaan) {
+      const daftarLayer = dataGeometri
+        .filter(function (item) {
+          return item.id_pekerjaan === idPekerjaan;
+        })
+        .map(function (item) {
+          const dataLayer =
+            layerGeometriMap.get(item.id_geometri);
+
+          return dataLayer
+            ? dataLayer.layer
+            : null;
+        })
+        .filter(Boolean);
+
+      if (!daftarLayer.length) {
+        return;
+      }
+
+      const grup = L.featureGroup(daftarLayer);
+      const bounds = grup.getBounds();
+
+      if (bounds.isValid()) {
+        map.fitBounds(
+          bounds,
+          {
+            padding: [35, 35],
+            maxZoom: 18
+          }
+        );
+      }
+    }
+
+    function zoomKeGeometri(idGeometri) {
+      const dataLayer =
+        layerGeometriMap.get(idGeometri);
+
+      if (!dataLayer) {
+        return;
+      }
+
+      if (!visibleGeometryIds.has(idGeometri)) {
+        visibleGeometryIds.add(idGeometri);
+        sinkronkanLayerPeta();
+        renderTreePekerjaan();
+      }
+
+      const bounds = dataLayer.layer.getBounds();
+
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(
+          bounds,
+          {
+            padding: [35, 35],
+            maxZoom: 19
+          }
+        );
+      }
+
+      const daftarSubLayer =
+        dataLayer.layer.getLayers();
+
+      if (
+        daftarSubLayer.length &&
+        daftarSubLayer[0].getPopup()
+      ) {
+        daftarSubLayer[0].openPopup();
+      }
+    }
+
+    /*
+      TREE PANEL KIRI
+    */
+
+    function kelompokkanPekerjaanPerTahun() {
+      const hasil = {};
+
+      dataPekerjaan.forEach(function (pekerjaan) {
+        const tahun =
+          pekerjaan.tahun ||
+          "Tanpa Tahun";
+
+        if (!hasil[tahun]) {
+          hasil[tahun] = [];
+        }
+
+        hasil[tahun].push(pekerjaan);
       });
+
+      return hasil;
+    }
+
+    function renderTreePekerjaan() {
+      const wadah =
+        document.getElementById("daftarPekerjaan");
+
+      if (!dataPekerjaan.length) {
+        wadah.innerHTML = `
+          <div class="info-box">
+            Belum ada data pekerjaan pada Google Sheets.
+          </div>
+        `;
+
+        return;
+      }
+
+      const kelompok =
+        kelompokkanPekerjaanPerTahun();
+
+      const daftarTahun =
+        Object.keys(kelompok).sort(function (a, b) {
+          return String(b).localeCompare(String(a));
+        });
 
       let html = "";
 
       daftarTahun.forEach(function (tahun) {
+        const tahunCollapsed =
+          collapsedYears.has(tahun);
+
         html += `
           <div class="tahun-group">
-            <div class="tahun-header">
-              ▼ Tahun ${escapeHtml(tahun)}
+
+            <div
+              class="tahun-header"
+              data-year="${escapeHtml(tahun)}"
+            >
+              <span>
+                ${tahunCollapsed ? "▶" : "▼"}
+              </span>
+
+              <span>
+                Tahun ${escapeHtml(tahun)}
+              </span>
             </div>
+
+            <div
+              class="tahun-content
+              ${tahunCollapsed ? "collapsed" : ""}"
+            >
         `;
 
         kelompok[tahun].forEach(function (pekerjaan) {
+          const id =
+            pekerjaan.id_pekerjaan;
+
           const aktif =
-            pekerjaan.id_pekerjaan === pekerjaanAktifId
-              ? "active"
-              : "";
+            id === pekerjaanAktifId;
+
+          const terbuka =
+            expandedProjectIds.has(id);
+
+          const daftarGeometri =
+            dataGeometri.filter(function (item) {
+              return item.id_pekerjaan === id;
+            });
 
           html += `
-            <div
-              class="pekerjaan-item ${aktif}"
-              data-id="${escapeHtml(pekerjaan.id_pekerjaan)}"
-            >
-              <div class="pekerjaan-nama">
-                ${escapeHtml(pekerjaan.nama_pekerjaan || "Tanpa Nama")}
+            <div class="pekerjaan-block">
+
+              <div
+                class="pekerjaan-row
+                ${aktif ? "active" : ""}"
+                data-project-id="${escapeHtml(id)}"
+              >
+
+                <button
+                  class="tree-caret"
+                  type="button"
+                  data-toggle-project="${escapeHtml(id)}"
+                  title="Buka atau tutup layer"
+                >
+                  ${terbuka ? "▼" : "▶"}
+                </button>
+
+                <div class="project-label">
+
+                  <div class="pekerjaan-nama">
+                    ${escapeHtml(
+                      pekerjaan.nama_pekerjaan ||
+                      "Tanpa Nama"
+                    )}
+                  </div>
+
+                  <div class="pekerjaan-lokasi">
+                    ${escapeHtml(
+                      pekerjaan.lokasi ||
+                      "Lokasi belum diisi"
+                    )}
+                  </div>
+
+                </div>
+
               </div>
 
-              <div class="pekerjaan-lokasi">
-                ${escapeHtml(pekerjaan.lokasi || "Lokasi belum diisi")}
-              </div>
+              <div
+                class="layer-anak
+                ${terbuka ? "open" : ""}"
+              >
+          `;
 
-              <span class="badge">
-                ${escapeHtml(pekerjaan.status || "Belum Ada Status")}
-              </span>
+          if (!daftarGeometri.length) {
+            html += `
+              <div class="layer-empty">
+                Belum ada layer saluran atau
+                catchment area.
+              </div>
+            `;
+          } else {
+            daftarGeometri.forEach(function (item) {
+              const idGeometri =
+                item.id_geometri;
+
+              const warna =
+                String(item.warna || "").trim() ||
+                warnaDefault(item);
+
+              const checked =
+                visibleGeometryIds.has(idGeometri);
+
+              const segmen =
+                dataSegmen.find(function (data) {
+                  return (
+                    data.id_segmen === item.id_segmen
+                  );
+                });
+
+              html += `
+                <div
+                  class="layer-row"
+                  data-layer-id="${escapeHtml(idGeometri)}"
+                >
+
+                  <input
+                    type="checkbox"
+                    data-layer-checkbox="${escapeHtml(idGeometri)}"
+                    ${checked ? "checked" : ""}
+                  >
+
+                  <span
+                    class="layer-symbol"
+                    style="color:${escapeHtml(warna)};"
+                  >
+                    ${ikonJenisObjek(item)}
+                  </span>
+
+                  <div class="layer-text">
+
+                    <div class="layer-name">
+                      ${escapeHtml(
+                        item.nama_objek ||
+                        namaJenisObjek(item)
+                      )}
+                    </div>
+
+                    <div class="layer-subtitle">
+                      ${escapeHtml(
+                        segmen
+                          ? segmen.nama_segmen
+                          : namaJenisObjek(item)
+                      )}
+                    </div>
+
+                  </div>
+
+                </div>
+              `;
+            });
+          }
+
+          html += `
+              </div>
             </div>
           `;
         });
 
-        html += `</div>`;
+        html += `
+            </div>
+          </div>
+        `;
       });
 
       wadah.innerHTML = html;
 
+      pasangEventTree();
+    }
+
+    function pasangEventTree() {
       document
-        .querySelectorAll(".pekerjaan-item")
-        .forEach(function (elemen) {
-          elemen.addEventListener("click", function () {
-            pilihPekerjaan(this.dataset.id);
-          });
+        .querySelectorAll(".tahun-header")
+        .forEach(function (element) {
+          element.addEventListener(
+            "click",
+            function () {
+              const tahun =
+                this.dataset.year;
+
+              if (collapsedYears.has(tahun)) {
+                collapsedYears.delete(tahun);
+              } else {
+                collapsedYears.add(tahun);
+              }
+
+              renderTreePekerjaan();
+            }
+          );
+        });
+
+      document
+        .querySelectorAll(".pekerjaan-row")
+        .forEach(function (element) {
+          element.addEventListener(
+            "click",
+            function (event) {
+              if (
+                event.target.closest(".tree-caret")
+              ) {
+                return;
+              }
+
+              pilihPekerjaan(
+                this.dataset.projectId
+              );
+            }
+          );
+        });
+
+      document
+        .querySelectorAll("[data-toggle-project]")
+        .forEach(function (element) {
+          element.addEventListener(
+            "click",
+            function (event) {
+              event.stopPropagation();
+
+              const id =
+                this.dataset.toggleProject;
+
+              if (expandedProjectIds.has(id)) {
+                expandedProjectIds.delete(id);
+              } else {
+                expandedProjectIds.add(id);
+              }
+
+              renderTreePekerjaan();
+            }
+          );
+        });
+
+      document
+        .querySelectorAll("[data-layer-checkbox]")
+        .forEach(function (element) {
+          element.addEventListener(
+            "change",
+            function (event) {
+              event.stopPropagation();
+
+              const id =
+                this.dataset.layerCheckbox;
+
+              if (this.checked) {
+                visibleGeometryIds.add(id);
+              } else {
+                visibleGeometryIds.delete(id);
+              }
+
+              sinkronkanLayerPeta();
+            }
+          );
+
+          element.addEventListener(
+            "click",
+            function (event) {
+              event.stopPropagation();
+            }
+          );
+        });
+
+      document
+        .querySelectorAll(".layer-row")
+        .forEach(function (element) {
+          element.addEventListener(
+            "click",
+            function () {
+              zoomKeGeometri(
+                this.dataset.layerId
+              );
+            }
+          );
         });
     }
 
+    /*
+      PILIH PEKERJAAN
+    */
+
     function pilihPekerjaan(idPekerjaan) {
-      const pekerjaan = dataPekerjaan.find(function (item) {
-        return item.id_pekerjaan === idPekerjaan;
-      });
+      pekerjaanAktifId = idPekerjaan;
+
+      expandedProjectIds.add(idPekerjaan);
+      visibleGeometryIds.clear();
+
+      dataGeometri
+        .filter(function (item) {
+          return item.id_pekerjaan === idPekerjaan;
+        })
+        .forEach(function (item) {
+          visibleGeometryIds.add(
+            item.id_geometri
+          );
+        });
+
+      renderTreePekerjaan();
+      sinkronkanLayerPeta();
+      renderDetailPekerjaan();
+      zoomKePekerjaan(idPekerjaan);
+    }
+
+    /*
+      PANEL KANAN
+    */
+
+    function renderDetailPekerjaan() {
+      const detail =
+        document.getElementById("detailPekerjaan");
+
+      const pekerjaan =
+        dataPekerjaan.find(function (item) {
+          return (
+            item.id_pekerjaan ===
+            pekerjaanAktifId
+          );
+        });
 
       if (!pekerjaan) {
+        detail.innerHTML = `
+          <div class="info-box">
+            Pilih pekerjaan pada panel kiri.
+          </div>
+        `;
+
         return;
       }
 
-      pekerjaanAktifId = idPekerjaan;
-      renderDaftarPekerjaan();
-      tampilkanDetailPekerjaan(pekerjaan);
-    }
+      const segmenPekerjaan =
+        dataSegmen.filter(function (item) {
+          return (
+            item.id_pekerjaan ===
+            pekerjaanAktifId
+          );
+        });
 
-    function tampilkanDetailPekerjaan(pekerjaan) {
-      const detail = document.getElementById("detailPekerjaan");
+      const geometriPekerjaan =
+        dataGeometri.filter(function (item) {
+          return (
+            item.id_pekerjaan ===
+            pekerjaanAktifId
+          );
+        });
+
+      let tabelSegmen = "";
+
+      if (!segmenPekerjaan.length) {
+        tabelSegmen = `
+          <div class="info-box">
+            Belum ada data segmen saluran untuk
+            pekerjaan ini.
+          </div>
+        `;
+      } else {
+        const rows =
+          segmenPekerjaan.map(
+            function (segmen, index) {
+              return `
+                <tr>
+                  <td>${index + 1}</td>
+
+                  <td>
+                    ${escapeHtml(
+                      segmen.nama_segmen ||
+                      "-"
+                    )}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(
+                      segmen.jenis_saluran ||
+                      "-"
+                    )}
+                  </td>
+
+                  <td>
+                    ${formatAngka(
+                      segmen.panjang_m,
+                      2
+                    )}
+                  </td>
+
+                  <td>
+                    ${formatAngka(
+                      segmen.luas_ca_ha,
+                      4
+                    )}
+                  </td>
+
+                  <td>
+                    ${dimensiSegmen(segmen)}
+                  </td>
+
+                  <td>
+                    ${formatAngka(
+                      segmen.slope,
+                      6
+                    )}
+                  </td>
+
+                  <td>
+                    ${formatAngka(
+                      segmen.q_rencana_m3_dtk,
+                      3
+                    )}
+                  </td>
+
+                  <td>
+                    ${formatAngka(
+                      segmen.q_saluran_m3_dtk,
+                      3
+                    )}
+                  </td>
+
+                  <td>
+                    ${statusSegmenHtml(
+                      segmen.status
+                    )}
+                  </td>
+                </tr>
+              `;
+            }
+          ).join("");
+
+        tabelSegmen = `
+          <div class="rekap-wrap">
+
+            <table class="rekap-table">
+
+              <thead>
+                <tr>
+                  <th>No.</th>
+                  <th>Nama Segmen</th>
+                  <th>Jenis</th>
+                  <th>Panjang (m)</th>
+                  <th>CA (ha)</th>
+                  <th>Dimensi</th>
+                  <th>Slope</th>
+                  <th>Qr (m³/det)</th>
+                  <th>Qs (m³/det)</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${rows}
+              </tbody>
+
+            </table>
+
+          </div>
+        `;
+      }
 
       detail.innerHTML = `
         <h2 class="detail-title">
-          ${escapeHtml(pekerjaan.nama_pekerjaan || "Tanpa Nama")}
+          ${escapeHtml(
+            pekerjaan.nama_pekerjaan ||
+            "Tanpa Nama"
+          )}
         </h2>
+
+        <div class="detail-subtitle">
+          ${escapeHtml(
+            pekerjaan.lokasi ||
+            "Lokasi belum diisi"
+          )}
+        </div>
+
+        <div class="summary-grid">
+
+          <div class="summary-item">
+            <span>Jumlah Segmen</span>
+            <b>${segmenPekerjaan.length}</b>
+          </div>
+
+          <div class="summary-item">
+            <span>Jumlah Layer</span>
+            <b>${geometriPekerjaan.length}</b>
+          </div>
+
+          <div class="summary-item">
+            <span>Tahun</span>
+            <b>
+              ${escapeHtml(
+                pekerjaan.tahun ||
+                "-"
+              )}
+            </b>
+          </div>
+
+          <div class="summary-item">
+            <span>Kecamatan</span>
+            <b>
+              ${escapeHtml(
+                pekerjaan.kecamatan ||
+                "-"
+              )}
+            </b>
+          </div>
+
+        </div>
+
+        <h3 class="section-title">
+          Informasi Pekerjaan
+        </h3>
 
         <table class="detail-table">
           <tbody>
+
             <tr>
               <td>ID Pekerjaan</td>
-              <td>${escapeHtml(pekerjaan.id_pekerjaan || "-")}</td>
-            </tr>
-
-            <tr>
-              <td>Tahun</td>
-              <td>${escapeHtml(pekerjaan.tahun || "-")}</td>
-            </tr>
-
-            <tr>
-              <td>Lokasi</td>
-              <td>${escapeHtml(pekerjaan.lokasi || "-")}</td>
-            </tr>
-
-            <tr>
-              <td>Kecamatan</td>
-              <td>${escapeHtml(pekerjaan.kecamatan || "-")}</td>
+              <td>
+                ${escapeHtml(
+                  pekerjaan.id_pekerjaan ||
+                  "-"
+                )}
+              </td>
             </tr>
 
             <tr>
               <td>Kelurahan</td>
-              <td>${escapeHtml(pekerjaan.kelurahan || "-")}</td>
-            </tr>
-
-            <tr>
-              <td>Status</td>
-              <td>${escapeHtml(pekerjaan.status || "-")}</td>
+              <td>
+                ${escapeHtml(
+                  pekerjaan.kelurahan ||
+                  "-"
+                )}
+              </td>
             </tr>
 
             <tr>
               <td>Catatan</td>
-              <td>${escapeHtml(pekerjaan.catatan || "-")}</td>
+              <td>
+                ${escapeHtml(
+                  pekerjaan.catatan ||
+                  "-"
+                )}
+              </td>
             </tr>
 
-            <tr>
-              <td>Dibuat</td>
-              <td>${escapeHtml(pekerjaan.dibuat_pada || "-")}</td>
-            </tr>
-
-            <tr>
-              <td>Diperbarui</td>
-              <td>${escapeHtml(pekerjaan.diperbarui_pada || "-")}</td>
-            </tr>
           </tbody>
         </table>
 
-        <div class="info-box" style="margin-top:14px;">
-          Tabel rekap segmen saluran akan ditampilkan pada tahap berikutnya.
-        </div>
+        <h3 class="section-title">
+          Rekap Dimensi dan Perhitungan Saluran
+        </h3>
+
+        ${tabelSegmen}
       `;
     }
 
-    async function muatDataPekerjaan() {
-      const wadah = document.getElementById("daftarPekerjaan");
+    /*
+      MUAT SEMUA DATA
+    */
+
+    async function muatSemuaData() {
+      const wadah =
+        document.getElementById("daftarPekerjaan");
 
       wadah.innerHTML = `
         <div class="loading-box">
-          Membaca data pekerjaan dari Google Sheets...
+          Membaca data pekerjaan, segmen,
+          dan geometri dari Google Sheets...
+        </div>
+      `;
+
+      document.getElementById(
+        "detailPekerjaan"
+      ).innerHTML = `
+        <div class="loading-box">
+          Memuat rekap pekerjaan...
         </div>
       `;
 
       try {
-        const response = await fetch(
-          API_URL + "?sheet=Pekerjaan&t=" + Date.now()
-        );
+        const hasil = await Promise.all([
+          bacaSheet("Pekerjaan"),
+          bacaSheet("Segmen"),
+          bacaSheet("Geometri")
+        ]);
 
-        if (!response.ok) {
-          throw new Error(
-            "Respons server tidak berhasil: " + response.status
+        dataPekerjaan = hasil[0];
+        dataSegmen = hasil[1];
+        dataGeometri = hasil[2];
+
+        siapkanLayerGeometri();
+        renderTreePekerjaan();
+
+        const pekerjaanMasihAda =
+          dataPekerjaan.some(function (item) {
+            return (
+              item.id_pekerjaan ===
+              pekerjaanAktifId
+            );
+          });
+
+        if (
+          !pekerjaanMasihAda &&
+          dataPekerjaan.length
+        ) {
+          pilihPekerjaan(
+            dataPekerjaan[0].id_pekerjaan
           );
+        } else if (pekerjaanAktifId) {
+          pilihPekerjaan(pekerjaanAktifId);
+        } else {
+          document.getElementById(
+            "detailPekerjaan"
+          ).innerHTML = `
+            <div class="info-box">
+              Belum ada pekerjaan yang dipilih.
+            </div>
+          `;
         }
-
-        const hasil = await response.json();
-
-        if (!hasil.success) {
-          throw new Error(
-            hasil.message || "API mengembalikan status gagal."
-          );
-        }
-
-        dataPekerjaan = Array.isArray(hasil.data)
-          ? hasil.data
-          : [];
-
-        renderDaftarPekerjaan();
-
       } catch (error) {
         console.error(error);
-        tampilkanError(error.message);
+
+        wadah.innerHTML = `
+          <div class="error-box">
+            <b>Data gagal dimuat.</b><br>
+            ${escapeHtml(error.message)}
+          </div>
+        `;
+
+        document.getElementById(
+          "detailPekerjaan"
+        ).innerHTML = `
+          <div class="error-box">
+            Rekap pekerjaan tidak dapat ditampilkan.
+          </div>
+        `;
       }
     }
 
     document
       .getElementById("btnMuatUlang")
-      .addEventListener("click", muatDataPekerjaan);
+      .addEventListener(
+        "click",
+        muatSemuaData
+      );
 
-    muatDataPekerjaan();
+    muatSemuaData();
   </script>
 
 </body>
