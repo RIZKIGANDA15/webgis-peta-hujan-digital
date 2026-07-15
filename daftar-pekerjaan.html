@@ -3,18 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Daftar Pekerjaan Drainase</title>
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  >
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -49,8 +43,8 @@
     }
 
     #panelKiri {
-      width: 320px;
-      min-width: 320px;
+      width: 340px;
+      min-width: 340px;
       height: 100%;
       background: white;
       box-shadow: 2px 0 8px rgba(0, 0, 0, 0.22);
@@ -74,9 +68,7 @@
       font-weight: bold;
     }
 
-    #panelKanan .panel-header {
-      background: #0f766e;
-    }
+    #panelKanan .panel-header { background: #0f766e; }
 
     .panel-content {
       height: calc(100% - 46px);
@@ -90,36 +82,40 @@
       height: 100%;
     }
 
-    .info-box {
+    .info-box,
+    .loading-box,
+    .error-box,
+    .success-box {
       padding: 12px;
-      background: #f8fafc;
-      border: 1px solid #d1d5db;
       border-radius: 8px;
       font-size: 12.5px;
       line-height: 1.5;
+    }
+
+    .info-box {
+      background: #f8fafc;
+      border: 1px solid #d1d5db;
     }
 
     .loading-box {
-      padding: 12px;
       background: #ecfdf5;
       border: 1px solid #99f6e4;
-      border-radius: 8px;
       color: #0f766e;
-      font-size: 12.5px;
-      line-height: 1.5;
     }
 
     .error-box {
-      padding: 12px;
       background: #fee2e2;
       border: 1px solid #fecaca;
-      border-radius: 8px;
       color: #991b1b;
-      font-size: 12.5px;
-      line-height: 1.5;
     }
 
-    /* TREE LAYER SEPERTI GOOGLE EARTH */
+    .success-box {
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+
+    /* TREE LAYER */
 
     .tahun-group {
       margin-bottom: 10px;
@@ -129,29 +125,46 @@
       background: white;
     }
 
-    .tahun-header {
+    .tahun-header,
+    .kelompok-header {
       display: flex;
       align-items: center;
       gap: 7px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .tahun-header {
       padding: 9px 10px;
       background: #e5e7eb;
       color: #111827;
       font-size: 13px;
       font-weight: bold;
-      cursor: pointer;
-      user-select: none;
     }
 
-    .tahun-header:hover {
-      background: #dbe1e8;
+    .tahun-header:hover { background: #dbe1e8; }
+
+    .tahun-content.collapsed,
+    .kelompok-content.collapsed { display: none; }
+
+    .kelompok-block {
+      border-top: 1px solid #d1d5db;
     }
 
-    .tahun-content {
-      display: block;
+    .kelompok-header {
+      padding: 8px 10px 8px 18px;
+      background: #eef2f7;
+      color: #374151;
+      font-size: 12.5px;
+      font-weight: bold;
     }
 
-    .tahun-content.collapsed {
-      display: none;
+    .kelompok-header:hover { background: #e5eaf1; }
+
+    .kelompok-icon {
+      width: 17px;
+      text-align: center;
+      color: #d97706;
     }
 
     .pekerjaan-block {
@@ -162,20 +175,18 @@
       display: flex;
       align-items: flex-start;
       gap: 6px;
-      padding: 9px 8px;
+      padding: 9px 8px 9px 28px;
       background: white;
       cursor: pointer;
       user-select: none;
     }
 
-    .pekerjaan-row:hover {
-      background: #f0fdfa;
-    }
+    .pekerjaan-row:hover { background: #f0fdfa; }
 
     .pekerjaan-row.active {
       background: #ccfbf1;
       border-left: 4px solid #0f766e;
-      padding-left: 4px;
+      padding-left: 24px;
     }
 
     .tree-caret {
@@ -211,14 +222,12 @@
 
     .layer-anak {
       display: none;
-      padding: 4px 0 6px 25px;
+      padding: 4px 0 6px 52px;
       background: #fafafa;
       border-top: 1px solid #eef0f3;
     }
 
-    .layer-anak.open {
-      display: block;
-    }
+    .layer-anak.open { display: block; }
 
     .layer-row {
       display: flex;
@@ -232,9 +241,7 @@
       border-radius: 5px;
     }
 
-    .layer-row:hover {
-      background: #e7f8f5;
-    }
+    .layer-row:hover { background: #e7f8f5; }
 
     .layer-row input {
       margin-top: 2px;
@@ -333,7 +340,7 @@
     }
 
     .detail-table td:first-child {
-      width: 115px;
+      width: 125px;
       color: #4b5563;
       font-weight: bold;
     }
@@ -374,9 +381,7 @@
       font-weight: bold;
     }
 
-    .rekap-table tbody tr:nth-child(even) td {
-      background: #f8fafc;
-    }
+    .rekap-table tbody tr:nth-child(even) td { background: #f8fafc; }
 
     .status-pill {
       display: inline-block;
@@ -386,20 +391,9 @@
       font-weight: bold;
     }
 
-    .status-ok {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .status-no {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .status-empty {
-      background: #e5e7eb;
-      color: #4b5563;
-    }
+    .status-ok { background: #dcfce7; color: #166534; }
+    .status-no { background: #fee2e2; color: #991b1b; }
+    .status-empty { background: #e5e7eb; color: #4b5563; }
 
     /* TOMBOL */
 
@@ -419,115 +413,314 @@
       cursor: pointer;
     }
 
-    .btn:hover {
-      background: #0b5f59;
+    .btn:hover { background: #0b5f59; }
+    .btn-secondary { background: #374151; }
+    .btn-secondary:hover { background: #1f2937; }
+    .btn-light { background: #e5e7eb; color: #1f2937; }
+    .btn-light:hover { background: #d1d5db; }
+    .btn-orange { background: #d97706; }
+    .btn-orange:hover { background: #b45309; }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
     }
 
-    .btn-secondary {
-      background: #374151;
+    /* MODAL IMPOR */
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(17, 24, 39, 0.62);
+      z-index: 5000;
     }
 
-    .btn-secondary:hover {
-      background: #1f2937;
+    .modal-backdrop.open { display: flex; }
+
+    .modal-card {
+      width: min(760px, 100%);
+      max-height: 92vh;
+      overflow: hidden;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
     }
 
-    @media (max-width: 1150px) {
-      #panelKiri {
-        width: 280px;
-        min-width: 280px;
-      }
-
-      #panelKanan {
-        width: 410px;
-        min-width: 410px;
-      }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px 18px;
+      background: #0f766e;
+      color: white;
     }
 
-    @media (max-width: 850px) {
-      #panelKiri {
-        width: 230px;
-        min-width: 230px;
-      }
+    .modal-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
 
-      #panelKanan {
-        width: 340px;
-        min-width: 340px;
-      }
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      font-size: 19px;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      max-height: calc(92vh - 64px);
+      padding: 18px;
+      overflow-y: auto;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 10px 12px;
+      align-items: center;
+    }
+
+    .form-grid label {
+      color: #374151;
+      font-size: 12.5px;
+      font-weight: bold;
+    }
+
+    .form-grid input[type="text"],
+    .form-grid input[type="number"],
+    .form-grid input[type="password"],
+    .form-grid input[type="file"] {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font: inherit;
+      font-size: 12.5px;
+    }
+
+    .check-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 10px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+
+    .check-list label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .import-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .import-summary div {
+      padding: 9px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 7px;
+      text-align: center;
+    }
+
+    .import-summary span {
+      display: block;
+      color: #6b7280;
+      font-size: 10.5px;
+    }
+
+    .import-summary b {
+      display: block;
+      margin-top: 3px;
+      color: #0f766e;
+      font-size: 15px;
+    }
+
+    .preview-list {
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+    }
+
+    .preview-item {
+      padding: 9px 10px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 12px;
+    }
+
+    .preview-item:last-child { border-bottom: none; }
+
+    .preview-item b {
+      color: #0f766e;
+      line-height: 1.4;
+    }
+
+    .preview-item small {
+      display: block;
+      margin-top: 3px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .progress-wrap {
+      display: none;
+      margin-top: 12px;
+    }
+
+    .progress-wrap.show { display: block; }
+
+    .progress-track {
+      height: 10px;
+      overflow: hidden;
+      background: #e5e7eb;
+      border-radius: 999px;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      background: #0f766e;
+      transition: width 0.2s ease;
+    }
+
+    .progress-text {
+      margin-top: 5px;
+      color: #4b5563;
+      font-size: 11.5px;
+    }
+
+    @media (max-width: 1200px) {
+      #panelKiri { width: 290px; min-width: 290px; }
+      #panelKanan { width: 410px; min-width: 410px; }
+    }
+
+    @media (max-width: 900px) {
+      #panelKiri { width: 240px; min-width: 240px; }
+      #panelKanan { width: 340px; min-width: 340px; }
+      .import-summary { grid-template-columns: 1fr 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 
 <body>
-
   <header>
     <h1>Daftar Pekerjaan Drainase</h1>
-    <p>
-      Inventarisasi layer dan hasil perhitungan pekerjaan drainase
-    </p>
+    <p>Inventarisasi layer dan hasil perhitungan pekerjaan drainase</p>
   </header>
 
   <div id="appContainer">
-
     <aside id="panelKiri">
-
-      <div class="panel-header">
-        Layer Pekerjaan
-      </div>
+      <div class="panel-header">Layer Pekerjaan</div>
 
       <div class="panel-content">
-
         <div id="daftarPekerjaan">
-          <div class="loading-box">
-            Membaca data pekerjaan, segmen, dan geometri...
-          </div>
+          <div class="loading-box">Membaca data pekerjaan, segmen, dan geometri...</div>
         </div>
 
-        <button class="btn" id="btnMuatUlang" type="button">
-          Muat Ulang Data
-        </button>
-
-        <a href="index.html" class="btn btn-secondary">
-          Kembali ke Home
-        </a>
-
+        <button class="btn btn-orange" id="btnBukaImpor" type="button">Impor KML / KMZ</button>
+        <button class="btn" id="btnMuatUlang" type="button">Muat Ulang Data</button>
+        <a href="index.html" class="btn btn-secondary">Kembali ke Home</a>
       </div>
-
     </aside>
 
     <div id="map"></div>
 
     <aside id="panelKanan">
-
-      <div class="panel-header">
-        Rekap Pekerjaan
-      </div>
+      <div class="panel-header">Rekap Pekerjaan</div>
 
       <div class="panel-content" id="detailPekerjaan">
-
         <div class="info-box">
-          Pilih pekerjaan pada panel kiri untuk menampilkan layer peta
-          dan rekap dimensi salurannya.
+          Pilih pekerjaan pada panel kiri untuk menampilkan layer peta dan rekap dimensi salurannya.
         </div>
+      </div>
+    </aside>
+  </div>
 
+  <div class="modal-backdrop" id="modalImpor">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Impor KML / KMZ Google Earth</h2>
+        <button type="button" class="modal-close" id="btnTutupImpor" aria-label="Tutup">×</button>
       </div>
 
-    </aside>
+      <div class="modal-body">
+        <div class="form-grid">
+          <label for="fileKmlKmz">File KML/KMZ</label>
+          <input type="file" id="fileKmlKmz" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz">
 
+          <label for="inputTahunImpor">Tahun</label>
+          <input type="number" id="inputTahunImpor" min="2000" max="2100" value="2026">
+
+          <label for="inputKelompokImpor">Kelompok pekerjaan</label>
+          <input type="text" id="inputKelompokImpor" placeholder="Contoh: Rekomtek Saluran Trotoar BM 2026">
+
+          <label for="inputTokenImpor">WRITE_TOKEN</label>
+          <input type="password" id="inputTokenImpor" autocomplete="off" placeholder="Diisi hanya saat akan menyimpan">
+        </div>
+
+        <div class="check-list">
+          <label><input type="checkbox" id="cekImporSaluran" checked> Impor saluran</label>
+          <label><input type="checkbox" id="cekImporCA" checked> Impor Catchment Area</label>
+          <label><input type="checkbox" id="cekImporLain" checked> Impor objek lain</label>
+          <label><input type="checkbox" id="cekImporPath"> Impor Path Elevasi</label>
+        </div>
+
+        <div id="statusBacaFile" class="info-box" style="margin-top:12px;">
+          Pilih file KML atau KMZ. Struktur folder akan dibaca sebagai kelompok dan pekerjaan.
+        </div>
+
+        <div id="ringkasanImpor"></div>
+        <div id="daftarPreviewImpor"></div>
+
+        <div class="progress-wrap" id="progressImpor">
+          <div class="progress-track"><div class="progress-bar" id="progressBarImpor"></div></div>
+          <div class="progress-text" id="progressTextImpor">Menyiapkan data...</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-light" id="btnPreviewImpor" type="button" disabled>Tampilkan Sementara</button>
+          <button class="btn" id="btnSimpanImpor" type="button" disabled>Simpan ke Database</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
 
   <script>
     const API_URL =
       "https://script.google.com/macros/s/AKfycbxl_ZXQrUbhp5k339Khc18o_N49cCiW31K6YA0HqGBegxlSNkE0J0XFxQi5DBbWNJvf/exec";
 
-    /*
-      PETA
-    */
+    /* ==================================================
+       PETA
+    ================================================== */
 
-    const map = L.map("map", {
-      zoomControl: true
-    }).setView([-6.225, 106.900], 11);
+    const map = L.map("map", { zoomControl: true }).setView([-6.225, 106.900], 11);
 
     const googleHybrid = L.tileLayer(
       "https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
@@ -562,30 +755,32 @@
         "OpenStreetMap": osmMap
       },
       null,
-      {
-        position: "topright"
-      }
+      { position: "topright" }
     ).addTo(map);
 
-    /*
-      DATA UTAMA
-    */
+    const previewImportLayer = L.featureGroup().addTo(map);
+
+    /* ==================================================
+       DATA UTAMA
+    ================================================== */
 
     let dataPekerjaan = [];
     let dataSegmen = [];
     let dataGeometri = [];
-
     let pekerjaanAktifId = null;
 
     const expandedProjectIds = new Set();
+    const expandedGroupKeys = new Set();
     const collapsedYears = new Set();
     const visibleGeometryIds = new Set();
-
     const layerGeometriMap = new Map();
 
-    /*
-      UTILITAS
-    */
+    let hasilKmlParsed = null;
+    let fileImporAktif = null;
+
+    /* ==================================================
+       UTILITAS
+    ================================================== */
 
     function escapeHtml(teks) {
       return String(teks ?? "")
@@ -597,21 +792,13 @@
     }
 
     function angka(nilai) {
-      const hasil = parseFloat(
-        String(nilai ?? "")
-          .replace(",", ".")
-          .trim()
-      );
-
+      const hasil = parseFloat(String(nilai ?? "").replace(",", ".").trim());
       return Number.isFinite(hasil) ? hasil : null;
     }
 
     function formatAngka(nilai, digit = 2) {
       const hasil = angka(nilai);
-
-      if (hasil === null) {
-        return "-";
-      }
+      if (hasil === null) return "-";
 
       return hasil.toLocaleString("id-ID", {
         minimumFractionDigits: digit,
@@ -621,37 +808,55 @@
 
     function normalisasiOpacity(nilai, defaultValue) {
       let hasil = angka(nilai);
-
-      if (hasil === null) {
-        return defaultValue;
-      }
-
-      if (hasil > 1) {
-        hasil = hasil / 100;
-      }
-
+      if (hasil === null) return defaultValue;
+      if (hasil > 1) hasil = hasil / 100;
       return Math.max(0, Math.min(1, hasil));
+    }
+
+    function slug(teks) {
+      return String(teks || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 34) || "data";
+    }
+
+    function hashString(teks) {
+      let hash = 2166136261;
+      const isi = String(teks || "");
+
+      for (let i = 0; i < isi.length; i++) {
+        hash ^= isi.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+
+      return (hash >>> 0).toString(36).toUpperCase().slice(0, 7);
+    }
+
+    function buatIdPekerjaan(tahun, kelompok, nama) {
+      return `PKJ-${tahun}-${slug(nama).slice(0, 18).toUpperCase()}-${hashString(kelompok + "|" + nama)}`;
+    }
+
+    function buatIdSegmen(idPekerjaan, nama, index) {
+      return `SEG-${hashString(idPekerjaan + "|" + nama + "|" + index)}`;
+    }
+
+    function buatIdGeometri(idPekerjaan, nama, index) {
+      return `GEO-${hashString(idPekerjaan + "|" + nama + "|" + index)}`;
     }
 
     function warnaDefault(item) {
       const jenis = String(item.jenis_objek || "").toLowerCase();
       const tipe = String(item.tipe_geometri || "").toLowerCase();
 
-      if (
-        jenis.includes("catchment") ||
-        jenis.includes("ca") ||
-        tipe.includes("polygon")
-      ) {
-        return "#2563eb";
+      if (jenis.includes("catchment") || jenis === "ca" || tipe.includes("polygon")) {
+        return jenis.includes("saluran") ? "#dc2626" : "#2563eb";
       }
 
-      if (
-        jenis.includes("saluran") ||
-        tipe.includes("line")
-      ) {
-        return "#dc2626";
-      }
-
+      if (jenis.includes("saluran") || tipe.includes("line")) return "#dc2626";
+      if (jenis.includes("path")) return "#a855f7";
       return "#f59e0b";
     }
 
@@ -659,244 +864,171 @@
       const jenis = String(item.jenis_objek || "").toLowerCase();
       const tipe = String(item.tipe_geometri || "").toLowerCase();
 
-      if (
-        jenis.includes("catchment") ||
-        jenis.includes("ca") ||
-        tipe.includes("polygon")
-      ) {
-        return "▰";
-      }
-
-      if (
-        jenis.includes("saluran") ||
-        tipe.includes("line")
-      ) {
-        return "━";
-      }
-
+      if (jenis.includes("catchment")) return "▰";
+      if (jenis.includes("saluran") || tipe.includes("line")) return "━";
+      if (jenis.includes("path")) return "⋯";
+      if (tipe.includes("polygon")) return "▰";
       return "●";
     }
 
     function namaJenisObjek(item) {
       const jenis = String(item.jenis_objek || "").toLowerCase();
-      const tipe = String(item.tipe_geometri || "").toLowerCase();
 
-      if (
-        jenis.includes("catchment") ||
-        jenis.includes("ca") ||
-        tipe.includes("polygon")
-      ) {
-        return "Catchment Area";
-      }
-
-      if (
-        jenis.includes("saluran") ||
-        tipe.includes("line")
-      ) {
-        return "Saluran";
-      }
-
-      if (tipe.includes("point")) {
-        return "Titik Lokasi";
-      }
-
-      return item.jenis_objek || "Objek Peta";
+      if (jenis === "catchment_area") return "Catchment Area";
+      if (jenis === "saluran") return "Saluran";
+      if (jenis === "path_elevasi") return "Path Elevasi";
+      if (jenis === "titik_lokasi") return "Titik Lokasi";
+      return "Objek Lain";
     }
 
     function statusSegmenHtml(status) {
       const teks = String(status || "").trim();
       const kecil = teks.toLowerCase();
 
-      if (
-        kecil.includes("memenuhi") &&
-        !kecil.includes("tidak")
-      ) {
-        return `
-          <span class="status-pill status-ok">
-            ${escapeHtml(teks)}
-          </span>
-        `;
+      if (kecil.includes("memenuhi") && !kecil.includes("tidak")) {
+        return `<span class="status-pill status-ok">${escapeHtml(teks)}</span>`;
       }
 
-      if (
-        kecil.includes("tidak") ||
-        kecil.includes("belum memenuhi")
-      ) {
-        return `
-          <span class="status-pill status-no">
-            ${escapeHtml(teks)}
-          </span>
-        `;
+      if (kecil.includes("tidak") || kecil.includes("belum memenuhi")) {
+        return `<span class="status-pill status-no">${escapeHtml(teks)}</span>`;
       }
 
-      return `
-        <span class="status-pill status-empty">
-          ${escapeHtml(teks || "-")}
-        </span>
-      `;
+      return `<span class="status-pill status-empty">${escapeHtml(teks || "-")}</span>`;
     }
 
     function dimensiSegmen(segmen) {
       const jenis = String(segmen.jenis_saluran || "").toLowerCase();
-
       const lebar = angka(segmen.lebar_m);
       const tinggi = angka(segmen.tinggi_m);
       const diameter = angka(segmen.diameter_m);
 
-      if (
-        diameter !== null &&
-        (
-          jenis.includes("rcp") ||
-          jenis.includes("pipa") ||
-          jenis.includes("round")
-        )
-      ) {
+      if (diameter !== null && (jenis.includes("rcp") || jenis.includes("pipa") || jenis.includes("round"))) {
         return "Ø " + formatAngka(diameter, 2) + " m";
       }
 
       if (lebar !== null || tinggi !== null) {
-        return (
-          formatAngka(lebar, 2) +
-          " × " +
-          formatAngka(tinggi, 2) +
-          " m"
-        );
+        return formatAngka(lebar, 2) + " × " + formatAngka(tinggi, 2) + " m";
       }
 
-      if (diameter !== null) {
-        return "Ø " + formatAngka(diameter, 2) + " m";
-      }
-
+      if (diameter !== null) return "Ø " + formatAngka(diameter, 2) + " m";
       return "-";
     }
 
-    /*
-      API
-    */
+    function pecahLokasi(namaFolder) {
+      const bagian = String(namaFolder || "")
+        .split(",")
+        .map(item => item.trim())
+        .filter(Boolean);
+
+      if (bagian.length >= 3) {
+        return {
+          lokasi: bagian.slice(0, -2).join(", "),
+          kelurahan: bagian[bagian.length - 2],
+          kecamatan: bagian[bagian.length - 1]
+        };
+      }
+
+      return {
+        lokasi: String(namaFolder || ""),
+        kelurahan: "",
+        kecamatan: ""
+      };
+    }
+
+    /* ==================================================
+       API
+    ================================================== */
 
     async function bacaSheet(namaSheet) {
       const response = await fetch(
-        API_URL +
-        "?sheet=" +
-        encodeURIComponent(namaSheet) +
-        "&t=" +
-        Date.now()
+        API_URL + "?sheet=" + encodeURIComponent(namaSheet) + "&t=" + Date.now()
       );
 
       if (!response.ok) {
-        throw new Error(
-          "Gagal membaca " +
-          namaSheet +
-          ". Status: " +
-          response.status
-        );
+        throw new Error("Gagal membaca " + namaSheet + ". Status: " + response.status);
       }
 
       const hasil = await response.json();
-
-      if (!hasil.success) {
-        throw new Error(
-          hasil.message ||
-          "Data " + namaSheet + " gagal dibaca."
-        );
-      }
-
-      return Array.isArray(hasil.data)
-        ? hasil.data
-        : [];
+      if (!hasil.success) throw new Error(hasil.message || "Data " + namaSheet + " gagal dibaca.");
+      return Array.isArray(hasil.data) ? hasil.data : [];
     }
 
-    /*
-      PEMBUATAN LAYER GEOJSON
-    */
+    async function kirimPaketImpor(paket, token) {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "simpan_import_kml",
+          token: token,
+          pekerjaan: paket.pekerjaan,
+          segmen: paket.segmen,
+          geometri: paket.geometri
+        })
+      });
+
+      const hasil = await response.json();
+      if (!hasil.success) throw new Error(hasil.message || "Paket gagal disimpan.");
+      return hasil;
+    }
+
+    /* ==================================================
+       LAYER GEOJSON DATABASE
+    ================================================== */
 
     function parseGeoJson(item) {
       const isi = String(item.geojson || "").trim();
-
-      if (!isi) {
-        return null;
-      }
+      if (!isi) return null;
 
       try {
         return JSON.parse(isi);
       } catch (error) {
-        console.warn(
-          "GeoJSON tidak valid:",
-          item.id_geometri,
-          error
-        );
-
+        console.warn("GeoJSON tidak valid:", item.id_geometri, error);
         return null;
       }
     }
 
     function buatLayerGeoJson(item) {
       const geojson = parseGeoJson(item);
+      if (!geojson) return null;
 
-      if (!geojson) {
-        return null;
-      }
+      const warna = String(item.warna || "").trim() || warnaDefault(item);
+      const ketebalan = angka(item.ketebalan) ?? 3;
+      const tipe = String(item.tipe_geometri || "").toLowerCase();
+      const opacityTersimpan = normalisasiOpacity(item.opasitas, tipe.includes("polygon") ? 0.35 : 0.9);
 
-      const warna =
-        String(item.warna || "").trim() ||
-        warnaDefault(item);
+      return L.geoJSON(geojson, {
+        style: function () {
+          return {
+            color: warna,
+            weight: ketebalan,
+            opacity: tipe.includes("polygon") ? 0.9 : opacityTersimpan,
+            fillColor: warna,
+            fillOpacity: tipe.includes("polygon") ? opacityTersimpan : 0.15
+          };
+        },
 
-      const ketebalan =
-        angka(item.ketebalan) ?? 3;
+        pointToLayer: function (feature, latlng) {
+          return L.circleMarker(latlng, {
+            radius: 7,
+            color: "#ffffff",
+            weight: 2,
+            fillColor: warna,
+            fillOpacity: opacityTersimpan
+          });
+        },
 
-      const opacity =
-        normalisasiOpacity(item.opasitas, 0.9);
-
-      const fillOpacity =
-        normalisasiOpacity(item.opasitas, 0.25);
-
-      const layer = L.geoJSON(
-        geojson,
-        {
-          style: function () {
-            return {
-              color: warna,
-              weight: ketebalan,
-              opacity: opacity,
-              fillColor: warna,
-              fillOpacity: fillOpacity
-            };
-          },
-
-          pointToLayer: function (feature, latlng) {
-            return L.circleMarker(
-              latlng,
-              {
-                radius: 7,
-                color: "#ffffff",
-                weight: 2,
-                fillColor: warna,
-                fillOpacity: opacity
-              }
-            );
-          },
-
-          onEachFeature: function (feature, subLayer) {
-            const nama =
-              item.nama_objek ||
-              namaJenisObjek(item);
-
-            subLayer.bindPopup(`
-              <b>${escapeHtml(nama)}</b><br>
-              Jenis: ${escapeHtml(namaJenisObjek(item))}
-            `);
-          }
+        onEachFeature: function (feature, subLayer) {
+          const nama = item.nama_objek || namaJenisObjek(item);
+          subLayer.bindPopup(
+            `<b>${escapeHtml(nama)}</b><br>Jenis: ${escapeHtml(namaJenisObjek(item))}`
+          );
         }
-      );
-
-      return layer;
+      });
     }
 
     function hapusSemuaLayerDariPeta() {
       layerGeometriMap.forEach(function (dataLayer) {
-        if (map.hasLayer(dataLayer.layer)) {
-          map.removeLayer(dataLayer.layer);
-        }
+        if (map.hasLayer(dataLayer.layer)) map.removeLayer(dataLayer.layer);
       });
     }
 
@@ -906,91 +1038,42 @@
 
       dataGeometri.forEach(function (item) {
         const id = item.id_geometri;
-
-        if (!id) {
-          return;
-        }
+        if (!id) return;
 
         const layer = buatLayerGeoJson(item);
+        if (!layer) return;
 
-        if (!layer) {
-          return;
-        }
-
-        layerGeometriMap.set(
-          id,
-          {
-            item: item,
-            layer: layer
-          }
-        );
+        layerGeometriMap.set(id, { item, layer });
       });
     }
 
     function sinkronkanLayerPeta() {
       hapusSemuaLayerDariPeta();
-
-      if (!pekerjaanAktifId) {
-        return;
-      }
+      if (!pekerjaanAktifId) return;
 
       dataGeometri
-        .filter(function (item) {
-          return (
-            item.id_pekerjaan === pekerjaanAktifId &&
-            visibleGeometryIds.has(item.id_geometri)
-          );
-        })
+        .filter(item => item.id_pekerjaan === pekerjaanAktifId && visibleGeometryIds.has(item.id_geometri))
         .forEach(function (item) {
-          const dataLayer =
-            layerGeometriMap.get(item.id_geometri);
-
-          if (dataLayer) {
-            dataLayer.layer.addTo(map);
-          }
+          const dataLayer = layerGeometriMap.get(item.id_geometri);
+          if (dataLayer) dataLayer.layer.addTo(map);
         });
     }
 
     function zoomKePekerjaan(idPekerjaan) {
       const daftarLayer = dataGeometri
-        .filter(function (item) {
-          return item.id_pekerjaan === idPekerjaan;
-        })
-        .map(function (item) {
-          const dataLayer =
-            layerGeometriMap.get(item.id_geometri);
-
-          return dataLayer
-            ? dataLayer.layer
-            : null;
-        })
+        .filter(item => item.id_pekerjaan === idPekerjaan)
+        .map(item => layerGeometriMap.get(item.id_geometri)?.layer || null)
         .filter(Boolean);
 
-      if (!daftarLayer.length) {
-        return;
-      }
+      if (!daftarLayer.length) return;
 
-      const grup = L.featureGroup(daftarLayer);
-      const bounds = grup.getBounds();
-
-      if (bounds.isValid()) {
-        map.fitBounds(
-          bounds,
-          {
-            padding: [35, 35],
-            maxZoom: 18
-          }
-        );
-      }
+      const bounds = L.featureGroup(daftarLayer).getBounds();
+      if (bounds.isValid()) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 18 });
     }
 
     function zoomKeGeometri(idGeometri) {
-      const dataLayer =
-        layerGeometriMap.get(idGeometri);
-
-      if (!dataLayer) {
-        return;
-      }
+      const dataLayer = layerGeometriMap.get(idGeometri);
+      if (!dataLayer) return;
 
       if (!visibleGeometryIds.has(idGeometri)) {
         visibleGeometryIds.add(idGeometri);
@@ -999,369 +1082,190 @@
       }
 
       const bounds = dataLayer.layer.getBounds();
+      if (bounds && bounds.isValid()) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 19 });
 
-      if (bounds && bounds.isValid()) {
-        map.fitBounds(
-          bounds,
-          {
-            padding: [35, 35],
-            maxZoom: 19
-          }
-        );
-      }
-
-      const daftarSubLayer =
-        dataLayer.layer.getLayers();
-
-      if (
-        daftarSubLayer.length &&
-        daftarSubLayer[0].getPopup()
-      ) {
-        daftarSubLayer[0].openPopup();
-      }
+      const daftarSubLayer = dataLayer.layer.getLayers();
+      if (daftarSubLayer.length && daftarSubLayer[0].getPopup()) daftarSubLayer[0].openPopup();
     }
 
-    /*
-      TREE PANEL KIRI
-    */
+    /* ==================================================
+       TREE PANEL KIRI: TAHUN > KELOMPOK > PEKERJAAN > LAYER
+    ================================================== */
 
-    function kelompokkanPekerjaanPerTahun() {
+    function kelompokkanTree() {
       const hasil = {};
 
       dataPekerjaan.forEach(function (pekerjaan) {
-        const tahun =
-          pekerjaan.tahun ||
-          "Tanpa Tahun";
+        const tahun = pekerjaan.tahun || "Tanpa Tahun";
+        const kelompok = pekerjaan.kelompok_pekerjaan || "Pekerjaan Lainnya";
 
-        if (!hasil[tahun]) {
-          hasil[tahun] = [];
-        }
-
-        hasil[tahun].push(pekerjaan);
+        if (!hasil[tahun]) hasil[tahun] = {};
+        if (!hasil[tahun][kelompok]) hasil[tahun][kelompok] = [];
+        hasil[tahun][kelompok].push(pekerjaan);
       });
 
       return hasil;
     }
 
     function renderTreePekerjaan() {
-      const wadah =
-        document.getElementById("daftarPekerjaan");
+      const wadah = document.getElementById("daftarPekerjaan");
 
       if (!dataPekerjaan.length) {
-        wadah.innerHTML = `
-          <div class="info-box">
-            Belum ada data pekerjaan pada Google Sheets.
-          </div>
-        `;
-
+        wadah.innerHTML = `<div class="info-box">Belum ada data pekerjaan pada Google Sheets.</div>`;
         return;
       }
 
-      const kelompok =
-        kelompokkanPekerjaanPerTahun();
-
-      const daftarTahun =
-        Object.keys(kelompok).sort(function (a, b) {
-          return String(b).localeCompare(String(a));
-        });
-
+      const tree = kelompokkanTree();
+      const daftarTahun = Object.keys(tree).sort((a, b) => String(b).localeCompare(String(a)));
       let html = "";
 
       daftarTahun.forEach(function (tahun) {
-        const tahunCollapsed =
-          collapsedYears.has(tahun);
+        const tahunCollapsed = collapsedYears.has(tahun);
 
         html += `
           <div class="tahun-group">
-
-            <div
-              class="tahun-header"
-              data-year="${escapeHtml(tahun)}"
-            >
-              <span>
-                ${tahunCollapsed ? "▶" : "▼"}
-              </span>
-
-              <span>
-                Tahun ${escapeHtml(tahun)}
-              </span>
+            <div class="tahun-header" data-year="${escapeHtml(tahun)}">
+              <span>${tahunCollapsed ? "▶" : "▼"}</span>
+              <span>Tahun ${escapeHtml(tahun)}</span>
             </div>
-
-            <div
-              class="tahun-content
-              ${tahunCollapsed ? "collapsed" : ""}"
-            >
+            <div class="tahun-content ${tahunCollapsed ? "collapsed" : ""}">
         `;
 
-        kelompok[tahun].forEach(function (pekerjaan) {
-          const id =
-            pekerjaan.id_pekerjaan;
-
-          const aktif =
-            id === pekerjaanAktifId;
-
-          const terbuka =
-            expandedProjectIds.has(id);
-
-          const daftarGeometri =
-            dataGeometri.filter(function (item) {
-              return item.id_pekerjaan === id;
-            });
+        Object.keys(tree[tahun]).sort().forEach(function (kelompok) {
+          const groupKey = tahun + "||" + kelompok;
+          const groupOpen = expandedGroupKeys.has(groupKey);
 
           html += `
-            <div class="pekerjaan-block">
-
-              <div
-                class="pekerjaan-row
-                ${aktif ? "active" : ""}"
-                data-project-id="${escapeHtml(id)}"
-              >
-
-                <button
-                  class="tree-caret"
-                  type="button"
-                  data-toggle-project="${escapeHtml(id)}"
-                  title="Buka atau tutup layer"
-                >
-                  ${terbuka ? "▼" : "▶"}
-                </button>
-
-                <div class="project-label">
-
-                  <div class="pekerjaan-nama">
-                    ${escapeHtml(
-                      pekerjaan.nama_pekerjaan ||
-                      "Tanpa Nama"
-                    )}
-                  </div>
-
-                  <div class="pekerjaan-lokasi">
-                    ${escapeHtml(
-                      pekerjaan.lokasi ||
-                      "Lokasi belum diisi"
-                    )}
-                  </div>
-
-                </div>
-
+            <div class="kelompok-block">
+              <div class="kelompok-header" data-group-key="${escapeHtml(groupKey)}">
+                <span>${groupOpen ? "▼" : "▶"}</span>
+                <span class="kelompok-icon">▰</span>
+                <span>${escapeHtml(kelompok)}</span>
               </div>
-
-              <div
-                class="layer-anak
-                ${terbuka ? "open" : ""}"
-              >
+              <div class="kelompok-content ${groupOpen ? "" : "collapsed"}">
           `;
 
-          if (!daftarGeometri.length) {
+          tree[tahun][kelompok].forEach(function (pekerjaan) {
+            const id = pekerjaan.id_pekerjaan;
+            const aktif = id === pekerjaanAktifId;
+            const terbuka = expandedProjectIds.has(id);
+            const daftarGeometri = dataGeometri.filter(item => item.id_pekerjaan === id);
+
             html += `
-              <div class="layer-empty">
-                Belum ada layer saluran atau
-                catchment area.
-              </div>
-            `;
-          } else {
-            daftarGeometri.forEach(function (item) {
-              const idGeometri =
-                item.id_geometri;
-
-              const warna =
-                String(item.warna || "").trim() ||
-                warnaDefault(item);
-
-              const checked =
-                visibleGeometryIds.has(idGeometri);
-
-              const segmen =
-                dataSegmen.find(function (data) {
-                  return (
-                    data.id_segmen === item.id_segmen
-                  );
-                });
-
-              html += `
-                <div
-                  class="layer-row"
-                  data-layer-id="${escapeHtml(idGeometri)}"
-                >
-
-                  <input
-                    type="checkbox"
-                    data-layer-checkbox="${escapeHtml(idGeometri)}"
-                    ${checked ? "checked" : ""}
-                  >
-
-                  <span
-                    class="layer-symbol"
-                    style="color:${escapeHtml(warna)};"
-                  >
-                    ${ikonJenisObjek(item)}
-                  </span>
-
-                  <div class="layer-text">
-
-                    <div class="layer-name">
-                      ${escapeHtml(
-                        item.nama_objek ||
-                        namaJenisObjek(item)
-                      )}
-                    </div>
-
-                    <div class="layer-subtitle">
-                      ${escapeHtml(
-                        segmen
-                          ? segmen.nama_segmen
-                          : namaJenisObjek(item)
-                      )}
-                    </div>
-
+              <div class="pekerjaan-block">
+                <div class="pekerjaan-row ${aktif ? "active" : ""}" data-project-id="${escapeHtml(id)}">
+                  <button class="tree-caret" type="button" data-toggle-project="${escapeHtml(id)}">${terbuka ? "▼" : "▶"}</button>
+                  <div class="project-label">
+                    <div class="pekerjaan-nama">${escapeHtml(pekerjaan.nama_pekerjaan || "Tanpa Nama")}</div>
+                    <div class="pekerjaan-lokasi">${escapeHtml(pekerjaan.lokasi || "Lokasi belum diisi")}</div>
                   </div>
-
                 </div>
-              `;
-            });
-          }
 
-          html += `
-              </div>
-            </div>
-          `;
+                <div class="layer-anak ${terbuka ? "open" : ""}">
+            `;
+
+            if (!daftarGeometri.length) {
+              html += `<div class="layer-empty">Belum ada layer saluran atau catchment area.</div>`;
+            } else {
+              daftarGeometri.forEach(function (item) {
+                const idGeometri = item.id_geometri;
+                const warna = String(item.warna || "").trim() || warnaDefault(item);
+                const checked = visibleGeometryIds.has(idGeometri);
+                const segmen = dataSegmen.find(data => data.id_segmen === item.id_segmen);
+
+                html += `
+                  <div class="layer-row" data-layer-id="${escapeHtml(idGeometri)}">
+                    <input type="checkbox" data-layer-checkbox="${escapeHtml(idGeometri)}" ${checked ? "checked" : ""}>
+                    <span class="layer-symbol" style="color:${escapeHtml(warna)};">${ikonJenisObjek(item)}</span>
+                    <div class="layer-text">
+                      <div class="layer-name">${escapeHtml(item.nama_objek || namaJenisObjek(item))}</div>
+                      <div class="layer-subtitle">${escapeHtml(segmen ? segmen.nama_segmen : namaJenisObjek(item))}</div>
+                    </div>
+                  </div>
+                `;
+              });
+            }
+
+            html += `</div></div>`;
+          });
+
+          html += `</div></div>`;
         });
 
-        html += `
-            </div>
-          </div>
-        `;
+        html += `</div></div>`;
       });
 
       wadah.innerHTML = html;
-
       pasangEventTree();
     }
 
     function pasangEventTree() {
-      document
-        .querySelectorAll(".tahun-header")
-        .forEach(function (element) {
-          element.addEventListener(
-            "click",
-            function () {
-              const tahun =
-                this.dataset.year;
+      document.querySelectorAll(".tahun-header").forEach(function (element) {
+        element.addEventListener("click", function () {
+          const tahun = this.dataset.year;
+          collapsedYears.has(tahun) ? collapsedYears.delete(tahun) : collapsedYears.add(tahun);
+          renderTreePekerjaan();
+        });
+      });
 
-              if (collapsedYears.has(tahun)) {
-                collapsedYears.delete(tahun);
-              } else {
-                collapsedYears.add(tahun);
-              }
+      document.querySelectorAll(".kelompok-header").forEach(function (element) {
+        element.addEventListener("click", function () {
+          const key = this.dataset.groupKey;
+          expandedGroupKeys.has(key) ? expandedGroupKeys.delete(key) : expandedGroupKeys.add(key);
+          renderTreePekerjaan();
+        });
+      });
 
-              renderTreePekerjaan();
-            }
-          );
+      document.querySelectorAll(".pekerjaan-row").forEach(function (element) {
+        element.addEventListener("click", function (event) {
+          if (event.target.closest(".tree-caret")) return;
+          pilihPekerjaan(this.dataset.projectId);
+        });
+      });
+
+      document.querySelectorAll("[data-toggle-project]").forEach(function (element) {
+        element.addEventListener("click", function (event) {
+          event.stopPropagation();
+          const id = this.dataset.toggleProject;
+          expandedProjectIds.has(id) ? expandedProjectIds.delete(id) : expandedProjectIds.add(id);
+          renderTreePekerjaan();
+        });
+      });
+
+      document.querySelectorAll("[data-layer-checkbox]").forEach(function (element) {
+        element.addEventListener("change", function (event) {
+          event.stopPropagation();
+          const id = this.dataset.layerCheckbox;
+          this.checked ? visibleGeometryIds.add(id) : visibleGeometryIds.delete(id);
+          sinkronkanLayerPeta();
         });
 
-      document
-        .querySelectorAll(".pekerjaan-row")
-        .forEach(function (element) {
-          element.addEventListener(
-            "click",
-            function (event) {
-              if (
-                event.target.closest(".tree-caret")
-              ) {
-                return;
-              }
+        element.addEventListener("click", event => event.stopPropagation());
+      });
 
-              pilihPekerjaan(
-                this.dataset.projectId
-              );
-            }
-          );
+      document.querySelectorAll(".layer-row").forEach(function (element) {
+        element.addEventListener("click", function () {
+          zoomKeGeometri(this.dataset.layerId);
         });
-
-      document
-        .querySelectorAll("[data-toggle-project]")
-        .forEach(function (element) {
-          element.addEventListener(
-            "click",
-            function (event) {
-              event.stopPropagation();
-
-              const id =
-                this.dataset.toggleProject;
-
-              if (expandedProjectIds.has(id)) {
-                expandedProjectIds.delete(id);
-              } else {
-                expandedProjectIds.add(id);
-              }
-
-              renderTreePekerjaan();
-            }
-          );
-        });
-
-      document
-        .querySelectorAll("[data-layer-checkbox]")
-        .forEach(function (element) {
-          element.addEventListener(
-            "change",
-            function (event) {
-              event.stopPropagation();
-
-              const id =
-                this.dataset.layerCheckbox;
-
-              if (this.checked) {
-                visibleGeometryIds.add(id);
-              } else {
-                visibleGeometryIds.delete(id);
-              }
-
-              sinkronkanLayerPeta();
-            }
-          );
-
-          element.addEventListener(
-            "click",
-            function (event) {
-              event.stopPropagation();
-            }
-          );
-        });
-
-      document
-        .querySelectorAll(".layer-row")
-        .forEach(function (element) {
-          element.addEventListener(
-            "click",
-            function () {
-              zoomKeGeometri(
-                this.dataset.layerId
-              );
-            }
-          );
-        });
+      });
     }
-
-    /*
-      PILIH PEKERJAAN
-    */
 
     function pilihPekerjaan(idPekerjaan) {
       pekerjaanAktifId = idPekerjaan;
+      const pekerjaan = dataPekerjaan.find(item => item.id_pekerjaan === idPekerjaan);
+
+      if (pekerjaan) {
+        const tahun = pekerjaan.tahun || "Tanpa Tahun";
+        const kelompok = pekerjaan.kelompok_pekerjaan || "Pekerjaan Lainnya";
+        expandedGroupKeys.add(tahun + "||" + kelompok);
+      }
 
       expandedProjectIds.add(idPekerjaan);
       visibleGeometryIds.clear();
 
       dataGeometri
-        .filter(function (item) {
-          return item.id_pekerjaan === idPekerjaan;
-        })
-        .forEach(function (item) {
-          visibleGeometryIds.add(
-            item.id_geometri
-          );
-        });
+        .filter(item => item.id_pekerjaan === idPekerjaan)
+        .forEach(item => visibleGeometryIds.add(item.id_geometri));
 
       renderTreePekerjaan();
       sinkronkanLayerPeta();
@@ -1369,277 +1273,781 @@
       zoomKePekerjaan(idPekerjaan);
     }
 
-    /*
-      PANEL KANAN
-    */
+    /* ==================================================
+       PANEL KANAN
+    ================================================== */
 
     function renderDetailPekerjaan() {
-      const detail =
-        document.getElementById("detailPekerjaan");
-
-      const pekerjaan =
-        dataPekerjaan.find(function (item) {
-          return (
-            item.id_pekerjaan ===
-            pekerjaanAktifId
-          );
-        });
+      const detail = document.getElementById("detailPekerjaan");
+      const pekerjaan = dataPekerjaan.find(item => item.id_pekerjaan === pekerjaanAktifId);
 
       if (!pekerjaan) {
-        detail.innerHTML = `
-          <div class="info-box">
-            Pilih pekerjaan pada panel kiri.
-          </div>
-        `;
-
+        detail.innerHTML = `<div class="info-box">Pilih pekerjaan pada panel kiri.</div>`;
         return;
       }
 
-      const segmenPekerjaan =
-        dataSegmen.filter(function (item) {
-          return (
-            item.id_pekerjaan ===
-            pekerjaanAktifId
-          );
-        });
-
-      const geometriPekerjaan =
-        dataGeometri.filter(function (item) {
-          return (
-            item.id_pekerjaan ===
-            pekerjaanAktifId
-          );
-        });
-
+      const segmenPekerjaan = dataSegmen.filter(item => item.id_pekerjaan === pekerjaanAktifId);
+      const geometriPekerjaan = dataGeometri.filter(item => item.id_pekerjaan === pekerjaanAktifId);
       let tabelSegmen = "";
 
       if (!segmenPekerjaan.length) {
-        tabelSegmen = `
-          <div class="info-box">
-            Belum ada data segmen saluran untuk
-            pekerjaan ini.
-          </div>
-        `;
+        tabelSegmen = `<div class="info-box">Belum ada data segmen saluran untuk pekerjaan ini.</div>`;
       } else {
-        const rows =
-          segmenPekerjaan.map(
-            function (segmen, index) {
-              return `
-                <tr>
-                  <td>${index + 1}</td>
-
-                  <td>
-                    ${escapeHtml(
-                      segmen.nama_segmen ||
-                      "-"
-                    )}
-                  </td>
-
-                  <td>
-                    ${escapeHtml(
-                      segmen.jenis_saluran ||
-                      "-"
-                    )}
-                  </td>
-
-                  <td>
-                    ${formatAngka(
-                      segmen.panjang_m,
-                      2
-                    )}
-                  </td>
-
-                  <td>
-                    ${formatAngka(
-                      segmen.luas_ca_ha,
-                      4
-                    )}
-                  </td>
-
-                  <td>
-                    ${dimensiSegmen(segmen)}
-                  </td>
-
-                  <td>
-                    ${formatAngka(
-                      segmen.slope,
-                      6
-                    )}
-                  </td>
-
-                  <td>
-                    ${formatAngka(
-                      segmen.q_rencana_m3_dtk,
-                      3
-                    )}
-                  </td>
-
-                  <td>
-                    ${formatAngka(
-                      segmen.q_saluran_m3_dtk,
-                      3
-                    )}
-                  </td>
-
-                  <td>
-                    ${statusSegmenHtml(
-                      segmen.status
-                    )}
-                  </td>
-                </tr>
-              `;
-            }
-          ).join("");
+        const rows = segmenPekerjaan.map(function (segmen, index) {
+          return `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${escapeHtml(segmen.nama_segmen || "-")}</td>
+              <td>${escapeHtml(segmen.jenis_saluran || "-")}</td>
+              <td>${formatAngka(segmen.panjang_m, 2)}</td>
+              <td>${formatAngka(segmen.luas_ca_ha, 4)}</td>
+              <td>${dimensiSegmen(segmen)}</td>
+              <td>${formatAngka(segmen.slope, 6)}</td>
+              <td>${formatAngka(segmen.q_rencana_m3_dtk, 3)}</td>
+              <td>${formatAngka(segmen.q_saluran_m3_dtk, 3)}</td>
+              <td>${statusSegmenHtml(segmen.status)}</td>
+            </tr>
+          `;
+        }).join("");
 
         tabelSegmen = `
           <div class="rekap-wrap">
-
             <table class="rekap-table">
-
               <thead>
                 <tr>
-                  <th>No.</th>
-                  <th>Nama Segmen</th>
-                  <th>Jenis</th>
-                  <th>Panjang (m)</th>
-                  <th>CA (ha)</th>
-                  <th>Dimensi</th>
-                  <th>Slope</th>
-                  <th>Qr (m³/det)</th>
-                  <th>Qs (m³/det)</th>
-                  <th>Status</th>
+                  <th>No.</th><th>Nama Segmen</th><th>Jenis</th><th>Panjang (m)</th>
+                  <th>CA (ha)</th><th>Dimensi</th><th>Slope</th><th>Qr (m³/det)</th>
+                  <th>Qs (m³/det)</th><th>Status</th>
                 </tr>
               </thead>
-
-              <tbody>
-                ${rows}
-              </tbody>
-
+              <tbody>${rows}</tbody>
             </table>
-
           </div>
         `;
       }
 
       detail.innerHTML = `
-        <h2 class="detail-title">
-          ${escapeHtml(
-            pekerjaan.nama_pekerjaan ||
-            "Tanpa Nama"
-          )}
-        </h2>
-
-        <div class="detail-subtitle">
-          ${escapeHtml(
-            pekerjaan.lokasi ||
-            "Lokasi belum diisi"
-          )}
-        </div>
+        <h2 class="detail-title">${escapeHtml(pekerjaan.nama_pekerjaan || "Tanpa Nama")}</h2>
+        <div class="detail-subtitle">${escapeHtml(pekerjaan.lokasi || "Lokasi belum diisi")}</div>
 
         <div class="summary-grid">
-
-          <div class="summary-item">
-            <span>Jumlah Segmen</span>
-            <b>${segmenPekerjaan.length}</b>
-          </div>
-
-          <div class="summary-item">
-            <span>Jumlah Layer</span>
-            <b>${geometriPekerjaan.length}</b>
-          </div>
-
-          <div class="summary-item">
-            <span>Tahun</span>
-            <b>
-              ${escapeHtml(
-                pekerjaan.tahun ||
-                "-"
-              )}
-            </b>
-          </div>
-
-          <div class="summary-item">
-            <span>Kecamatan</span>
-            <b>
-              ${escapeHtml(
-                pekerjaan.kecamatan ||
-                "-"
-              )}
-            </b>
-          </div>
-
+          <div class="summary-item"><span>Jumlah Segmen</span><b>${segmenPekerjaan.length}</b></div>
+          <div class="summary-item"><span>Jumlah Layer</span><b>${geometriPekerjaan.length}</b></div>
+          <div class="summary-item"><span>Tahun</span><b>${escapeHtml(pekerjaan.tahun || "-")}</b></div>
+          <div class="summary-item"><span>Kecamatan</span><b>${escapeHtml(pekerjaan.kecamatan || "-")}</b></div>
         </div>
 
-        <h3 class="section-title">
-          Informasi Pekerjaan
-        </h3>
-
+        <h3 class="section-title">Informasi Pekerjaan</h3>
         <table class="detail-table">
           <tbody>
-
-            <tr>
-              <td>ID Pekerjaan</td>
-              <td>
-                ${escapeHtml(
-                  pekerjaan.id_pekerjaan ||
-                  "-"
-                )}
-              </td>
-            </tr>
-
-            <tr>
-              <td>Kelurahan</td>
-              <td>
-                ${escapeHtml(
-                  pekerjaan.kelurahan ||
-                  "-"
-                )}
-              </td>
-            </tr>
-
-            <tr>
-              <td>Catatan</td>
-              <td>
-                ${escapeHtml(
-                  pekerjaan.catatan ||
-                  "-"
-                )}
-              </td>
-            </tr>
-
+            <tr><td>Kelompok</td><td>${escapeHtml(pekerjaan.kelompok_pekerjaan || "-")}</td></tr>
+            <tr><td>ID Pekerjaan</td><td>${escapeHtml(pekerjaan.id_pekerjaan || "-")}</td></tr>
+            <tr><td>Kelurahan</td><td>${escapeHtml(pekerjaan.kelurahan || "-")}</td></tr>
+            <tr><td>Catatan</td><td>${escapeHtml(pekerjaan.catatan || "-")}</td></tr>
           </tbody>
         </table>
 
-        <h3 class="section-title">
-          Rekap Dimensi dan Perhitungan Saluran
-        </h3>
-
+        <h3 class="section-title">Rekap Dimensi dan Perhitungan Saluran</h3>
         ${tabelSegmen}
       `;
     }
 
-    /*
-      MUAT SEMUA DATA
-    */
+    /* ==================================================
+       PARSER KML / KMZ
+    ================================================== */
+
+    function directChildren(node, localName) {
+      return Array.from(node.children || []).filter(child => child.localName === localName);
+    }
+
+    function firstDirectChild(node, localName) {
+      return directChildren(node, localName)[0] || null;
+    }
+
+    function textDirect(node, localName, fallback = "") {
+      const child = firstDirectChild(node, localName);
+      return child ? String(child.textContent || "").trim() : fallback;
+    }
+
+    function descendants(node, localName) {
+      return Array.from(node.getElementsByTagNameNS("*", localName));
+    }
+
+    function parseKmlColor(kmlColor, fallbackColor, fallbackOpacity) {
+      const value = String(kmlColor || "").trim().replace("#", "");
+      if (!/^[0-9a-fA-F]{8}$/.test(value)) {
+        return { color: fallbackColor, opacity: fallbackOpacity };
+      }
+
+      const aa = value.slice(0, 2);
+      const bb = value.slice(2, 4);
+      const gg = value.slice(4, 6);
+      const rr = value.slice(6, 8);
+
+      return {
+        color: "#" + rr + gg + bb,
+        opacity: parseInt(aa, 16) / 255
+      };
+    }
+
+    function parseDaftarStyle(doc) {
+      const styles = new Map();
+      const styleMaps = new Map();
+
+      descendants(doc, "Style").forEach(function (styleEl) {
+        const id = styleEl.getAttribute("id");
+        if (!id) return;
+
+        const lineStyle = firstDirectChild(styleEl, "LineStyle");
+        const polyStyle = firstDirectChild(styleEl, "PolyStyle");
+        const lineParsed = parseKmlColor(
+          lineStyle ? textDirect(lineStyle, "color") : "",
+          "#dc2626",
+          0.9
+        );
+        const polyParsed = parseKmlColor(
+          polyStyle ? textDirect(polyStyle, "color") : "",
+          lineParsed.color,
+          0.35
+        );
+
+        styles.set("#" + id, {
+          lineColor: lineParsed.color,
+          lineOpacity: lineParsed.opacity,
+          lineWidth: lineStyle ? (angka(textDirect(lineStyle, "width")) ?? 3) : 3,
+          polyColor: polyParsed.color,
+          polyOpacity: polyParsed.opacity
+        });
+      });
+
+      descendants(doc, "StyleMap").forEach(function (mapEl) {
+        const id = mapEl.getAttribute("id");
+        if (!id) return;
+
+        let normalUrl = "";
+        directChildren(mapEl, "Pair").forEach(function (pair) {
+          if (textDirect(pair, "key") === "normal") normalUrl = textDirect(pair, "styleUrl");
+        });
+
+        if (normalUrl) styleMaps.set("#" + id, normalUrl);
+      });
+
+      return { styles, styleMaps };
+    }
+
+    function resolveStylePlacemark(placemark, daftarStyle) {
+      const inlineStyle = firstDirectChild(placemark, "Style");
+
+      if (inlineStyle) {
+        const fakeDoc = { getElementsByTagNameNS: () => [inlineStyle] };
+        inlineStyle.setAttribute("id", "inline-temp");
+        return parseDaftarStyle(fakeDoc).styles.get("#inline-temp");
+      }
+
+      let styleUrl = textDirect(placemark, "styleUrl");
+      if (daftarStyle.styleMaps.has(styleUrl)) styleUrl = daftarStyle.styleMaps.get(styleUrl);
+      return daftarStyle.styles.get(styleUrl) || null;
+    }
+
+    function parseCoordinates(teks) {
+      return String(teks || "")
+        .trim()
+        .split(/\s+/)
+        .map(function (item) {
+          const bagian = item.split(",");
+          const lon = Number(bagian[0]);
+          const lat = Number(bagian[1]);
+          return Number.isFinite(lon) && Number.isFinite(lat) ? [lon, lat] : null;
+        })
+        .filter(Boolean);
+    }
+
+    function parseGeometryElement(geomEl) {
+      if (!geomEl) return null;
+
+      if (geomEl.localName === "Point") {
+        const coordEl = descendants(geomEl, "coordinates")[0];
+        const coords = parseCoordinates(coordEl?.textContent)[0];
+        return coords ? { type: "Point", coordinates: coords } : null;
+      }
+
+      if (geomEl.localName === "LineString") {
+        const coordEl = descendants(geomEl, "coordinates")[0];
+        const coords = parseCoordinates(coordEl?.textContent);
+        return coords.length >= 2 ? { type: "LineString", coordinates: coords } : null;
+      }
+
+      if (geomEl.localName === "Polygon") {
+        const outer = firstDirectChild(geomEl, "outerBoundaryIs");
+        const outerCoordEl = outer ? descendants(outer, "coordinates")[0] : null;
+        const outerCoords = parseCoordinates(outerCoordEl?.textContent);
+        if (outerCoords.length < 4) return null;
+
+        const rings = [outerCoords];
+        directChildren(geomEl, "innerBoundaryIs").forEach(function (inner) {
+          const coordEl = descendants(inner, "coordinates")[0];
+          const coords = parseCoordinates(coordEl?.textContent);
+          if (coords.length >= 4) rings.push(coords);
+        });
+
+        return { type: "Polygon", coordinates: rings };
+      }
+
+      if (geomEl.localName === "MultiGeometry") {
+        const geoms = Array.from(geomEl.children || [])
+          .map(parseGeometryElement)
+          .filter(Boolean);
+
+        if (!geoms.length) return null;
+        const tipeUnik = [...new Set(geoms.map(item => item.type))];
+
+        if (tipeUnik.length === 1 && tipeUnik[0] === "Point") {
+          return { type: "MultiPoint", coordinates: geoms.map(item => item.coordinates) };
+        }
+
+        if (tipeUnik.length === 1 && tipeUnik[0] === "LineString") {
+          return { type: "MultiLineString", coordinates: geoms.map(item => item.coordinates) };
+        }
+
+        if (tipeUnik.length === 1 && tipeUnik[0] === "Polygon") {
+          return { type: "MultiPolygon", coordinates: geoms.map(item => item.coordinates) };
+        }
+
+        return { type: "GeometryCollection", geometries: geoms };
+      }
+
+      return null;
+    }
+
+    function parsePlacemark(placemark, folderPath, daftarStyle) {
+      const geometryEl = Array.from(placemark.children || []).find(function (child) {
+        return ["Point", "LineString", "Polygon", "MultiGeometry"].includes(child.localName);
+      });
+
+      const geometry = parseGeometryElement(geometryEl);
+      if (!geometry) return null;
+
+      const nama = textDirect(placemark, "name", "Objek Tanpa Nama");
+      const description = textDirect(placemark, "description", "");
+      const style = resolveStylePlacemark(placemark, daftarStyle);
+
+      return {
+        nama,
+        description,
+        folderPath: [...folderPath],
+        geometry,
+        style
+      };
+    }
+
+    function kumpulkanPlacemark(folderNode, daftarStyle, path = []) {
+      const hasil = [];
+
+      directChildren(folderNode, "Placemark").forEach(function (pm) {
+        const parsed = parsePlacemark(pm, path, daftarStyle);
+        if (parsed) hasil.push(parsed);
+      });
+
+      directChildren(folderNode, "Folder").forEach(function (subfolder) {
+        const namaFolder = textDirect(subfolder, "name", "Folder");
+        hasil.push(...kumpulkanPlacemark(subfolder, daftarStyle, [...path, namaFolder]));
+      });
+
+      return hasil;
+    }
+
+    function parseDokumenKml(kmlText, namaFile) {
+      const doc = new DOMParser().parseFromString(kmlText, "application/xml");
+      const parserError = doc.getElementsByTagName("parsererror")[0];
+      if (parserError) throw new Error("File KML tidak valid atau gagal dibaca.");
+
+      const daftarStyle = parseDaftarStyle(doc);
+      const documentNode = descendants(doc, "Document")[0] || doc.documentElement;
+      const folderLangsung = directChildren(documentNode, "Folder");
+
+      let groupNode = documentNode;
+      if (folderLangsung.length === 1) groupNode = folderLangsung[0];
+
+      const groupName = textDirect(groupNode, "name", namaFile.replace(/\.(kml|kmz)$/i, ""));
+      let projectFolders = directChildren(groupNode, "Folder");
+
+      if (!projectFolders.length) projectFolders = [groupNode];
+
+      const projects = projectFolders.map(function (folder) {
+        const projectName = textDirect(folder, "name", "Pekerjaan Tanpa Nama");
+        const placemarks = kumpulkanPlacemark(folder, daftarStyle, []);
+        return { projectName, placemarks };
+      }).filter(project => project.placemarks.length > 0);
+
+      if (!projects.length) throw new Error("Tidak ditemukan folder pekerjaan dengan geometri di dalam KML/KMZ.");
+
+      return { groupName, projects, sourceFile: namaFile };
+    }
+
+    async function bacaFileKmlKmz(file) {
+      const ekstensi = file.name.split(".").pop().toLowerCase();
+
+      if (ekstensi === "kml") {
+        return parseDokumenKml(await file.text(), file.name);
+      }
+
+      if (ekstensi === "kmz") {
+        const zip = await JSZip.loadAsync(file);
+        const semuaKml = Object.keys(zip.files).filter(name => name.toLowerCase().endsWith(".kml"));
+        if (!semuaKml.length) throw new Error("File KMZ tidak berisi dokumen KML.");
+
+        const namaKml = semuaKml.find(name => /(^|\/)doc\.kml$/i.test(name)) || semuaKml[0];
+        const isiKml = await zip.files[namaKml].async("text");
+        return parseDokumenKml(isiKml, file.name);
+      }
+
+      throw new Error("Format file harus .kml atau .kmz.");
+    }
+
+    function klasifikasiPlacemark(placemark) {
+      const nama = placemark.nama.toLowerCase();
+      const path = placemark.folderPath.join(" ").toLowerCase();
+      const tipe = placemark.geometry.type.toLowerCase();
+
+      if (path.includes("path elevasi")) return "path_elevasi";
+      if (path.includes("catchment area") || nama.includes("catchment") || /(^|\s)ca\s*[0-9ivx\-]*/i.test(placemark.nama)) {
+        return "catchment_area";
+      }
+      if (nama.includes("saluran") || nama.startsWith("sal.") || nama.startsWith("sal ") || nama.includes("rencana saluran")) {
+        return "saluran";
+      }
+      if (tipe.includes("line") && !nama.includes("trotoar")) return "saluran";
+      if (tipe.includes("point")) return "titik_lokasi";
+      return "objek_lain";
+    }
+
+    function apakahJenisDiimpor(jenis) {
+      if (jenis === "saluran") return document.getElementById("cekImporSaluran").checked;
+      if (jenis === "catchment_area") return document.getElementById("cekImporCA").checked;
+      if (jenis === "path_elevasi") return document.getElementById("cekImporPath").checked;
+      return document.getElementById("cekImporLain").checked;
+    }
+
+    function ekstrakKunciSisi(nama) {
+      const teks = String(nama || "").toLowerCase();
+      const hasil = [];
+
+      ["timur", "barat", "utara", "selatan"].forEach(function (arah) {
+        if (teks.includes(arah)) hasil.push(arah);
+      });
+
+      const nomor = teks.match(/(?:saluran|ca|catchment area)\s*(?:ke\s*)?([0-9]+|i{1,3})\b/i);
+      if (nomor) hasil.push(nomor[1].toUpperCase());
+      return hasil.join("|");
+    }
+
+    function panjangGeometryMeter(feature) {
+      try {
+        const tipe = feature.geometry?.type || "";
+        if (tipe === "LineString" || tipe === "MultiLineString") {
+          return turf.length(feature, { units: "kilometers" }) * 1000;
+        }
+      } catch (error) {
+        console.warn("Panjang geometri gagal dihitung", error);
+      }
+      return null;
+    }
+
+    function luasGeometryHa(feature) {
+      try {
+        const tipe = feature.geometry?.type || "";
+        if (tipe === "Polygon" || tipe === "MultiPolygon") return turf.area(feature) / 10000;
+      } catch (error) {
+        console.warn("Luas geometri gagal dihitung", error);
+      }
+      return null;
+    }
+
+    function tentukanStyleImpor(placemark, jenis) {
+      const style = placemark.style || {};
+      let color = style.lineColor || style.polyColor || "";
+      let opacity = style.lineOpacity;
+      let width = style.lineWidth || 3;
+
+      if (jenis === "catchment_area") {
+        color = style.polyColor || style.lineColor || "#2563eb";
+        opacity = style.polyOpacity ?? 0.35;
+      } else if (jenis === "saluran") {
+        color = style.lineColor || style.polyColor || "#dc2626";
+        opacity = style.lineOpacity ?? 0.9;
+        width = style.lineWidth || 4;
+      } else if (jenis === "path_elevasi") {
+        color = style.lineColor || "#a855f7";
+        opacity = style.lineOpacity ?? 0.85;
+      } else {
+        color = style.lineColor || style.polyColor || "#f59e0b";
+        opacity = style.lineOpacity ?? style.polyOpacity ?? 0.8;
+      }
+
+      return { color, opacity, width };
+    }
+
+    function buatPaketDariParsed(parsed, tahun, kelompok) {
+      const paket = [];
+
+      parsed.projects.forEach(function (project) {
+        const lokasi = pecahLokasi(project.projectName);
+        const idPekerjaan = buatIdPekerjaan(tahun, kelompok, project.projectName);
+        const segmen = [];
+        const geometri = [];
+        const petaSegmen = [];
+
+        const placemarksTerpilih = project.placemarks
+          .map((placemark, index) => ({ placemark, index, jenis: klasifikasiPlacemark(placemark) }))
+          .filter(item => apakahJenisDiimpor(item.jenis));
+
+        placemarksTerpilih.forEach(function (item, urutan) {
+          const { placemark, jenis } = item;
+          const feature = {
+            type: "Feature",
+            properties: {
+              nama: placemark.nama,
+              jenis_objek: jenis,
+              sumber: parsed.sourceFile,
+              folder_path: placemark.folderPath.join(" / ")
+            },
+            geometry: placemark.geometry
+          };
+
+          const idGeometri = buatIdGeometri(idPekerjaan, placemark.nama, urutan);
+          const style = tentukanStyleImpor(placemark, jenis);
+          let idSegmen = "";
+
+          if (jenis === "saluran") {
+            idSegmen = buatIdSegmen(idPekerjaan, placemark.nama, segmen.length);
+            const dataSeg = {
+              id_segmen: idSegmen,
+              id_pekerjaan: idPekerjaan,
+              nama_segmen: placemark.nama,
+              jenis_saluran: "",
+              panjang_m: panjangGeometryMeter(feature) ?? "",
+              luas_ca_ha: "",
+              elevasi_hulu_m: "",
+              elevasi_hilir_m: "",
+              slope: "",
+              r24_mm: "",
+              metode_tc: "",
+              tc_menit: "",
+              intensitas_mm_jam: "",
+              c_gabungan: "",
+              q_rencana_m3_dtk: "",
+              lebar_m: "",
+              tinggi_m: "",
+              diameter_m: "",
+              jagaan_m: "",
+              manning_n: "",
+              q_saluran_m3_dtk: "",
+              status: "Belum Lengkap",
+              catatan: "Dibuat otomatis dari layer KML/KMZ"
+            };
+
+            segmen.push(dataSeg);
+            petaSegmen.push({ idSegmen, nama: placemark.nama, kunci: ekstrakKunciSisi(placemark.nama), data: dataSeg });
+          }
+
+          geometri.push({
+            id_geometri: idGeometri,
+            id_pekerjaan: idPekerjaan,
+            id_segmen: idSegmen,
+            nama_objek: placemark.nama,
+            jenis_objek: jenis,
+            tipe_geometri: placemark.geometry.type,
+            geojson: feature,
+            warna: style.color,
+            ketebalan: style.width,
+            opasitas: style.opacity
+          });
+        });
+
+        const caList = geometri.filter(item => item.jenis_objek === "catchment_area");
+        caList.forEach(function (geoCa) {
+          const luasHa = luasGeometryHa(geoCa.geojson);
+          const kunciCa = ekstrakKunciSisi(geoCa.nama_objek);
+          let kandidat = [];
+
+          if (kunciCa) kandidat = petaSegmen.filter(item => item.kunci === kunciCa);
+          if (!kandidat.length && petaSegmen.length === 1) kandidat = [petaSegmen[0]];
+
+          if (kandidat.length === 1) {
+            geoCa.id_segmen = kandidat[0].idSegmen;
+            const awal = angka(kandidat[0].data.luas_ca_ha) || 0;
+            kandidat[0].data.luas_ca_ha = luasHa !== null ? awal + luasHa : kandidat[0].data.luas_ca_ha;
+          }
+        });
+
+        segmen.forEach(function (item) {
+          if (typeof item.panjang_m === "number") item.panjang_m = Number(item.panjang_m.toFixed(2));
+          if (typeof item.luas_ca_ha === "number") item.luas_ca_ha = Number(item.luas_ca_ha.toFixed(4));
+        });
+
+        paket.push({
+          pekerjaan: {
+            id_pekerjaan: idPekerjaan,
+            tahun: String(tahun),
+            nama_pekerjaan: project.projectName,
+            lokasi: lokasi.lokasi,
+            kecamatan: lokasi.kecamatan,
+            kelurahan: lokasi.kelurahan,
+            status: "",
+            catatan: "Impor dari " + parsed.sourceFile,
+            kelompok_pekerjaan: kelompok
+          },
+          segmen,
+          geometri
+        });
+      });
+
+      return paket;
+    }
+
+    function statistikPaket(paket) {
+      return {
+        pekerjaan: paket.length,
+        segmen: paket.reduce((sum, item) => sum + item.segmen.length, 0),
+        geometri: paket.reduce((sum, item) => sum + item.geometri.length, 0),
+        ca: paket.reduce(
+          (sum, item) => sum + item.geometri.filter(g => g.jenis_objek === "catchment_area").length,
+          0
+        )
+      };
+    }
+
+    function refreshPreviewImpor() {
+      if (!hasilKmlParsed) return;
+
+      const tahun = document.getElementById("inputTahunImpor").value || new Date().getFullYear();
+      const kelompok = document.getElementById("inputKelompokImpor").value.trim() || hasilKmlParsed.groupName;
+      const paket = buatPaketDariParsed(hasilKmlParsed, tahun, kelompok);
+      const statistik = statistikPaket(paket);
+
+      document.getElementById("ringkasanImpor").innerHTML = `
+        <div class="import-summary">
+          <div><span>Pekerjaan</span><b>${statistik.pekerjaan}</b></div>
+          <div><span>Segmen Saluran</span><b>${statistik.segmen}</b></div>
+          <div><span>Semua Layer</span><b>${statistik.geometri}</b></div>
+          <div><span>Catchment Area</span><b>${statistik.ca}</b></div>
+        </div>
+      `;
+
+      document.getElementById("daftarPreviewImpor").innerHTML = `
+        <div class="preview-list">
+          ${paket.map(function (item) {
+            const jenisCount = {};
+            item.geometri.forEach(g => { jenisCount[g.jenis_objek] = (jenisCount[g.jenis_objek] || 0) + 1; });
+            return `
+              <div class="preview-item">
+                <b>${escapeHtml(item.pekerjaan.nama_pekerjaan)}</b>
+                <small>
+                  ${item.segmen.length} segmen · ${item.geometri.length} layer ·
+                  ${jenisCount.catchment_area || 0} CA · ${jenisCount.path_elevasi || 0} path elevasi
+                </small>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+
+      document.getElementById("btnPreviewImpor").disabled = statistik.geometri === 0;
+      document.getElementById("btnSimpanImpor").disabled = statistik.geometri === 0;
+    }
+
+    function previewPaketDiPeta() {
+      if (!hasilKmlParsed) return;
+
+      const tahun = document.getElementById("inputTahunImpor").value;
+      const kelompok = document.getElementById("inputKelompokImpor").value.trim();
+      const paket = buatPaketDariParsed(hasilKmlParsed, tahun, kelompok);
+
+      previewImportLayer.clearLayers();
+
+      paket.forEach(function (item) {
+        item.geometri.forEach(function (geo) {
+          const tipe = String(geo.tipe_geometri).toLowerCase();
+          const layer = L.geoJSON(geo.geojson, {
+            style: {
+              color: geo.warna || warnaDefault(geo),
+              weight: angka(geo.ketebalan) || 3,
+              opacity: tipe.includes("polygon") ? 0.9 : normalisasiOpacity(geo.opasitas, 0.9),
+              fillColor: geo.warna || warnaDefault(geo),
+              fillOpacity: tipe.includes("polygon") ? normalisasiOpacity(geo.opasitas, 0.35) : 0.12
+            },
+            pointToLayer: function (feature, latlng) {
+              return L.circleMarker(latlng, {
+                radius: 7,
+                color: "#ffffff",
+                weight: 2,
+                fillColor: geo.warna || "#f59e0b",
+                fillOpacity: 0.9
+              });
+            }
+          }).bindPopup(`<b>${escapeHtml(geo.nama_objek)}</b><br>${escapeHtml(item.pekerjaan.nama_pekerjaan)}`);
+
+          previewImportLayer.addLayer(layer);
+        });
+      });
+
+      const bounds = previewImportLayer.getBounds();
+      if (bounds.isValid()) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 17 });
+
+      document.getElementById("statusBacaFile").className = "success-box";
+      document.getElementById("statusBacaFile").innerHTML =
+        "Preview sementara sudah ditampilkan di peta. Data belum disimpan ke Google Sheets.";
+    }
+
+    async function simpanSemuaPaketImpor() {
+      if (!hasilKmlParsed) return;
+
+      const tahun = document.getElementById("inputTahunImpor").value;
+      const kelompok = document.getElementById("inputKelompokImpor").value.trim();
+      const token = document.getElementById("inputTokenImpor").value;
+
+      if (!tahun) {
+        alert("Isi tahun pekerjaan.");
+        return;
+      }
+
+      if (!kelompok) {
+        alert("Isi kelompok pekerjaan.");
+        return;
+      }
+
+      if (!token) {
+        alert("Masukkan WRITE_TOKEN untuk menyimpan data.");
+        return;
+      }
+
+      const paket = buatPaketDariParsed(hasilKmlParsed, tahun, kelompok);
+      if (!paket.length) {
+        alert("Tidak ada pekerjaan yang dapat disimpan.");
+        return;
+      }
+
+      const btnSimpan = document.getElementById("btnSimpanImpor");
+      const btnPreview = document.getElementById("btnPreviewImpor");
+      const progress = document.getElementById("progressImpor");
+      const progressBar = document.getElementById("progressBarImpor");
+      const progressText = document.getElementById("progressTextImpor");
+
+      btnSimpan.disabled = true;
+      btnPreview.disabled = true;
+      progress.classList.add("show");
+
+      const gagal = [];
+
+      for (let i = 0; i < paket.length; i++) {
+        const persen = Math.round((i / paket.length) * 100);
+        progressBar.style.width = persen + "%";
+        progressText.textContent = `Menyimpan ${i + 1} dari ${paket.length}: ${paket[i].pekerjaan.nama_pekerjaan}`;
+
+        try {
+          await kirimPaketImpor(paket[i], token);
+        } catch (error) {
+          gagal.push({ nama: paket[i].pekerjaan.nama_pekerjaan, pesan: error.message });
+        }
+      }
+
+      progressBar.style.width = "100%";
+
+      if (gagal.length) {
+        progressText.textContent = `${paket.length - gagal.length} pekerjaan berhasil, ${gagal.length} gagal.`;
+        document.getElementById("statusBacaFile").className = "error-box";
+        document.getElementById("statusBacaFile").innerHTML =
+          `<b>Sebagian data gagal disimpan.</b><br>${gagal.map(item => escapeHtml(item.nama + ": " + item.pesan)).join("<br>")}`;
+        btnSimpan.disabled = false;
+        btnPreview.disabled = false;
+        return;
+      }
+
+      progressText.textContent = `${paket.length} pekerjaan berhasil disimpan.`;
+      document.getElementById("statusBacaFile").className = "success-box";
+      document.getElementById("statusBacaFile").innerHTML =
+        `<b>Impor berhasil.</b><br>${paket.length} pekerjaan sudah disimpan ke Google Sheets.`;
+
+      document.getElementById("inputTokenImpor").value = "";
+      previewImportLayer.clearLayers();
+      await muatSemuaData();
+
+      setTimeout(function () {
+        tutupModalImpor();
+      }, 900);
+    }
+
+    /* ==================================================
+       MODAL IMPOR DAN EVENT
+    ================================================== */
+
+    function bukaModalImpor() {
+      document.getElementById("modalImpor").classList.add("open");
+    }
+
+    function tutupModalImpor() {
+      document.getElementById("modalImpor").classList.remove("open");
+    }
+
+    document.getElementById("btnBukaImpor").addEventListener("click", bukaModalImpor);
+    document.getElementById("btnTutupImpor").addEventListener("click", tutupModalImpor);
+
+    document.getElementById("modalImpor").addEventListener("click", function (event) {
+      if (event.target === this) tutupModalImpor();
+    });
+
+    document.getElementById("fileKmlKmz").addEventListener("change", async function () {
+      const file = this.files?.[0];
+      if (!file) return;
+
+      fileImporAktif = file;
+      hasilKmlParsed = null;
+      document.getElementById("btnPreviewImpor").disabled = true;
+      document.getElementById("btnSimpanImpor").disabled = true;
+      document.getElementById("ringkasanImpor").innerHTML = "";
+      document.getElementById("daftarPreviewImpor").innerHTML = "";
+      document.getElementById("statusBacaFile").className = "loading-box";
+      document.getElementById("statusBacaFile").textContent = "Membaca struktur file " + file.name + "...";
+
+      try {
+        hasilKmlParsed = await bacaFileKmlKmz(file);
+        document.getElementById("inputKelompokImpor").value = hasilKmlParsed.groupName;
+
+        const tahunDariNama = (hasilKmlParsed.groupName + " " + file.name).match(/\b(20\d{2})\b/);
+        if (tahunDariNama) document.getElementById("inputTahunImpor").value = tahunDariNama[1];
+
+        document.getElementById("statusBacaFile").className = "success-box";
+        document.getElementById("statusBacaFile").innerHTML =
+          `<b>File berhasil dibaca.</b><br>Kelompok: ${escapeHtml(hasilKmlParsed.groupName)} · ${hasilKmlParsed.projects.length} folder pekerjaan.`;
+
+        refreshPreviewImpor();
+      } catch (error) {
+        hasilKmlParsed = null;
+        document.getElementById("statusBacaFile").className = "error-box";
+        document.getElementById("statusBacaFile").textContent = error.message;
+      }
+    });
+
+    [
+      "inputTahunImpor", "inputKelompokImpor", "cekImporSaluran",
+      "cekImporCA", "cekImporLain", "cekImporPath"
+    ].forEach(function (id) {
+      document.getElementById(id).addEventListener("input", refreshPreviewImpor);
+      document.getElementById(id).addEventListener("change", refreshPreviewImpor);
+    });
+
+    document.getElementById("btnPreviewImpor").addEventListener("click", previewPaketDiPeta);
+    document.getElementById("btnSimpanImpor").addEventListener("click", simpanSemuaPaketImpor);
+
+    /* ==================================================
+       MUAT SEMUA DATA
+    ================================================== */
 
     async function muatSemuaData() {
-      const wadah =
-        document.getElementById("daftarPekerjaan");
+      const wadah = document.getElementById("daftarPekerjaan");
 
-      wadah.innerHTML = `
-        <div class="loading-box">
-          Membaca data pekerjaan, segmen,
-          dan geometri dari Google Sheets...
-        </div>
-      `;
-
-      document.getElementById(
-        "detailPekerjaan"
-      ).innerHTML = `
-        <div class="loading-box">
-          Memuat rekap pekerjaan...
-        </div>
-      `;
+      wadah.innerHTML = `<div class="loading-box">Membaca data pekerjaan, segmen, dan geometri dari Google Sheets...</div>`;
+      document.getElementById("detailPekerjaan").innerHTML = `<div class="loading-box">Memuat rekap pekerjaan...</div>`;
 
       try {
         const hasil = await Promise.all([
@@ -1653,63 +2061,32 @@
         dataGeometri = hasil[2];
 
         siapkanLayerGeometri();
-        renderTreePekerjaan();
 
-        const pekerjaanMasihAda =
-          dataPekerjaan.some(function (item) {
-            return (
-              item.id_pekerjaan ===
-              pekerjaanAktifId
-            );
-          });
+        const pekerjaanMasihAda = dataPekerjaan.some(item => item.id_pekerjaan === pekerjaanAktifId);
 
-        if (
-          !pekerjaanMasihAda &&
-          dataPekerjaan.length
-        ) {
-          pilihPekerjaan(
-            dataPekerjaan[0].id_pekerjaan
-          );
+        if (!pekerjaanMasihAda && dataPekerjaan.length) {
+          const awal = dataPekerjaan[0];
+          const tahun = awal.tahun || "Tanpa Tahun";
+          const kelompok = awal.kelompok_pekerjaan || "Pekerjaan Lainnya";
+          expandedGroupKeys.add(tahun + "||" + kelompok);
+          pilihPekerjaan(awal.id_pekerjaan);
         } else if (pekerjaanAktifId) {
           pilihPekerjaan(pekerjaanAktifId);
         } else {
-          document.getElementById(
-            "detailPekerjaan"
-          ).innerHTML = `
-            <div class="info-box">
-              Belum ada pekerjaan yang dipilih.
-            </div>
-          `;
+          renderTreePekerjaan();
+          document.getElementById("detailPekerjaan").innerHTML =
+            `<div class="info-box">Belum ada pekerjaan yang dipilih.</div>`;
         }
       } catch (error) {
         console.error(error);
-
-        wadah.innerHTML = `
-          <div class="error-box">
-            <b>Data gagal dimuat.</b><br>
-            ${escapeHtml(error.message)}
-          </div>
-        `;
-
-        document.getElementById(
-          "detailPekerjaan"
-        ).innerHTML = `
-          <div class="error-box">
-            Rekap pekerjaan tidak dapat ditampilkan.
-          </div>
-        `;
+        wadah.innerHTML = `<div class="error-box"><b>Data gagal dimuat.</b><br>${escapeHtml(error.message)}</div>`;
+        document.getElementById("detailPekerjaan").innerHTML =
+          `<div class="error-box">Rekap pekerjaan tidak dapat ditampilkan.</div>`;
       }
     }
 
-    document
-      .getElementById("btnMuatUlang")
-      .addEventListener(
-        "click",
-        muatSemuaData
-      );
-
+    document.getElementById("btnMuatUlang").addEventListener("click", muatSemuaData);
     muatSemuaData();
   </script>
-
 </body>
 </html>
