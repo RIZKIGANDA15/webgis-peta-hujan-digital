@@ -1104,13 +1104,11 @@
 
       if (!yakin) return;
 
-      let token = sessionStorage.getItem("WRITE_TOKEN_DRAINASE") || "";
+      const token = prompt(
+        `Masukkan WRITE_TOKEN untuk menghapus layer "${namaLayer}":`
+      ) || "";
 
-      if (!token) {
-        token = prompt("Masukkan WRITE_TOKEN untuk menghapus layer:") || "";
-      }
-
-      if (!token) {
+      if (!token.trim()) {
         alert("Penghapusan dibatalkan karena WRITE_TOKEN tidak diisi.");
         return;
       }
@@ -1123,8 +1121,7 @@
       }
 
       try {
-        const hasil = await kirimHapusLayer(idGeometri, token);
-        sessionStorage.setItem("WRITE_TOKEN_DRAINASE", token);
+        const hasil = await kirimHapusLayer(idGeometri, token.trim());
 
         visibleGeometryIds.delete(idGeometri);
 
@@ -1138,10 +1135,6 @@
 
       } catch (error) {
         console.error(error);
-
-        if (String(error.message || "").toLowerCase().includes("token")) {
-          sessionStorage.removeItem("WRITE_TOKEN_DRAINASE");
-        }
 
         alert("Layer gagal dihapus: " + error.message);
 
