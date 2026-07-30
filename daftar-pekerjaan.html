@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daftar Pekerjaan Drainase</title>
-  <!-- Revisi: 1 Catchment Area = 1 Segmen; layer saluran tidak menjadi segmen; hapus layer permanen -->
+  <!-- Revisi: 1 Catchment Area = 1 Segmen; hapus layer, pekerjaan induk, dan kelompok pekerjaan secara permanen -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -162,6 +162,42 @@
 
     .kelompok-header:hover { background: #e5eaf1; }
 
+    .kelompok-name {
+      flex: 1;
+      min-width: 0;
+      line-height: 1.3;
+    }
+
+    .group-delete-btn {
+      width: 27px;
+      min-width: 27px;
+      height: 27px;
+      margin-left: auto;
+      padding: 0;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fff1f2;
+      color: #b91c1c;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.18s ease;
+      flex: 0 0 auto;
+    }
+
+    .group-delete-btn:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+
+    .group-delete-btn:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
     .kelompok-icon {
       width: 17px;
       text-align: center;
@@ -273,6 +309,36 @@
     }
 
     .layer-delete-btn:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    .project-delete-btn {
+      width: 27px;
+      min-width: 27px;
+      height: 27px;
+      margin-top: 1px;
+      padding: 0;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fff1f2;
+      color: #b91c1c;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.18s ease;
+      flex: 0 0 auto;
+    }
+
+    .project-delete-btn:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+
+    .project-delete-btn:disabled {
       opacity: 0.55;
       cursor: wait;
     }
@@ -1146,6 +1212,233 @@
       }
     }
 
+
+    async function kirimHapusKelompok(tahun, kelompok, token) {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "hapus_kelompok",
+          token: token,
+          tahun: tahun,
+          kelompok_pekerjaan: kelompok
+        })
+      });
+
+      const hasil = await response.json();
+      if (!hasil.success) {
+        throw new Error(hasil.message || "Kelompok pekerjaan gagal dihapus.");
+      }
+
+      return hasil;
+    }
+
+    async function hapusKelompokPermanen(tahun, kelompok, tombol) {
+      const daftarPekerjaanKelompok = dataPekerjaan.filter(function (pekerjaan) {
+        const tahunData = pekerjaan.tahun || "Tanpa Tahun";
+        const kelompokData = pekerjaan.kelompok_pekerjaan || "Pekerjaan Lainnya";
+        return tahunData === tahun && kelompokData === kelompok;
+      });
+
+      if (!daftarPekerjaanKelompok.length) {
+        alert("Kelompok pekerjaan tidak ditemukan pada data yang sedang tampil.");
+        return;
+      }
+
+      const daftarId = new Set(
+        daftarPekerjaanKelompok.map(pekerjaan => pekerjaan.id_pekerjaan)
+      );
+
+      const jumlahPekerjaan = daftarPekerjaanKelompok.length;
+      const jumlahLayer = dataGeometri.filter(
+        data => daftarId.has(data.id_pekerjaan)
+      ).length;
+      const jumlahSegmen = dataSegmen.filter(
+        data => daftarId.has(data.id_pekerjaan)
+      ).length;
+
+      const yakin = confirm(
+        `Hapus permanen kelompok "${kelompok}" pada Tahun ${tahun}?\n\n` +
+        `Seluruh ${jumlahPekerjaan} pekerjaan, ${jumlahLayer} layer, dan ${jumlahSegmen} segmen di dalam kelompok ini akan ikut dihapus.\n\n` +
+        `Data yang sudah dihapus tidak dapat dikembalikan.`
+      );
+
+      if (!yakin) return;
+
+      const token = prompt(
+        `Masukkan WRITE_TOKEN untuk menghapus seluruh kelompok "${kelompok}":`
+      ) || "";
+
+      if (!token.trim()) {
+        alert("Penghapusan dibatalkan karena WRITE_TOKEN tidak diisi.");
+        return;
+      }
+
+      const teksAsli = tombol ? tombol.textContent : "";
+
+      if (tombol) {
+        tombol.disabled = true;
+        tombol.textContent = "…";
+      }
+
+      try {
+        const hasil = await kirimHapusKelompok(
+          tahun,
+          kelompok,
+          token.trim()
+        );
+
+        dataGeometri
+          .filter(data => daftarId.has(data.id_pekerjaan))
+          .forEach(data => visibleGeometryIds.delete(data.id_geometri));
+
+        daftarId.forEach(idPekerjaan => {
+          expandedProjectIds.delete(idPekerjaan);
+        });
+
+        expandedGroupKeys.delete(tahun + "||" + kelompok);
+
+        if (pekerjaanAktifId && daftarId.has(pekerjaanAktifId)) {
+          pekerjaanAktifId = null;
+        }
+
+        const pekerjaanDihapus = Number(
+          hasil.data?.jumlah_pekerjaan_dihapus || 0
+        );
+        const layerDihapus = Number(
+          hasil.data?.jumlah_geometri_dihapus || 0
+        );
+        const segmenDihapus = Number(
+          hasil.data?.jumlah_segmen_dihapus || 0
+        );
+
+        alert(
+          `Kelompok "${kelompok}" berhasil dihapus.\n\n` +
+          `${pekerjaanDihapus} pekerjaan, ${layerDihapus} layer, dan ${segmenDihapus} segmen ikut dihapus.`
+        );
+
+        await muatSemuaData();
+
+      } catch (error) {
+        console.error(error);
+        alert("Kelompok pekerjaan gagal dihapus: " + error.message);
+
+      } finally {
+        if (tombol && document.body.contains(tombol)) {
+          tombol.disabled = false;
+          tombol.textContent = teksAsli || "🗑";
+        }
+      }
+    }
+
+
+    async function kirimHapusPekerjaan(idPekerjaan, token) {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "hapus_pekerjaan",
+          token: token,
+          id_pekerjaan: idPekerjaan
+        })
+      });
+
+      const hasil = await response.json();
+      if (!hasil.success) {
+        throw new Error(hasil.message || "Pekerjaan gagal dihapus.");
+      }
+
+      return hasil;
+    }
+
+    async function hapusPekerjaanPermanen(idPekerjaan, tombol) {
+      const pekerjaan = dataPekerjaan.find(
+        data => data.id_pekerjaan === idPekerjaan
+      );
+
+      if (!pekerjaan) {
+        alert("Pekerjaan induk tidak ditemukan pada data yang sedang tampil.");
+        return;
+      }
+
+      const namaPekerjaan =
+        pekerjaan.nama_pekerjaan || pekerjaan.lokasi || idPekerjaan;
+
+      const jumlahLayer = dataGeometri.filter(
+        data => data.id_pekerjaan === idPekerjaan
+      ).length;
+
+      const jumlahSegmen = dataSegmen.filter(
+        data => data.id_pekerjaan === idPekerjaan
+      ).length;
+
+      const yakin = confirm(
+        `Hapus permanen pekerjaan induk "${namaPekerjaan}"?\n\n` +
+        `Seluruh ${jumlahLayer} layer dan ${jumlahSegmen} segmen di bawah pekerjaan ini akan ikut dihapus.\n\n` +
+        `Data yang sudah dihapus tidak dapat dikembalikan.`
+      );
+
+      if (!yakin) return;
+
+      const token = prompt(
+        `Masukkan WRITE_TOKEN untuk menghapus seluruh pekerjaan "${namaPekerjaan}":`
+      ) || "";
+
+      if (!token.trim()) {
+        alert("Penghapusan dibatalkan karena WRITE_TOKEN tidak diisi.");
+        return;
+      }
+
+      const teksAsli = tombol ? tombol.textContent : "";
+
+      if (tombol) {
+        tombol.disabled = true;
+        tombol.textContent = "…";
+      }
+
+      try {
+        const hasil = await kirimHapusPekerjaan(
+          idPekerjaan,
+          token.trim()
+        );
+
+        dataGeometri
+          .filter(data => data.id_pekerjaan === idPekerjaan)
+          .forEach(data => visibleGeometryIds.delete(data.id_geometri));
+
+        expandedProjectIds.delete(idPekerjaan);
+
+        if (pekerjaanAktifId === idPekerjaan) {
+          pekerjaanAktifId = null;
+        }
+
+        const layerDihapus = Number(
+          hasil.data?.jumlah_geometri_dihapus || 0
+        );
+
+        const segmenDihapus = Number(
+          hasil.data?.jumlah_segmen_dihapus || 0
+        );
+
+        alert(
+          `Pekerjaan "${namaPekerjaan}" berhasil dihapus.\n\n` +
+          `${layerDihapus} layer dan ${segmenDihapus} segmen ikut dihapus.`
+        );
+
+        await muatSemuaData();
+
+      } catch (error) {
+        console.error(error);
+        alert("Pekerjaan gagal dihapus: " + error.message);
+
+      } finally {
+        if (tombol && document.body.contains(tombol)) {
+          tombol.disabled = false;
+          tombol.textContent = teksAsli || "🗑";
+        }
+      }
+    }
+
     /* ==================================================
        LAYER GEOJSON DATABASE
     ================================================== */
@@ -1312,7 +1605,16 @@
               <div class="kelompok-header" data-group-key="${escapeHtml(groupKey)}">
                 <span>${groupOpen ? "▼" : "▶"}</span>
                 <span class="kelompok-icon">▰</span>
-                <span>${escapeHtml(kelompok)}</span>
+                <span class="kelompok-name">${escapeHtml(kelompok)}</span>
+                <button
+                  type="button"
+                  class="group-delete-btn"
+                  data-delete-group="true"
+                  data-delete-group-year="${escapeHtml(tahun)}"
+                  data-delete-group-name="${escapeHtml(kelompok)}"
+                  title="Hapus seluruh kelompok dan semua pekerjaan di dalamnya"
+                  aria-label="Hapus kelompok ${escapeHtml(kelompok)}"
+                >🗑</button>
               </div>
               <div class="kelompok-content ${groupOpen ? "" : "collapsed"}">
           `;
@@ -1331,6 +1633,13 @@
                     <div class="pekerjaan-nama">${escapeHtml(pekerjaan.nama_pekerjaan || "Tanpa Nama")}</div>
                     <div class="pekerjaan-lokasi">${escapeHtml(pekerjaan.lokasi || "Lokasi belum diisi")}</div>
                   </div>
+                  <button
+                    type="button"
+                    class="project-delete-btn"
+                    data-delete-project="${escapeHtml(id)}"
+                    title="Hapus seluruh pekerjaan dan semua layer di dalamnya"
+                    aria-label="Hapus pekerjaan ${escapeHtml(pekerjaan.nama_pekerjaan || "Tanpa Nama")}"
+                  >🗑</button>
                 </div>
 
                 <div class="layer-anak ${terbuka ? "open" : ""}">
@@ -1388,16 +1697,28 @@
       });
 
       document.querySelectorAll(".kelompok-header").forEach(function (element) {
-        element.addEventListener("click", function () {
+        element.addEventListener("click", function (event) {
+          if (event.target.closest("[data-delete-group]")) return;
           const key = this.dataset.groupKey;
           expandedGroupKeys.has(key) ? expandedGroupKeys.delete(key) : expandedGroupKeys.add(key);
           renderTreePekerjaan();
         });
       });
 
+      document.querySelectorAll("[data-delete-group]").forEach(function (element) {
+        element.addEventListener("click", function (event) {
+          event.stopPropagation();
+          hapusKelompokPermanen(
+            this.dataset.deleteGroupYear,
+            this.dataset.deleteGroupName,
+            this
+          );
+        });
+      });
+
       document.querySelectorAll(".pekerjaan-row").forEach(function (element) {
         element.addEventListener("click", function (event) {
-          if (event.target.closest(".tree-caret")) return;
+          if (event.target.closest(".tree-caret, [data-delete-project]")) return;
           pilihPekerjaan(this.dataset.projectId);
         });
       });
@@ -1408,6 +1729,13 @@
           const id = this.dataset.toggleProject;
           expandedProjectIds.has(id) ? expandedProjectIds.delete(id) : expandedProjectIds.add(id);
           renderTreePekerjaan();
+        });
+      });
+
+      document.querySelectorAll("[data-delete-project]").forEach(function (element) {
+        element.addEventListener("click", function (event) {
+          event.stopPropagation();
+          hapusPekerjaanPermanen(this.dataset.deleteProject, this);
         });
       });
 
