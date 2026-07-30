@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daftar Pekerjaan Drainase</title>
-  <!-- Revisi: 1 Catchment Area = 1 Segmen; layer saluran tidak menjadi segmen -->
+  <!-- Revisi: 1 Catchment Area = 1 Segmen; layer saluran tidak menjadi segmen; hapus layer permanen -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -247,6 +247,34 @@
     .layer-row input {
       margin-top: 2px;
       cursor: pointer;
+    }
+
+    .layer-delete-btn {
+      width: 28px;
+      min-width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fff1f2;
+      color: #b91c1c;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.18s ease;
+    }
+
+    .layer-delete-btn:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+
+    .layer-delete-btn:disabled {
+      opacity: 0.55;
+      cursor: wait;
     }
 
     .layer-symbol {
@@ -1033,6 +1061,98 @@
       return hasil;
     }
 
+
+    async function kirimHapusLayer(idGeometri, token) {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "hapus_layer",
+          token: token,
+          id_geometri: idGeometri
+        })
+      });
+
+      const hasil = await response.json();
+      if (!hasil.success) throw new Error(hasil.message || "Layer gagal dihapus.");
+      return hasil;
+    }
+
+    async function hapusLayerPermanen(idGeometri, tombol) {
+      const item = dataGeometri.find(data => data.id_geometri === idGeometri);
+
+      if (!item) {
+        alert("Layer tidak ditemukan pada data yang sedang tampil.");
+        return;
+      }
+
+      const namaLayer = item.nama_objek || namaJenisObjek(item);
+      const jenisKecil = String(item.jenis_objek || "").toLowerCase();
+      const tipeKecil = String(item.tipe_geometri || "").toLowerCase();
+      const merupakanCatchment =
+        jenisKecil.includes("catchment") ||
+        jenisKecil === "ca" ||
+        (tipeKecil.includes("polygon") && String(item.id_segmen || "").trim() !== "");
+
+      const tambahanPesan = merupakanCatchment
+        ? "\n\nSegmen Catchment Area yang terhubung juga akan ikut dihapus dari tabel rekap."
+        : "";
+
+      const yakin = confirm(
+        `Hapus permanen layer "${namaLayer}"?${tambahanPesan}\n\nData yang sudah dihapus tidak dapat dikembalikan.`
+      );
+
+      if (!yakin) return;
+
+      let token = sessionStorage.getItem("WRITE_TOKEN_DRAINASE") || "";
+
+      if (!token) {
+        token = prompt("Masukkan WRITE_TOKEN untuk menghapus layer:") || "";
+      }
+
+      if (!token) {
+        alert("Penghapusan dibatalkan karena WRITE_TOKEN tidak diisi.");
+        return;
+      }
+
+      const teksAsli = tombol ? tombol.textContent : "";
+
+      if (tombol) {
+        tombol.disabled = true;
+        tombol.textContent = "…";
+      }
+
+      try {
+        const hasil = await kirimHapusLayer(idGeometri, token);
+        sessionStorage.setItem("WRITE_TOKEN_DRAINASE", token);
+
+        visibleGeometryIds.delete(idGeometri);
+
+        const jumlahSegmen = Number(hasil.data?.jumlah_segmen_dihapus || 0);
+        const pesanSegmen = jumlahSegmen > 0
+          ? " Segmen Catchment Area terkait juga sudah dihapus."
+          : "";
+
+        alert(`Layer "${namaLayer}" berhasil dihapus.${pesanSegmen}`);
+        await muatSemuaData();
+
+      } catch (error) {
+        console.error(error);
+
+        if (String(error.message || "").toLowerCase().includes("token")) {
+          sessionStorage.removeItem("WRITE_TOKEN_DRAINASE");
+        }
+
+        alert("Layer gagal dihapus: " + error.message);
+
+      } finally {
+        if (tombol && document.body.contains(tombol)) {
+          tombol.disabled = false;
+          tombol.textContent = teksAsli || "🗑";
+        }
+      }
+    }
+
     /* ==================================================
        LAYER GEOJSON DATABASE
     ================================================== */
@@ -1240,6 +1360,13 @@
                       <div class="layer-name">${escapeHtml(item.nama_objek || namaJenisObjek(item))}</div>
                       <div class="layer-subtitle">${escapeHtml(segmen ? segmen.nama_segmen : namaJenisObjek(item))}</div>
                     </div>
+                    <button
+                      type="button"
+                      class="layer-delete-btn"
+                      data-delete-layer="${escapeHtml(idGeometri)}"
+                      title="Hapus permanen layer"
+                      aria-label="Hapus layer ${escapeHtml(item.nama_objek || namaJenisObjek(item))}"
+                    >🗑</button>
                   </div>
                 `;
               });
@@ -1302,8 +1429,16 @@
         element.addEventListener("click", event => event.stopPropagation());
       });
 
+      document.querySelectorAll("[data-delete-layer]").forEach(function (element) {
+        element.addEventListener("click", function (event) {
+          event.stopPropagation();
+          hapusLayerPermanen(this.dataset.deleteLayer, this);
+        });
+      });
+
       document.querySelectorAll(".layer-row").forEach(function (element) {
-        element.addEventListener("click", function () {
+        element.addEventListener("click", function (event) {
+          if (event.target.closest("[data-delete-layer]")) return;
           zoomKeGeometri(this.dataset.layerId);
         });
       });
