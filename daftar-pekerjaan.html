@@ -1820,7 +1820,6 @@
               <td>${formatAngka(segmen.slope, 6)}</td>
               <td>${formatAngka(segmen.q_rencana_m3_dtk, 3)}</td>
               <td>${formatAngka(segmen.q_saluran_m3_dtk, 3)}</td>
-              <td>${statusSegmenHtml(segmen.status)}</td>
             </tr>
           `;
         }).join("");
@@ -1832,7 +1831,7 @@
                 <tr>
                   <th>No.</th><th>Nama Segmen / CA</th><th>Jenis</th><th>Panjang (m)</th>
                   <th>CA (ha)</th><th>Dimensi</th><th>Slope</th><th>Qr (m³/det)</th>
-                  <th>Qs (m³/det)</th><th>Status</th>
+                  <th>Qs (m³/det)</th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
